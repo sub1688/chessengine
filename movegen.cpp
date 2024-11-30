@@ -1,21 +1,65 @@
 #include "movegen.h"
-
 #include <array>
 #include <iostream>
 #include <random>
 
-uint64_t Movegen::generateLegalBishopMoves(uint8_t squareIndex, bool white) {
-    uint64_t movementMask = generateBishopMovementMask(squareIndex);
-    uint64_t blockers = movementMask & Board::BITBOARD_OCCUPANCY; // Mask blockers from the board occupancy
+uint64_t Movegen::generatePseudoLegalPawnMoves(uint8_t squareIndex, bool white) {
+    uint64_t moves = 0ULL;
+    uint64_t emptyBitboard = ~Board::BITBOARD_OCCUPANCY;
+
+    if (white) {
+        uint64_t singlePush = 1ULL << (squareIndex + 8) & emptyBitboard;
+        moves |= singlePush;
+        if (singlePush & RANK_3) {
+            moves |= 1ULL << (squareIndex + 16) & emptyBitboard;
+        }
+    }else {
+        uint64_t singlePush = 1ULL << (squareIndex - 8) & emptyBitboard;
+        moves |= singlePush;
+        if (singlePush & RANK_6) {
+            moves |= 1ULL << (squareIndex - 16) & emptyBitboard;
+        }
+    }
+    return moves;
+}
+
+
+uint64_t Movegen::generatePseudoLegalQueenMoves(uint8_t squareIndex, bool white) {
+    return generatePseudoLegalBishopMoves(squareIndex, white) | generatePseudoLegalRookMoves(squareIndex, white);
+}
+
+
+uint64_t Movegen::generatePseudoLegalBishopMoves(uint8_t squareIndex, bool white) {
+    uint64_t movementMask = BISHOP_MOVEMENT_MASKS[squareIndex];
+    uint64_t blockers = movementMask & Board::BITBOARD_OCCUPANCY;
     uint64_t index = (blockers * BISHOP_MAGICS[squareIndex]) >> 52;
     return BISHOP_MOVE_TABLE[squareIndex][index] & (white ? ~Board::BITBOARD_WHITE_OCCUPANCY : ~Board::BITBOARD_BLACK_OCCUPANCY);
 }
 
-uint64_t Movegen::generateLegalRookMoves(uint8_t squareIndex, bool white) {
-    uint64_t movementMask = generateRookMovementMask(squareIndex);
-    uint64_t blockers = movementMask & Board::BITBOARD_OCCUPANCY; // Mask blockers from the board occupancy
+uint64_t Movegen::generatePseudoLegalRookMoves(uint8_t squareIndex, bool white) {
+    uint64_t movementMask = ROOK_MOVEMENT_MASKS[squareIndex];
+    uint64_t blockers = movementMask & Board::BITBOARD_OCCUPANCY;
     uint64_t index = (blockers * ROOK_MAGICS[squareIndex]) >> 52;
     return ROOK_MOVE_TABLE[squareIndex][index] & (white ? ~Board::BITBOARD_WHITE_OCCUPANCY : ~Board::BITBOARD_BLACK_OCCUPANCY);
+}
+
+uint64_t Movegen::generatePseudoLegalKingMoves(uint8_t squareIndex, bool white) {
+    uint64_t movementMask = KING_MOVEMENT_MASKS[squareIndex];
+    return movementMask & (white ? ~Board::BITBOARD_WHITE_OCCUPANCY : ~Board::BITBOARD_BLACK_OCCUPANCY);
+}
+
+uint64_t Movegen::generatePseudoLegalKnightMoves(uint8_t squareIndex, bool white) {
+    uint64_t movementMask = KNIGHT_MOVEMENT_MASKS[squareIndex];
+    return movementMask & (white ? ~Board::BITBOARD_WHITE_OCCUPANCY : ~Board::BITBOARD_BLACK_OCCUPANCY);
+}
+
+void Movegen::precomputeMovementMasks() {
+    for (int i = 0; i < 64; i++) {
+        ROOK_MOVEMENT_MASKS[i] = generateRookMovementMask(i);
+        BISHOP_MOVEMENT_MASKS[i] = generateBishopMovementMask(i);
+        KING_MOVEMENT_MASKS[i] = generateKingMovementMask(i);
+        KNIGHT_MOVEMENT_MASKS[i] = generateKnightMovementMask(i);
+    }
 }
 
 void Movegen::precomputeRookMovegenTable() {
@@ -168,33 +212,67 @@ std::vector<uint64_t> Movegen::generateAllBlockers(uint64_t movementMask) {
 }
 
 uint64_t Movegen::generateRookMovementMask(uint8_t squareIndex) {
-    uint64_t mask = 0ULL;
+    uint64_t movementMask = 0ULL;
+
+    // Calculate north, south, east, west rays
     int rank = squareIndex / 8;
     int file = squareIndex % 8;
 
-    // Generate rank mask: Shift the full rank to the correct position
-    uint64_t rankMask = (RANK_1 << (rank * 8)) & ~(1ULL << squareIndex);
+    // North ray (rank increases)
+    for (int r = rank + 1; r < 7; ++r) {
+        // Stop before rank 8
+        movementMask |= (1ULL << (r * 8 + file));
+    }
 
-    // Generate file mask: Use FILE_A shifted to the correct file
-    uint64_t fileMask = ((FILE_A << file) & ~FILE_A) & ~(1ULL << squareIndex);
+    // South ray (rank decreases)
+    for (int r = rank - 1; r > 0; --r) {
+        // Stop before rank 1
+        movementMask |= (1ULL << (r * 8 + file));
+    }
 
-    mask = rankMask | fileMask;
-    return mask;
+    // East ray (file increases)
+    for (int f = file + 1; f < 7; ++f) {
+        // Stop before file H
+        movementMask |= (1ULL << (rank * 8 + f));
+    }
+
+    // West ray (file decreases)
+    for (int f = file - 1; f > 0; --f) {
+        // Stop before file A
+        movementMask |= (1ULL << (rank * 8 + f));
+    }
+
+    return movementMask;
 }
+
 uint64_t Movegen::generateBishopMovementMask(uint8_t squareIndex) {
-    uint64_t mask = 0ULL;
-    uint64_t pos = (1ULL << squareIndex);
+    uint64_t movementMask = 0ULL;
 
-    // Compute diagonals
-    uint64_t diagonalMask = ((pos * FILE_A) & ~FILE_A) | ((pos * FILE_H) & ~FILE_H);
+    int rank = squareIndex / 8;
+    int file = squareIndex % 8;
 
-    // Compute anti-diagonals
-    uint64_t antiDiagonalMask = ((pos & ~FILE_A) / FILE_A) | ((pos & ~FILE_H) / FILE_H);
+    // North-East (rank++, file++)
+    for (int r = rank + 1, f = file + 1; r < 7 && f < 7; ++r, ++f) {
+        movementMask |= (1ULL << (r * 8 + f));
+    }
 
-    mask = (diagonalMask | antiDiagonalMask) & ~(1ULL << squareIndex);
-    return mask;
+    // North-West (rank++, file--)
+    for (int r = rank + 1, f = file - 1; r < 7 && f > 0; ++r, --f) {
+        movementMask |= (1ULL << (r * 8 + f));
+    }
+
+    // South-East (rank--, file++)
+    for (int r = rank - 1, f = file + 1; r > 0 && f < 7; --r, ++f) {
+        movementMask |= (1ULL << (r * 8 + f));
+    }
+
+    // South-West (rank--, file--)
+    for (int r = rank - 1, f = file - 1; r > 0 && f > 0; --r, --f) {
+        movementMask |= (1ULL << (r * 8 + f));
+    }
+
+    return movementMask;
 }
-
 uint64_t Movegen::generateQueenMovementMask(uint8_t squareIndex) {
     return generateRookMovementMask(squareIndex) | generateBishopMovementMask(squareIndex);
 }
@@ -260,9 +338,9 @@ uint64_t Movegen::generateRandomMagic() {
 
 uint64_t Movegen::random_uint64() {
     uint64_t u1, u2, u3, u4;
-    u1 = (uint64_t) (random()) & 0xFFFF;
-    u2 = (uint64_t) (random()) & 0xFFFF;
-    u3 = (uint64_t) (random()) & 0xFFFF;
-    u4 = (uint64_t) (random()) & 0xFFFF;
+    u1 = random_uint64() & 0xFFFF;
+    u2 = random_uint64() & 0xFFFF;
+    u3 = random_uint64() & 0xFFFF;
+    u4 = random_uint64() & 0xFFFF;
     return u1 | (u2 << 16) | (u3 << 32) | (u4 << 48);
 }

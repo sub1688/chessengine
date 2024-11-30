@@ -32,8 +32,7 @@ struct Move {
     uint8_t from;
     uint8_t to;
 
-    Move(uint8_t m_from, uint8_t m_to) : from(m_from), to(m_to) {
-    }
+    Move(uint8_t m_from, uint8_t m_to) : from(m_from), to(m_to) {}
 };
 
 namespace Movegen {
@@ -41,6 +40,8 @@ namespace Movegen {
     constexpr uint64_t FILE_A = 0x0101010101010101ULL;
     constexpr uint64_t FILE_H = 0x8080808080808080ULL;
     constexpr uint64_t RANK_1 = 0x00000000000000FFULL;
+    constexpr uint64_t RANK_3 = 0x0000000000FF0000ULL;
+    constexpr uint64_t RANK_6 = 0x0000FF0000000000ULL;
     constexpr uint64_t RANK_8 = 0xFF00000000000000ULL;
 
     inline const uint64_t ROOK_MAGICS[64] = {
@@ -57,6 +58,7 @@ namespace Movegen {
         0x402006810140, 0x8000c100241281, 0x4002a8410204001, 0x120e00201024806a, 0x20104014080202, 0x1202004c20111042,
         0x8001009410080132, 0x48002002c084081, 0x346008145140122
     };
+
     inline const uint64_t BISHOP_MAGICS[64] = {
         0x2200104c0300240, 0x2028804400a00040, 0x9040800a01441000, 0x1004030100240004, 0x2000020260000081,
         0x24020901120c0, 0x8a204105400a000, 0x400130009004200, 0x9000418060404300, 0x866110a18, 0x41020c040080f0,
@@ -72,11 +74,23 @@ namespace Movegen {
         0x80041304008, 0x8800040820001105, 0x4406582001208920, 0x832081055b800200,
     };
 
+    inline uint64_t ROOK_MOVEMENT_MASKS[64];
+    inline uint64_t BISHOP_MOVEMENT_MASKS[64];
+    inline uint64_t KNIGHT_MOVEMENT_MASKS[64];
+    inline uint64_t KING_MOVEMENT_MASKS[64];
+
+
     inline uint64_t ROOK_MOVE_TABLE[64][4096];
     inline uint64_t BISHOP_MOVE_TABLE[64][4096];
 
-    uint64_t generateLegalBishopMoves(uint8_t squareIndex, bool white);
-    uint64_t generateLegalRookMoves(uint8_t squareIndex, bool white);
+
+
+    uint64_t generatePseudoLegalBishopMoves(uint8_t squareIndex, bool white);
+    uint64_t generatePseudoLegalRookMoves(uint8_t squareIndex, bool white);
+    uint64_t generatePseudoLegalQueenMoves(uint8_t squareIndex, bool white);
+    uint64_t generatePseudoLegalKingMoves(uint8_t squareIndex, bool white);
+    uint64_t generatePseudoLegalKnightMoves(uint8_t squareIndex, bool white);
+    uint64_t generatePseudoLegalPawnMoves(uint8_t squareIndex, bool white);
 
     uint64_t random_uint64();
 
@@ -97,6 +111,8 @@ namespace Movegen {
     std::vector<uint64_t> generateAllBlockers(uint64_t movementMask);
 
     uint64_t precomputeRookMovesWithBlocker(uint8_t squareIndex, uint64_t blocker);
+
+    void precomputeMovementMasks();
 
     void precomputeRookMovegenTable();
 

@@ -1,7 +1,0 @@
-ninja_dyndep_version = 1.0
-build CMakeFiles/chessengine.dir/main.cpp.o: dyndep
-
-build CMakeFiles/chessengine.dir/board.cpp.o: dyndep
-
-build CMakeFiles/chessengine.dir/movegen.cpp.o: dyndep
-
