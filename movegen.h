@@ -1,4 +1,5 @@
 #pragma once
+#include <optional>
 #include <vector>
 
 #include "board.h"
@@ -79,11 +80,8 @@ namespace Movegen {
     inline uint64_t KNIGHT_MOVEMENT_MASKS[64];
     inline uint64_t KING_MOVEMENT_MASKS[64];
 
-
     inline uint64_t ROOK_MOVE_TABLE[64][4096];
     inline uint64_t BISHOP_MOVE_TABLE[64][4096];
-
-
 
     uint64_t generatePseudoLegalBishopMoves(uint8_t squareIndex, bool white);
     uint64_t generatePseudoLegalRookMoves(uint8_t squareIndex, bool white);
@@ -121,4 +119,8 @@ namespace Movegen {
     void precomputeBishopMovegenTable();
 
     void printMovementMask(uint64_t mask);
+
+    uint8_t popLeastSignificantBitAndGetIndex(uint64_t &num);
+
+    std::array<std::optional<Move>, 216> generateAllLegalMovesOnBoard();
 }

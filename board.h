@@ -17,6 +17,10 @@
 #define BLACK_ROOK 11
 
 namespace Board {
+    inline uint8_t pieceSquareTable[64];
+
+    inline bool whiteToMove = true;
+
     inline uint64_t BITBOARD_BLACK_ROOK = 0ULL;
     inline uint64_t BITBOARD_BLACK_KNIGHT = 0ULL;
     inline uint64_t BITBOARD_BLACK_BISHOP = 0ULL;

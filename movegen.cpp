@@ -1,11 +1,66 @@
 #include "movegen.h"
 #include <array>
 #include <iostream>
+#include <optional>
 #include <random>
+
+
+std::array<std::optional<Move>, 216> Movegen::generateAllLegalMovesOnBoard() {
+    std::array<std::optional<Move>, 216> legalMoves;
+    int arrayIndex = 0;
+
+    bool whiteToMove = Board::whiteToMove;
+
+    uint64_t currentOccupancy = whiteToMove ? Board::BITBOARD_WHITE_OCCUPANCY : Board::BITBOARD_BLACK_OCCUPANCY;
+
+    while (currentOccupancy) {
+        int pieceIndex = popLeastSignificantBitAndGetIndex(currentOccupancy);
+        uint64_t pseudoLegalMoves = 0ULL;
+        switch (Board::getPiece(pieceIndex)) {
+            case BLACK_PAWN:
+            case WHITE_PAWN:
+                pseudoLegalMoves = generatePseudoLegalPawnMoves(pieceIndex, whiteToMove);
+                break;
+            case BLACK_KNIGHT:
+            case WHITE_KNIGHT:
+                pseudoLegalMoves = generatePseudoLegalKnightMoves(pieceIndex, whiteToMove);
+                break;
+            case WHITE_BISHOP:
+            case BLACK_BISHOP:
+                pseudoLegalMoves = generatePseudoLegalBishopMoves(pieceIndex, whiteToMove);
+                break;
+            case WHITE_ROOK:
+            case BLACK_ROOK:
+                pseudoLegalMoves = generatePseudoLegalRookMoves(pieceIndex, whiteToMove);
+                break;
+            case WHITE_KING:
+            case BLACK_KING:
+                pseudoLegalMoves = generatePseudoLegalKingMoves(pieceIndex, whiteToMove);
+                break;
+            case BLACK_QUEEN:
+            case WHITE_QUEEN:
+                pseudoLegalMoves = generatePseudoLegalQueenMoves(pieceIndex, whiteToMove);
+                break;
+            default:
+                continue;
+        }
+
+        if (!pseudoLegalMoves)
+            continue;
+
+        while (pseudoLegalMoves) {
+            uint8_t targetIndex = popLeastSignificantBitAndGetIndex(pseudoLegalMoves);
+            legalMoves[arrayIndex++] = Move(pieceIndex, targetIndex);
+        }
+    }
+
+    return legalMoves;
+}
 
 uint64_t Movegen::generatePseudoLegalPawnMoves(uint8_t squareIndex, bool white) {
     uint64_t moves = 0ULL;
     uint64_t emptyBitboard = ~Board::BITBOARD_OCCUPANCY;
+    uint64_t opponentBitboard = white ? Board::BITBOARD_BLACK_OCCUPANCY : Board::BITBOARD_WHITE_OCCUPANCY;
 
     if (white) {
         uint64_t singlePush = 1ULL << (squareIndex + 8) & emptyBitboard;
@@ -13,16 +68,19 @@ uint64_t Movegen::generatePseudoLegalPawnMoves(uint8_t squareIndex, bool white) 
         if (singlePush & RANK_3) {
             moves |= 1ULL << (squareIndex + 16) & emptyBitboard;
         }
+        moves |= 1ULL << (squareIndex + 9) & opponentBitboard;
+        moves |= 1ULL << (squareIndex + 7) & opponentBitboard;
     }else {
         uint64_t singlePush = 1ULL << (squareIndex - 8) & emptyBitboard;
         moves |= singlePush;
         if (singlePush & RANK_6) {
             moves |= 1ULL << (squareIndex - 16) & emptyBitboard;
         }
+        moves |= 1ULL << (squareIndex - 9) & opponentBitboard;
+        moves |= 1ULL << (squareIndex - 7) & opponentBitboard;
     }
     return moves;
 }
-
 
 uint64_t Movegen::generatePseudoLegalQueenMoves(uint8_t squareIndex, bool white) {
     return generatePseudoLegalBishopMoves(squareIndex, white) | generatePseudoLegalRookMoves(squareIndex, white);
@@ -343,4 +401,10 @@ uint64_t Movegen::random_uint64() {
     u3 = random_uint64() & 0xFFFF;
     u4 = random_uint64() & 0xFFFF;
     return u1 | (u2 << 16) | (u3 << 32) | (u4 << 48);
+}
+
+uint8_t Movegen::popLeastSignificantBitAndGetIndex(uint64_t &b) {
+    auto index = std::countr_zero(b);
+    b &= b - 1;
+    return index;
 }
