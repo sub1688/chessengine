@@ -16,26 +16,27 @@
 #define BLACK_KING 10
 #define BLACK_ROOK 11
 
+struct Move {
+    uint8_t from;
+    uint8_t to;
+    uint8_t pieceFrom = 12;
+    uint8_t capture = 12;
+
+    Move(uint8_t m_from, uint8_t m_to) : from(m_from), to(m_to) {}
+};
+
 namespace Board {
     inline uint8_t pieceSquareTable[64];
 
     inline bool whiteToMove = true;
 
-    inline uint64_t BITBOARD_BLACK_ROOK = 0ULL;
-    inline uint64_t BITBOARD_BLACK_KNIGHT = 0ULL;
-    inline uint64_t BITBOARD_BLACK_BISHOP = 0ULL;
-    inline uint64_t BITBOARD_BLACK_QUEEN = 0ULL;
-    inline uint64_t BITBOARD_BLACK_KING = 0ULL;
-    inline uint64_t BITBOARD_BLACK_PAWN = 0ULL;
-    inline uint64_t BITBOARD_WHITE_ROOK = 0ULL;
-    inline uint64_t BITBOARD_WHITE_KNIGHT = 0ULL;
-    inline uint64_t BITBOARD_WHITE_BISHOP = 0ULL;
-    inline uint64_t BITBOARD_WHITE_QUEEN = 0ULL;
-    inline uint64_t BITBOARD_WHITE_KING = 0ULL;
-    inline uint64_t BITBOARD_WHITE_PAWN = 0ULL;
-    inline uint64_t BITBOARD_OCCUPANCY = 0ULL;
+    inline uint64_t BITBOARDS[12];
+    inline uint64_t BITBOARD_OCCUPANCY;
     inline uint64_t BITBOARD_WHITE_OCCUPANCY = 0ULL;
     inline uint64_t BITBOARD_BLACK_OCCUPANCY = 0ULL;
+
+    void move(Move m);
+    void undoMove(Move m);
 
     void updateOccupancy();
 
@@ -43,7 +44,7 @@ namespace Board {
 
     uint8_t getPiece(int index);
 
-    uint8_t move(int index, int targetIndex);
+    void setPiece(int index, uint8_t piece);
 
     void printBoard();
 

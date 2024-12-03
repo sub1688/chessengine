@@ -29,13 +29,6 @@
 #define NOT_RANK_7 0xFF00FFFFFFFFFFFFULL // 0b1111111111111111111111110000000011111111111111111111111111111111
 #define NOT_RANK_8 0x00FFFFFFFFFFFFFFULL // 0b0000000000000000000000001111111111111111111111111111111111111111
 
-struct Move {
-    uint8_t from;
-    uint8_t to;
-
-    Move(uint8_t m_from, uint8_t m_to) : from(m_from), to(m_to) {}
-};
-
 namespace Movegen {
 
     constexpr uint64_t FILE_A = 0x0101010101010101ULL;
@@ -82,6 +75,8 @@ namespace Movegen {
 
     inline uint64_t ROOK_MOVE_TABLE[64][4096];
     inline uint64_t BISHOP_MOVE_TABLE[64][4096];
+
+    uint64_t perft(int depth);
 
     uint64_t generatePseudoLegalBishopMoves(uint8_t squareIndex, bool white);
     uint64_t generatePseudoLegalRookMoves(uint8_t squareIndex, bool white);

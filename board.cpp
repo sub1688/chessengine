@@ -1,53 +1,71 @@
 #include "board.h"
-
 #include <cassert>
 #include <cstdint>
 #include <iostream>
 #include <string>
 
+
 uint8_t Board::getPiece(int index) {
     uint64_t mask = 1ULL << index;
 
-    if (BITBOARD_WHITE_PAWN & mask) return WHITE_PAWN;
-    if (BITBOARD_WHITE_KNIGHT & mask) return WHITE_KNIGHT;
-    if (BITBOARD_WHITE_BISHOP & mask) return WHITE_BISHOP;
-    if (BITBOARD_WHITE_ROOK & mask) return WHITE_ROOK;
-    if (BITBOARD_WHITE_QUEEN & mask) return WHITE_QUEEN;
-    if (BITBOARD_WHITE_KING & mask) return WHITE_KING;
-
-    if (BITBOARD_BLACK_PAWN & mask) return BLACK_PAWN;
-    if (BITBOARD_BLACK_KNIGHT & mask) return BLACK_KNIGHT;
-    if (BITBOARD_BLACK_BISHOP & mask) return BLACK_BISHOP;
-    if (BITBOARD_BLACK_ROOK & mask) return BLACK_ROOK;
-    if (BITBOARD_BLACK_QUEEN & mask) return BLACK_QUEEN;
-    if (BITBOARD_BLACK_KING & mask) return BLACK_KING;
+    for (uint8_t i = 0; i < 12; i++) {
+        if (mask & BITBOARDS[i])
+            return i;
+    }
 
     return NONE;
 }
 
+void Board::setPiece(int index, uint8_t piece) {
+    assert(index >= 0 && index < 64);
+    assert(piece <= 12); // 12 represents NONE
+
+    uint64_t mask = 1ULL << index;
+    for (int i = 0; i < 12; i++) {
+        BITBOARDS[i] &= ~mask;
+    }
+    if (piece < 12) {
+        BITBOARDS[piece] |= mask;
+    }
+}
+
+void Board::move(Move m) {
+    setPiece(m.to, m.pieceFrom);
+    setPiece(m.from, NONE);
+    updateOccupancy();
+    whiteToMove = !whiteToMove;
+}
+
+void Board::undoMove(Move m) {
+    setPiece(m.from, m.pieceFrom);
+    setPiece(m.to, m.capture);
+
+    updateOccupancy();
+    whiteToMove = !whiteToMove;
+}
 
 void Board::updateOccupancy() {
-    BITBOARD_WHITE_OCCUPANCY = BITBOARD_WHITE_PAWN | BITBOARD_WHITE_KNIGHT | BITBOARD_WHITE_BISHOP |
-                               BITBOARD_WHITE_QUEEN | BITBOARD_WHITE_KING | BITBOARD_WHITE_ROOK;
-    BITBOARD_BLACK_OCCUPANCY = BITBOARD_BLACK_PAWN | BITBOARD_BLACK_KNIGHT | BITBOARD_BLACK_BISHOP |
-                               BITBOARD_BLACK_QUEEN | BITBOARD_BLACK_KING | BITBOARD_BLACK_KING;
+    BITBOARD_WHITE_OCCUPANCY = BITBOARDS[WHITE_PAWN] | BITBOARDS[WHITE_KNIGHT] | BITBOARDS[WHITE_BISHOP] |
+                               BITBOARDS[WHITE_QUEEN] | BITBOARDS[WHITE_KING] | BITBOARDS[WHITE_ROOK];
+    BITBOARD_BLACK_OCCUPANCY = BITBOARDS[BLACK_PAWN] | BITBOARDS[BLACK_KNIGHT] | BITBOARDS[BLACK_BISHOP] |
+                               BITBOARDS[BLACK_QUEEN] | BITBOARDS[BLACK_KING] | BITBOARDS[BLACK_KING];
     BITBOARD_OCCUPANCY = BITBOARD_WHITE_OCCUPANCY | BITBOARD_BLACK_OCCUPANCY;
 }
 
 
 void Board::setStartingPosition() {
-    BITBOARD_WHITE_PAWN = 0x000000000000FF00ULL; // Rank 2
-    BITBOARD_WHITE_ROOK = 0x0000000000000081ULL; // Corners of rank 1
-    BITBOARD_WHITE_KNIGHT = 0x0000000000000042ULL; // Knights on rank 1
-    BITBOARD_WHITE_BISHOP = 0x0000000000000024ULL; // Bishops on rank 1
-    BITBOARD_WHITE_QUEEN = 0x0000000000000008ULL; // Queen on d1
-    BITBOARD_WHITE_KING = 0x0000000000000010ULL; // King on e1
-    BITBOARD_BLACK_PAWN = 0x00FF000000000000ULL; // Rank 7
-    BITBOARD_BLACK_ROOK = 0x8100000000000000ULL; // Corners of rank 8
-    BITBOARD_BLACK_KNIGHT = 0x4200000000000000ULL; // Knights on rank 8
-    BITBOARD_BLACK_BISHOP = 0x2400000000000000ULL; // Bishops on rank 8
-    BITBOARD_BLACK_QUEEN = 0x0800000000000000ULL; // Queen on d8
-    BITBOARD_BLACK_KING = 0x1000000000000000ULL; // King on e8
+    BITBOARDS[WHITE_PAWN] = 0x000000000000FF00ULL; // Rank 2
+    BITBOARDS[WHITE_ROOK] = 0x0000000000000081ULL; // Corners of rank 1
+    BITBOARDS[WHITE_KNIGHT] = 0x0000000000000042ULL; // Knights on rank 1
+    BITBOARDS[WHITE_BISHOP] = 0x0000000000000024ULL; // Bishops on rank 1
+    BITBOARDS[WHITE_QUEEN] = 0x0000000000000008ULL; // Queen on d1
+    BITBOARDS[WHITE_KING] = 0x0000000000000010ULL; // King on e1
+    BITBOARDS[BLACK_PAWN] = 0x00FF000000000000ULL; // Rank 7
+    BITBOARDS[BLACK_ROOK] = 0x8100000000000000ULL; // Corners of rank 8
+    BITBOARDS[BLACK_KNIGHT] = 0x4200000000000000ULL; // Knights on rank 8
+    BITBOARDS[BLACK_BISHOP] = 0x2400000000000000ULL; // Bishops on rank 8
+    BITBOARDS[BLACK_QUEEN] = 0x0800000000000000ULL; // Queen on d8
+    BITBOARDS[BLACK_KING] = 0x1000000000000000ULL; // King on e8
 
     updateOccupancy();
 }
@@ -72,10 +90,9 @@ void Board::printBoard() {
 
 void Board::importFEN(const std::string &fen) {
     // Clear all bitboards
-    BITBOARD_WHITE_PAWN = BITBOARD_WHITE_KNIGHT = BITBOARD_WHITE_BISHOP = 0ULL;
-    BITBOARD_WHITE_ROOK = BITBOARD_WHITE_QUEEN = BITBOARD_WHITE_KING = 0ULL;
-    BITBOARD_BLACK_PAWN = BITBOARD_BLACK_KNIGHT = BITBOARD_BLACK_BISHOP = 0ULL;
-    BITBOARD_BLACK_ROOK = BITBOARD_BLACK_QUEEN = BITBOARD_BLACK_KING = 0ULL;
+    for (int i = 0; i < 12; i++) {
+        BITBOARDS[i] = 0ULL;
+    }
 
     size_t index = 0;
     int rank = 7;
@@ -97,30 +114,30 @@ void Board::importFEN(const std::string &fen) {
             uint64_t mask = 1ULL << square;
 
             switch (c) {
-                case 'P': BITBOARD_WHITE_PAWN |= mask;
+                case 'P': BITBOARDS[WHITE_PAWN] |= mask;
                     break;
-                case 'N': BITBOARD_WHITE_KNIGHT |= mask;
+                case 'N': BITBOARDS[WHITE_KNIGHT] |= mask;
                     break;
-                case 'B': BITBOARD_WHITE_BISHOP |= mask;
+                case 'B': BITBOARDS[WHITE_BISHOP] |= mask;
                     break;
-                case 'R': BITBOARD_WHITE_ROOK |= mask;
+                case 'R': BITBOARDS[WHITE_ROOK] |= mask;
                     break;
-                case 'Q': BITBOARD_WHITE_QUEEN |= mask;
+                case 'Q': BITBOARDS[WHITE_QUEEN] |= mask;
                     break;
-                case 'K': BITBOARD_WHITE_KING |= mask;
+                case 'K': BITBOARDS[WHITE_KING] |= mask;
                     break;
 
-                case 'p': BITBOARD_BLACK_PAWN |= mask;
+                case 'p': BITBOARDS[BLACK_PAWN] |= mask;
                     break;
-                case 'n': BITBOARD_BLACK_KNIGHT |= mask;
+                case 'n': BITBOARDS[BLACK_KNIGHT] |= mask;
                     break;
-                case 'b': BITBOARD_BLACK_BISHOP |= mask;
+                case 'b': BITBOARDS[BLACK_BISHOP] |= mask;
                     break;
-                case 'r': BITBOARD_BLACK_ROOK |= mask;
+                case 'r': BITBOARDS[BLACK_ROOK] |= mask;
                     break;
-                case 'q': BITBOARD_BLACK_QUEEN |= mask;
+                case 'q': BITBOARDS[BLACK_QUEEN] |= mask;
                     break;
-                case 'k': BITBOARD_BLACK_KING |= mask;
+                case 'k': BITBOARDS[BLACK_KING] |= mask;
                     break;
 
                 default:

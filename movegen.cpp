@@ -1,22 +1,48 @@
 #include "movegen.h"
 #include <array>
+#include <cassert>
 #include <iostream>
 #include <optional>
 #include <random>
 
+uint64_t Movegen::perft(int depth) {
+    uint64_t perftCount = 0;
+
+    // Generate all legal moves for the current position
+    std::array<std::optional<Move>, 216> moves = generateAllLegalMovesOnBoard();
+
+    for (const auto& move : moves) {
+        if (!move.has_value())
+            break; // Stop iterating when no more moves are available
+
+        if (depth == 1) {
+            perftCount++; // At depth 1, simply count the moves
+        } else {
+            // Make the move
+            Board::move(move.value());
+            // Recursively count moves at the next depth
+            perftCount += perft(depth - 1);
+            // Undo the move
+            Board::undoMove(move.value());
+        }
+    }
+
+    return perftCount;
+}
+
 
 std::array<std::optional<Move>, 216> Movegen::generateAllLegalMovesOnBoard() {
     std::array<std::optional<Move>, 216> legalMoves;
-    int arrayIndex = 0;
 
+    int arrayIndex = 0;
     bool whiteToMove = Board::whiteToMove;
 
     uint64_t currentOccupancy = whiteToMove ? Board::BITBOARD_WHITE_OCCUPANCY : Board::BITBOARD_BLACK_OCCUPANCY;
-
     while (currentOccupancy) {
         int pieceIndex = popLeastSignificantBitAndGetIndex(currentOccupancy);
         uint64_t pseudoLegalMoves = 0ULL;
-        switch (Board::getPiece(pieceIndex)) {
+        uint8_t piece = Board::getPiece(pieceIndex);
+        switch (piece) {
             case BLACK_PAWN:
             case WHITE_PAWN:
                 pseudoLegalMoves = generatePseudoLegalPawnMoves(pieceIndex, whiteToMove);
@@ -50,10 +76,12 @@ std::array<std::optional<Move>, 216> Movegen::generateAllLegalMovesOnBoard() {
 
         while (pseudoLegalMoves) {
             uint8_t targetIndex = popLeastSignificantBitAndGetIndex(pseudoLegalMoves);
-            legalMoves[arrayIndex++] = Move(pieceIndex, targetIndex);
+            Move move = Move(pieceIndex, targetIndex);
+            move.capture = Board::getPiece(targetIndex);
+            move.pieceFrom = piece;
+            legalMoves[arrayIndex++] = move;
         }
     }
-
     return legalMoves;
 }
 
