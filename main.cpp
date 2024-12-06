@@ -54,7 +54,6 @@ void debugPerft(int depth) {
     }
 }
 
-
 int main() {
     Board::setStartingPosition();
     Board::printBoard();

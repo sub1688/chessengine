@@ -118,4 +118,6 @@ namespace Movegen {
     uint8_t popLeastSignificantBitAndGetIndex(uint64_t &num);
 
     std::array<std::optional<Move>, 216> generateAllLegalMovesOnBoard();
+
+    bool isKingInDanger(bool white);
 }

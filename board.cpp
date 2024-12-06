@@ -4,6 +4,9 @@
 #include <iostream>
 #include <string>
 
+namespace Movegen {
+    bool isKingInDanger(bool white);
+}
 
 uint8_t Board::getPiece(int index) {
     uint64_t mask = 1ULL << index;
@@ -29,11 +32,17 @@ void Board::setPiece(int index, uint8_t piece) {
     }
 }
 
-void Board::move(Move m) {
+bool Board::move(Move m) {
     setPiece(m.to, m.pieceFrom);
     setPiece(m.from, NONE);
     updateOccupancy();
+    if (Movegen::isKingInDanger(whiteToMove)) {
+        whiteToMove = !whiteToMove;
+        undoMove(m);
+        return false;
+    }
     whiteToMove = !whiteToMove;
+    return true;
 }
 
 void Board::undoMove(Move m) {

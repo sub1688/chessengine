@@ -1,6 +1,5 @@
 #include "movegen.h"
 #include <array>
-#include <cassert>
 #include <iostream>
 #include <optional>
 #include <random>
@@ -19,11 +18,12 @@ uint64_t Movegen::perft(int depth) {
             perftCount++; // At depth 1, simply count the moves
         } else {
             // Make the move
-            Board::move(move.value());
-            // Recursively count moves at the next depth
-            perftCount += perft(depth - 1);
-            // Undo the move
-            Board::undoMove(move.value());
+            if (Board::move(move.value())) {
+                // Recursively count moves at the next depth
+                perftCount += perft(depth - 1);
+                // Undo the move
+                Board::undoMove(move.value());
+            }
         }
     }
 
@@ -84,6 +84,15 @@ std::array<std::optional<Move>, 216> Movegen::generateAllLegalMovesOnBoard() {
 
     return legalMoves;
 }
+
+bool Movegen::isKingInDanger(bool white) {
+    uint8_t kingIndex = std::countr_zero(white ? Board::BITBOARDS[WHITE_KING] : Board::BITBOARDS[BLACK_KING]);
+    uint8_t opponentOccupancy = white ? Board::BITBOARD_BLACK_OCCUPANCY : Board::BITBOARD_WHITE_OCCUPANCY;
+
+    uint64_t availableMoves = generatePseudoLegalKingMoves(kingIndex, white) | generatePseudoLegalQueenMoves(kingIndex, white) | generatePseudoLegalKnightMoves(kingIndex, white);
+    return availableMoves & opponentOccupancy;
+}
+
 
 uint64_t Movegen::generatePseudoLegalPawnMoves(uint8_t squareIndex, bool white) {
     uint64_t moves = 0ULL;

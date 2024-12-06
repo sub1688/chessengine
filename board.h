@@ -37,7 +37,7 @@ namespace Board {
     inline uint64_t BITBOARD_WHITE_OCCUPANCY = 0ULL;
     inline uint64_t BITBOARD_BLACK_OCCUPANCY = 0ULL;
 
-    void move(Move m);
+    bool move(Move m);
     void undoMove(Move m);
 
     void updateOccupancy();
