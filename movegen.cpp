@@ -30,7 +30,6 @@ uint64_t Movegen::perft(int depth) {
     return perftCount;
 }
 
-
 std::array<std::optional<Move>, 216> Movegen::generateAllLegalMovesOnBoard() {
     std::array<std::optional<Move>, 216> legalMoves;
 
@@ -82,6 +81,7 @@ std::array<std::optional<Move>, 216> Movegen::generateAllLegalMovesOnBoard() {
             legalMoves[arrayIndex++] = move;
         }
     }
+
     return legalMoves;
 }
 
@@ -96,16 +96,16 @@ uint64_t Movegen::generatePseudoLegalPawnMoves(uint8_t squareIndex, bool white) 
         if (singlePush & RANK_3) {
             moves |= 1ULL << (squareIndex + 16) & emptyBitboard;
         }
-        moves |= 1ULL << (squareIndex + 9) & opponentBitboard;
-        moves |= 1ULL << (squareIndex + 7) & opponentBitboard;
+        moves |= 1ULL << (squareIndex + 9) & opponentBitboard & NOT_FILE_A;
+        moves |= 1ULL << (squareIndex + 7) & opponentBitboard & NOT_FILE_H;
     }else {
         uint64_t singlePush = 1ULL << (squareIndex - 8) & emptyBitboard;
         moves |= singlePush;
         if (singlePush & RANK_6) {
             moves |= 1ULL << (squareIndex - 16) & emptyBitboard;
         }
-        moves |= 1ULL << (squareIndex - 9) & opponentBitboard;
-        moves |= 1ULL << (squareIndex - 7) & opponentBitboard;
+        moves |= 1ULL << (squareIndex - 9) & opponentBitboard & NOT_FILE_H;
+        moves |= 1ULL << (squareIndex - 7) & opponentBitboard & NOT_FILE_A;
     }
     return moves;
 }

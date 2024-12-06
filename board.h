@@ -31,6 +31,8 @@ namespace Board {
     inline bool whiteToMove = true;
 
     inline uint64_t BITBOARDS[12];
+    inline uint64_t ATTACK_RAYS = 0ULL;
+    inline uint64_t PIN_MASK = 0ULL;
     inline uint64_t BITBOARD_OCCUPANCY;
     inline uint64_t BITBOARD_WHITE_OCCUPANCY = 0ULL;
     inline uint64_t BITBOARD_BLACK_OCCUPANCY = 0ULL;
