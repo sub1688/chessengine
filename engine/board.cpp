@@ -35,19 +35,43 @@ void Board::setPiece(int index, uint8_t piece) {
 bool Board::move(Move m) {
     setPiece(m.to, m.pieceFrom);
     setPiece(m.from, NONE);
+
+    if (m.enPassantTarget != -1) {
+        setPiece(m.enPassantTarget, NONE);
+    }
+
     updateOccupancy();
     if (Movegen::isKingInDanger(whiteToMove)) {
         whiteToMove = !whiteToMove;
+        moveNumber++;
         undoMove(m);
         return false;
     }
+
+    moveNumber++;
+
+    // en passant
+    if (abs(m.to - m.from) == 16 && (m.pieceFrom == WHITE_PAWN || m.pieceFrom == BLACK_PAWN)) {
+        epMasks[moveNumber] = 1ULL << (whiteToMove ? m.from + 8 : m.from - 8);
+    }else {
+        epMasks[moveNumber] = 0ULL;
+    }
+
     whiteToMove = !whiteToMove;
     return true;
 }
 
 void Board::undoMove(Move m) {
     setPiece(m.from, m.pieceFrom);
-    setPiece(m.to, m.capture);
+    if (m.enPassantTarget != -1) {
+        setPiece(m.enPassantTarget, m.capture);
+        setPiece(m.to, NONE);
+    }else {
+        setPiece(m.to, m.capture);
+    }
+
+    // en passant
+    moveNumber--;
 
     updateOccupancy();
     whiteToMove = !whiteToMove;
@@ -160,3 +184,4 @@ void Board::importFEN(const std::string &fen) {
     // Update occupancy bitboards
     updateOccupancy();
 }
+

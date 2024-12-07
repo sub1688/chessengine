@@ -21,23 +21,27 @@ struct Move {
     uint8_t to;
     uint8_t pieceFrom = 12;
     uint8_t capture = 12;
+    int enPassantTarget = -1;
 
-    Move(uint8_t m_from, uint8_t m_to) : from(m_from), to(m_to) {}
+    Move(uint8_t m_from, uint8_t m_to) : from(m_from), to(m_to) {
+    }
 };
 
 namespace Board {
-    inline uint8_t pieceSquareTable[64];
-
     inline bool whiteToMove = true;
 
+    // En Passant
+    // If the number of moves per game exceeds 1024, we are in deep trouble...
+    inline uint64_t epMasks[1024];
+    inline int moveNumber = 0;
+
     inline uint64_t BITBOARDS[12];
-    inline uint64_t ATTACK_RAYS = 0ULL;
-    inline uint64_t PIN_MASK = 0ULL;
     inline uint64_t BITBOARD_OCCUPANCY;
     inline uint64_t BITBOARD_WHITE_OCCUPANCY = 0ULL;
     inline uint64_t BITBOARD_BLACK_OCCUPANCY = 0ULL;
 
     bool move(Move m);
+
     void undoMove(Move m);
 
     void updateOccupancy();

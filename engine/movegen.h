@@ -84,6 +84,7 @@ namespace Movegen {
     uint64_t generatePseudoLegalKingMoves(uint8_t squareIndex, bool white);
     uint64_t generatePseudoLegalKnightMoves(uint8_t squareIndex, bool white);
     uint64_t generatePseudoLegalPawnMoves(uint8_t squareIndex, bool white);
+    uint64_t generatePseudoLegalEnPassantMoves(uint8_t squareIndex, bool white);
 
     uint64_t random_uint64();
 
@@ -100,6 +101,7 @@ namespace Movegen {
     uint64_t generateKnightMovementMask(uint8_t squareIndex);
 
     uint64_t generateKingMovementMask(uint8_t squareIndex);
+
 
     std::vector<uint64_t> generateAllBlockers(uint64_t movementMask);
 
@@ -120,4 +122,6 @@ namespace Movegen {
     std::array<std::optional<Move>, 216> generateAllLegalMovesOnBoard();
 
     bool isKingInDanger(bool white);
+
+    void init();
 }

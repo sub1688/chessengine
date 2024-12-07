@@ -1,12 +1,13 @@
 #include <array>
 #include <chrono>
-
-#include "board.h"
-#include "movegen.h"
 #include <iostream>
 #include <optional>
-
 #include <string>
+
+#include <SFML/Graphics.hpp>
+
+#include "engine/movegen.h"
+#include "ui/BoardWindow.h"
 
 std::string indexToChessNotation(int index) {
     if (index < 0 || index > 63) {
@@ -18,7 +19,6 @@ std::string indexToChessNotation(int index) {
 
     return std::string(1, file) + rank; // Combine file and rank into a string
 }
-
 
 void benchmarkPerft(int depth) {
     using namespace std::chrono;
@@ -42,15 +42,19 @@ void debugPerft(int depth) {
         Move move = moves[i].value();
 
         if (depth == 1) {
-            std::cout << indexToChessNotation(move.from) << indexToChessNotation(move.to) << " 1" << std::endl;
+            if (Board::move(move)) {
+                std::cout << indexToChessNotation(move.from) << indexToChessNotation(move.to) << " 1" << std::endl;
+                Board::undoMove(move);
+            }
             continue;
         }
 
-        Board::move(move);
+        if (Board::move(move)) {
+            uint64_t perft = Movegen::perft(depth - 1);
 
-        uint64_t perft = Movegen::perft(depth - 1);
-        std::cout << indexToChessNotation(move.from) << indexToChessNotation(move.to) << " " << perft << std::endl;
-        Board::undoMove(move);
+            std::cout << indexToChessNotation(move.from) << indexToChessNotation(move.to) << " " << perft << std::endl;
+            Board::undoMove(move);
+        }
     }
 }
 
@@ -59,9 +63,7 @@ int main() {
     Board::printBoard();
 
     // init
-    Movegen::precomputeMovementMasks();
-    Movegen::precomputeRookMovegenTable();
-    Movegen::precomputeBishopMovegenTable();
+    Movegen::init();
 
-    benchmarkPerft(4);
+    BoardWindow::init();
 }
