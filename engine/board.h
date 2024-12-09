@@ -23,8 +23,7 @@ struct Move {
     uint8_t capture = 12;
     int enPassantTarget = -1;
 
-    Move(uint8_t m_from, uint8_t m_to) : from(m_from), to(m_to) {
-    }
+    Move(uint8_t m_from, uint8_t m_to) : from(m_from), to(m_to) {}
 };
 
 namespace Board {
