@@ -33,11 +33,47 @@ void Board::setPiece(int index, uint8_t piece) {
 }
 
 bool Board::move(Move m) {
-    setPiece(m.to, m.pieceFrom);
+    switch (m.promotion) {
+        case PROMOTE_QUEEN:
+            setPiece(m.to, whiteToMove ? WHITE_QUEEN : BLACK_QUEEN);
+        break;
+        case PROMOTE_BISHOP:
+            setPiece(m.to, whiteToMove ? WHITE_BISHOP : BLACK_KNIGHT);
+        break;
+        case PROMOTE_KNIGHT:
+            setPiece(m.to, whiteToMove ? WHITE_KNIGHT : BLACK_KNIGHT);
+        break;
+        case PROMOTE_ROOK:
+            setPiece(m.to, whiteToMove ? WHITE_ROOK : BLACK_ROOK);
+        break;
+        default:
+            setPiece(m.to, m.pieceFrom);
+    }
     setPiece(m.from, NONE);
 
     if (m.enPassantTarget != -1) {
         setPiece(m.enPassantTarget, NONE);
+    }
+
+    if (m.castle) {
+        switch (m.to) {
+            case 6:
+                setPiece(7, NONE);
+                setPiece(5, WHITE_ROOK);
+            break;
+            case 2:
+                setPiece(0, NONE);
+                setPiece(3, WHITE_ROOK);
+            break;
+            case 62:
+                setPiece(63, NONE);
+                setPiece(61, BLACK_ROOK);
+            break;
+            case 58:
+                setPiece(56, NONE);
+                setPiece(59, BLACK_ROOK);
+            break;
+        }
     }
 
     updateOccupancy();
@@ -53,8 +89,35 @@ bool Board::move(Move m) {
     // en passant
     if (abs(m.to - m.from) == 16 && (m.pieceFrom == WHITE_PAWN || m.pieceFrom == BLACK_PAWN)) {
         epMasks[moveNumber] = 1ULL << (whiteToMove ? m.from + 8 : m.from - 8);
-    }else {
+    } else {
         epMasks[moveNumber] = 0ULL;
+    }
+
+    // Preset previous castle rights
+    setWhiteCastleKingside(moveNumber, canWhiteCastleKingside(moveNumber - 1));
+    setWhiteCastleQueenside(moveNumber, canWhiteCastleQueenside(moveNumber - 1));
+    setBlackCastleKingside(moveNumber, canBlackCastleKingside(moveNumber - 1));
+    setBlackCastleQueenside(moveNumber, canBlackCastleQueenside(moveNumber - 1));
+
+    // castle rights
+    if (m.pieceFrom == WHITE_KING) {
+        setWhiteCastleKingside(moveNumber, false);
+        setWhiteCastleQueenside(moveNumber, false);
+    } else if (m.pieceFrom == BLACK_KING) {
+        setBlackCastleKingside(moveNumber, false);
+        setBlackCastleQueenside(moveNumber, false);
+    } else if (m.pieceFrom == WHITE_ROOK) {
+        if (m.from == 7) {
+            setWhiteCastleKingside(moveNumber, false);
+        }else if (m.from == 0) {
+            setWhiteCastleQueenside(moveNumber, false);
+        }
+    } else if (m.pieceFrom == BLACK_ROOK) {
+        if (m.from == 63) {
+            setBlackCastleKingside(moveNumber, false);
+        }else if (m.from == 56) {
+            setBlackCastleQueenside(moveNumber, false);
+        }
     }
 
     whiteToMove = !whiteToMove;
@@ -66,8 +129,29 @@ void Board::undoMove(Move m) {
     if (m.enPassantTarget != -1) {
         setPiece(m.enPassantTarget, m.capture);
         setPiece(m.to, NONE);
-    }else {
+    } else {
         setPiece(m.to, m.capture);
+    }
+
+    if (m.castle) {
+        switch (m.to) {
+            case 6:
+                setPiece(7, WHITE_ROOK);
+                setPiece(5, NONE);
+            break;
+            case 2:
+                setPiece(0, WHITE_ROOK);
+                setPiece(3, NONE);
+            break;
+            case 62:
+                setPiece(63, BLACK_ROOK);
+                setPiece(61, NONE);
+            break;
+            case 58:
+                setPiece(56, BLACK_ROOK);
+                setPiece(59, NONE);
+            break;
+        }
     }
 
     // en passant
@@ -99,6 +183,11 @@ void Board::setStartingPosition() {
     BITBOARDS[BLACK_BISHOP] = 0x2400000000000000ULL; // Bishops on rank 8
     BITBOARDS[BLACK_QUEEN] = 0x0800000000000000ULL; // Queen on d8
     BITBOARDS[BLACK_KING] = 0x1000000000000000ULL; // King on e8
+
+    setWhiteCastleKingside(0, true);
+    setWhiteCastleQueenside(0, true);
+    setBlackCastleKingside(0, true);
+    setBlackCastleQueenside(0, true);
 
     updateOccupancy();
 }
@@ -181,7 +270,75 @@ void Board::importFEN(const std::string &fen) {
         index++;
     }
 
+    index++;
+
+    Board::whiteToMove = fen[index] == 'w';
+    index += 2;
+
+    // Parse castling rights
+    castleRights[moveNumber] = 0; // Reset castling rights
+    while (fen[index] != ' ') {
+        char c = fen[index];
+        switch (c) {
+            case 'K': setWhiteCastleKingside(moveNumber, true); break;
+            case 'Q': setWhiteCastleQueenside(moveNumber, true); break;
+            case 'k': setBlackCastleKingside(moveNumber, true); break;
+            case 'q': setBlackCastleQueenside(moveNumber, true); break;
+            case '-': break; // No castling rights
+            default:
+                throw std::invalid_argument("Invalid castling rights character: " + std::string(1, c));
+        }
+        index++;
+    }
+
     // Update occupancy bitboards
     updateOccupancy();
 }
 
+bool Board::canWhiteCastleKingside(int moveNumber) {
+    return 1U & castleRights[moveNumber];
+}
+
+bool Board::canWhiteCastleQueenside(int moveNumber) {
+    return 1U & (castleRights[moveNumber] >> 1);
+}
+
+bool Board::canBlackCastleKingside(int moveNumber) {
+    return 1U & (castleRights[moveNumber] >> 2);
+}
+
+bool Board::canBlackCastleQueenside(int moveNumber) {
+    return 1U & (castleRights[moveNumber] >> 3);
+}
+
+void Board::setWhiteCastleKingside(int moveNumber, bool value) {
+    if (value) {
+        castleRights[moveNumber] |= 1U; // Set bit 0
+    } else {
+        castleRights[moveNumber] &= ~1U; // Clear bit 0
+    }
+}
+
+void Board::setWhiteCastleQueenside(int moveNumber, bool value) {
+    if (value) {
+        castleRights[moveNumber] |= (1U << 1); // Set bit 1
+    } else {
+        castleRights[moveNumber] &= ~(1U << 1); // Clear bit 1
+    }
+}
+
+void Board::setBlackCastleKingside(int moveNumber, bool value) {
+    if (value) {
+        castleRights[moveNumber] |= (1U << 2); // Set bit 2
+    } else {
+        castleRights[moveNumber] &= ~(1U << 2); // Clear bit 2
+    }
+}
+
+void Board::setBlackCastleQueenside(int moveNumber, bool value) {
+    if (value) {
+        castleRights[moveNumber] |= (1U << 3); // Set bit 3
+    } else {
+        castleRights[moveNumber] &= ~(1U << 3); // Clear bit 3
+    }
+}

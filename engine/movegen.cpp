@@ -10,7 +10,7 @@ uint64_t Movegen::perft(int depth) {
     // Generate all legal moves for the current position
     std::array<std::optional<Move>, 216> moves = generateAllLegalMovesOnBoard();
 
-    for (const auto& move : moves) {
+    for (const auto &move: moves) {
         if (!move.has_value())
             break; // Stop iterating when no more moves are available
 
@@ -39,14 +39,24 @@ std::array<std::optional<Move>, 216> Movegen::generateAllLegalMovesOnBoard() {
     while (currentOccupancy) {
         int pieceIndex = popLeastSignificantBitAndGetIndex(currentOccupancy);
         uint64_t pseudoLegalMoves = 0ULL;
+        uint64_t castleMoves = 0ULL;
         uint64_t pseudoLegalEnPassantMoves = 0ULL;
         uint8_t piece = Board::getPiece(pieceIndex);
+        bool promotion = false;
+
         switch (piece) {
-            case BLACK_PAWN:
-            case WHITE_PAWN:
-                pseudoLegalMoves = generatePseudoLegalPawnMoves(pieceIndex, whiteToMove);
-                pseudoLegalEnPassantMoves = generatePseudoLegalEnPassantMoves(pieceIndex, whiteToMove);
+            case BLACK_PAWN: {
+                pseudoLegalMoves = generatePseudoLegalPawnMoves(pieceIndex, false);
+                pseudoLegalEnPassantMoves = generatePseudoLegalEnPassantMoves(pieceIndex, false);
+                promotion = pseudoLegalMoves & RANK_1;
                 break;
+            }
+            case WHITE_PAWN: {
+                pseudoLegalMoves = generatePseudoLegalPawnMoves(pieceIndex, true);
+                pseudoLegalEnPassantMoves = generatePseudoLegalEnPassantMoves(pieceIndex, true);
+                promotion = pseudoLegalMoves & RANK_8;
+                break;
+            }
             case BLACK_KNIGHT:
             case WHITE_KNIGHT:
                 pseudoLegalMoves = generatePseudoLegalKnightMoves(pieceIndex, whiteToMove);
@@ -62,6 +72,7 @@ std::array<std::optional<Move>, 216> Movegen::generateAllLegalMovesOnBoard() {
             case WHITE_KING:
             case BLACK_KING:
                 pseudoLegalMoves = generatePseudoLegalKingMoves(pieceIndex, whiteToMove);
+                castleMoves = generatePseudoLegalCastleMoves(whiteToMove);
                 break;
             case BLACK_QUEEN:
             case WHITE_QUEEN:
@@ -71,23 +82,39 @@ std::array<std::optional<Move>, 216> Movegen::generateAllLegalMovesOnBoard() {
                 continue;
         }
 
-        if (!pseudoLegalMoves && !pseudoLegalEnPassantMoves)
-            continue;
-
         while (pseudoLegalMoves) {
             uint8_t targetIndex = popLeastSignificantBitAndGetIndex(pseudoLegalMoves);
-            Move move = Move(pieceIndex, targetIndex);
-            move.capture = Board::getPiece(targetIndex);
-            move.pieceFrom = piece;
-            legalMoves[arrayIndex++] = move;
+            if (promotion) {
+                for (int i = 0; i < 4; i++) {
+                    Move move = Move(pieceIndex, targetIndex);
+                    move.capture = Board::getPiece(targetIndex);
+                    move.pieceFrom = piece;
+                    move.promotion = i;
+                    legalMoves[arrayIndex++] = move;
+                }
+            }else {
+                Move move = Move(pieceIndex, targetIndex);
+                move.capture = Board::getPiece(targetIndex);
+                move.pieceFrom = piece;
+                legalMoves[arrayIndex++] = move;
+            }
         }
 
         while (pseudoLegalEnPassantMoves) {
             uint8_t targetIndex = popLeastSignificantBitAndGetIndex(pseudoLegalEnPassantMoves);
             Move move = Move(pieceIndex, targetIndex);
             move.enPassantTarget = whiteToMove ? targetIndex - 8 : targetIndex + 8;
-            move.capture = Board::getPiece(move.enPassantTarget);
+            move.capture = whiteToMove ? BLACK_PAWN : WHITE_PAWN;
             move.pieceFrom = piece;
+            legalMoves[arrayIndex++] = move;
+        }
+
+        while (castleMoves) {
+            uint8_t targetIndex = popLeastSignificantBitAndGetIndex(castleMoves);
+            Move move = Move(pieceIndex, targetIndex);
+            move.capture = NONE;
+            move.pieceFrom = whiteToMove ? WHITE_KING : BLACK_KING;
+            move.castle = true;
             legalMoves[arrayIndex++] = move;
         }
     }
@@ -97,7 +124,10 @@ std::array<std::optional<Move>, 216> Movegen::generateAllLegalMovesOnBoard() {
 
 bool Movegen::isKingInDanger(bool white) {
     uint8_t kingIndex = std::countr_zero(white ? Board::BITBOARDS[WHITE_KING] : Board::BITBOARDS[BLACK_KING]);
+    return isSquareAttacked(kingIndex, white);
+}
 
+bool Movegen::isSquareAttacked(int kingIndex, bool white) {
     uint64_t bishopMoves = generatePseudoLegalBishopMoves(kingIndex, white);
 
     uint64_t opposingQueenBitboard = white ? Board::BITBOARDS[BLACK_QUEEN] : Board::BITBOARDS[WHITE_QUEEN];
@@ -127,21 +157,17 @@ bool Movegen::isKingInDanger(bool white) {
     uint64_t opposingPawnBitboard = white ? Board::BITBOARDS[BLACK_PAWN] : Board::BITBOARDS[WHITE_PAWN];
     uint64_t pawnMoves = 0ULL;
     if (white) {
-        if (kingIndex >= 8) {
-            pawnMoves |= 1ULL << (kingIndex + 9) & opposingPawnBitboard & NOT_FILE_A;
-            pawnMoves |= 1ULL << (kingIndex + 7) & opposingPawnBitboard & NOT_FILE_H;
+        pawnMoves |= 1ULL << (kingIndex + 9) & opposingPawnBitboard & NOT_FILE_A;
+        pawnMoves |= 1ULL << (kingIndex + 7) & opposingPawnBitboard & NOT_FILE_H;
 
-            if (pawnMoves & opposingPawnBitboard)
-                return true;
-        }
+        if (pawnMoves & opposingPawnBitboard)
+            return true;
     } else {
-        if (kingIndex <= 56) {
-            pawnMoves |= 1ULL << (kingIndex - 9) & opposingPawnBitboard & NOT_FILE_H;
-            pawnMoves |= 1ULL << (kingIndex - 7) & opposingPawnBitboard & NOT_FILE_A;
+        pawnMoves |= 1ULL << (kingIndex - 9) & opposingPawnBitboard & NOT_FILE_H;
+        pawnMoves |= 1ULL << (kingIndex - 7) & opposingPawnBitboard & NOT_FILE_A;
 
-            if (pawnMoves & opposingPawnBitboard)
-                return true;
-        }
+        if (pawnMoves & opposingPawnBitboard)
+            return true;
     }
 
     return false;
@@ -155,7 +181,7 @@ uint64_t Movegen::generatePseudoLegalEnPassantMoves(uint8_t squareIndex, bool wh
     if (white) {
         moves |= 1ULL << (squareIndex + 9) & Board::epMasks[Board::moveNumber] & NOT_FILE_A;
         moves |= 1ULL << (squareIndex + 7) & Board::epMasks[Board::moveNumber] & NOT_FILE_H;
-    }else {
+    } else {
         moves |= 1ULL << (squareIndex - 9) & Board::epMasks[Board::moveNumber] & NOT_FILE_H;
         moves |= 1ULL << (squareIndex - 7) & Board::epMasks[Board::moveNumber] & NOT_FILE_A;
     }
@@ -176,8 +202,7 @@ uint64_t Movegen::generatePseudoLegalPawnMoves(uint8_t squareIndex, bool white) 
 
         moves |= 1ULL << (squareIndex + 9) & opponentBitboard & NOT_FILE_A;
         moves |= 1ULL << (squareIndex + 7) & opponentBitboard & NOT_FILE_H;
-
-    }else {
+    } else {
         uint64_t singlePush = 1ULL << (squareIndex - 8) & emptyBitboard;
         moves |= singlePush;
         if (singlePush & RANK_6) {
@@ -198,19 +223,58 @@ uint64_t Movegen::generatePseudoLegalBishopMoves(uint8_t squareIndex, bool white
     uint64_t movementMask = BISHOP_MOVEMENT_MASKS[squareIndex];
     uint64_t blockers = movementMask & Board::BITBOARD_OCCUPANCY;
     uint64_t index = (blockers * BISHOP_MAGICS[squareIndex]) >> 52;
-    return BISHOP_MOVE_TABLE[squareIndex][index] & (white ? ~Board::BITBOARD_WHITE_OCCUPANCY : ~Board::BITBOARD_BLACK_OCCUPANCY);
+    return BISHOP_MOVE_TABLE[squareIndex][index] & (white
+                                                        ? ~Board::BITBOARD_WHITE_OCCUPANCY
+                                                        : ~Board::BITBOARD_BLACK_OCCUPANCY);
 }
 
 uint64_t Movegen::generatePseudoLegalRookMoves(uint8_t squareIndex, bool white) {
     uint64_t movementMask = ROOK_MOVEMENT_MASKS[squareIndex];
     uint64_t blockers = movementMask & Board::BITBOARD_OCCUPANCY;
     uint64_t index = (blockers * ROOK_MAGICS[squareIndex]) >> 52;
-    return ROOK_MOVE_TABLE[squareIndex][index] & (white ? ~Board::BITBOARD_WHITE_OCCUPANCY : ~Board::BITBOARD_BLACK_OCCUPANCY);
+    return ROOK_MOVE_TABLE[squareIndex][index] & (white
+                                                      ? ~Board::BITBOARD_WHITE_OCCUPANCY
+                                                      : ~Board::BITBOARD_BLACK_OCCUPANCY);
 }
 
 uint64_t Movegen::generatePseudoLegalKingMoves(uint8_t squareIndex, bool white) {
     uint64_t movementMask = KING_MOVEMENT_MASKS[squareIndex];
     return movementMask & (white ? ~Board::BITBOARD_WHITE_OCCUPANCY : ~Board::BITBOARD_BLACK_OCCUPANCY);
+}
+
+uint64_t Movegen::generatePseudoLegalCastleMoves(bool white) {
+    uint64_t castleMoves = 0ULL;
+
+    if (isKingInDanger(white))
+        return 0ULL;
+
+    if (white) {
+        if (0x80ULL & Board::BITBOARDS[WHITE_ROOK] && Board::canWhiteCastleKingside(Board::moveNumber) &&
+            !(Board::BITBOARD_OCCUPANCY & 0x60ULL) &&
+            !isSquareAttacked(5, true)) {
+            castleMoves |= 0x40ULL;
+        }
+
+        if (0x1ULL & Board::BITBOARDS[WHITE_ROOK] && Board::canWhiteCastleQueenside(Board::moveNumber) &&
+            !(Board::BITBOARD_OCCUPANCY & 0xEULL) &&
+            !isSquareAttacked(3, true)) {
+            castleMoves |= 0x4ULL;
+        }
+    } else {
+        if (0x8000000000000000ULL & Board::BITBOARDS[BLACK_ROOK] && Board::canBlackCastleKingside(Board::moveNumber) &&
+            !(Board::BITBOARD_OCCUPANCY & 0x6000000000000000ULL) &&
+            !isSquareAttacked(61, false)) {
+            castleMoves |= 0x4000000000000000ULL;
+        }
+
+        if (0x100000000000000ULL & Board::BITBOARDS[BLACK_ROOK] && Board::canBlackCastleQueenside(Board::moveNumber) &&
+            !(Board::BITBOARD_OCCUPANCY & 0xE00000000000000ULL) &&
+            !isSquareAttacked(59, false)) {
+            castleMoves |= 0x400000000000000ULL;
+        }
+    }
+
+    return castleMoves;
 }
 
 uint64_t Movegen::generatePseudoLegalKnightMoves(uint8_t squareIndex, bool white) {
@@ -230,7 +294,7 @@ void Movegen::precomputeMovementMasks() {
 void Movegen::precomputeRookMovegenTable() {
     for (int i = 0; i < 64; i++) {
         uint64_t movementMask = generateRookMovementMask(i);
-        for (uint64_t blocker : generateAllBlockers(movementMask)) {
+        for (uint64_t blocker: generateAllBlockers(movementMask)) {
             uint64_t index = blocker * ROOK_MAGICS[i] >> 52;
             ROOK_MOVE_TABLE[i][index] = precomputeRookMovesWithBlocker(i, blocker);
         }
@@ -240,7 +304,7 @@ void Movegen::precomputeRookMovegenTable() {
 void Movegen::precomputeBishopMovegenTable() {
     for (int i = 0; i < 64; i++) {
         uint64_t movementMask = generateBishopMovementMask(i);
-        for (uint64_t blocker : generateAllBlockers(movementMask)) {
+        for (uint64_t blocker: generateAllBlockers(movementMask)) {
             uint64_t index = blocker * BISHOP_MAGICS[i] >> 52;
             BISHOP_MOVE_TABLE[i][index] = precomputeBishopMovesWithBlocker(i, blocker);
         }
@@ -438,6 +502,7 @@ uint64_t Movegen::generateBishopMovementMask(uint8_t squareIndex) {
 
     return movementMask;
 }
+
 uint64_t Movegen::generateQueenMovementMask(uint8_t squareIndex) {
     return generateRookMovementMask(squareIndex) | generateBishopMovementMask(squareIndex);
 }
@@ -499,7 +564,6 @@ void Movegen::printMovementMask(uint64_t movementMask) {
 uint64_t Movegen::generateRandomMagic() {
     return random_uint64() & random_uint64() & random_uint64();
 }
-
 
 uint64_t Movegen::random_uint64() {
     uint64_t u1, u2, u3, u4;

@@ -30,7 +30,6 @@
 #define NOT_RANK_8 0x00FFFFFFFFFFFFFFULL // 0b0000000000000000000000001111111111111111111111111111111111111111
 
 namespace Movegen {
-
     constexpr uint64_t FILE_A = 0x0101010101010101ULL;
     constexpr uint64_t FILE_H = 0x8080808080808080ULL;
     constexpr uint64_t RANK_1 = 0x00000000000000FFULL;
@@ -79,12 +78,20 @@ namespace Movegen {
     uint64_t perft(int depth);
 
     uint64_t generatePseudoLegalBishopMoves(uint8_t squareIndex, bool white);
+
     uint64_t generatePseudoLegalRookMoves(uint8_t squareIndex, bool white);
+
     uint64_t generatePseudoLegalQueenMoves(uint8_t squareIndex, bool white);
+
     uint64_t generatePseudoLegalKingMoves(uint8_t squareIndex, bool white);
+
     uint64_t generatePseudoLegalKnightMoves(uint8_t squareIndex, bool white);
+
     uint64_t generatePseudoLegalPawnMoves(uint8_t squareIndex, bool white);
+
     uint64_t generatePseudoLegalEnPassantMoves(uint8_t squareIndex, bool white);
+
+    uint64_t generatePseudoLegalCastleMoves(bool white);
 
     uint64_t random_uint64();
 
@@ -101,7 +108,6 @@ namespace Movegen {
     uint64_t generateKnightMovementMask(uint8_t squareIndex);
 
     uint64_t generateKingMovementMask(uint8_t squareIndex);
-
 
     std::vector<uint64_t> generateAllBlockers(uint64_t movementMask);
 
@@ -120,6 +126,8 @@ namespace Movegen {
     uint8_t popLeastSignificantBitAndGetIndex(uint64_t &num);
 
     std::array<std::optional<Move>, 216> generateAllLegalMovesOnBoard();
+
+    bool isSquareAttacked(int kingIndex, bool white);
 
     bool isKingInDanger(bool white);
 

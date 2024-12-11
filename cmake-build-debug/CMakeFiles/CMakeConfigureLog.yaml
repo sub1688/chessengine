@@ -522,3 +522,187 @@ events:
       Running the CXX compiler's linker: "/usr/lib/gcc/x86_64-unknown-linux-gnu/14.2.0/../../../../x86_64-unknown-linux-gnu/bin/ld" "-v"
       GNU ld (GNU Binutils) 2.43.1
 ...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/app/extra/clion/bin/cmake/linux/x64/share/cmake-3.29/Modules/CheckLibraryExists.cmake:69 (try_compile)"
+      - "/app/extra/clion/bin/cmake/linux/x64/share/cmake-3.29/Modules/FindX11.cmake:693 (check_library_exists)"
+      - "cmake-build-debug/_deps/sfml-src/cmake/Macros.cmake:383 (find_package)"
+      - "cmake-build-debug/_deps/sfml-src/src/SFML/Window/CMakeLists.txt:294 (sfml_find_package)"
+    checks:
+      - "Looking for XOpenDisplay in /usr/lib/x86_64-linux-gnu/libX11.so;/usr/lib/x86_64-linux-gnu/libXext.so"
+    directories:
+      source: "/home/admin/Desktop/chessengine/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-yoe2S6"
+      binary: "/home/admin/Desktop/chessengine/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-yoe2S6"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/admin/Desktop/chessengine/cmake-build-debug/_deps/sfml-src/cmake/Modules/;/home/admin/Desktop/chessengine/cmake-build-debug/_deps/sfml-src/cmake/Modules/"
+      CMAKE_OSX_DEPLOYMENT_TARGET: "13.0"
+      CMAKE_USER_MAKE_RULES_OVERRIDE: "/home/admin/Desktop/chessengine/cmake-build-debug/_deps/sfml-src/cmake/CompilerOptionsOverride.cmake"
+    buildResult:
+      variable: "X11_LIB_X11_SOLO"
+      cached: true
+      stdout: |
+        Change Dir: '/home/admin/Desktop/chessengine/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-yoe2S6'
+        
+        Run Build Command(s): /app/extra/clion/bin/ninja/linux/x64/ninja -v cmTC_1d424
+        [1/2] /usr/bin/cc   -DCHECK_FUNCTION_EXISTS=XOpenDisplay -fdiagnostics-color=always -o CMakeFiles/cmTC_1d424.dir/CheckFunctionExists.c.o -c /home/admin/Desktop/chessengine/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-yoe2S6/CheckFunctionExists.c
+        [2/2] : && /usr/bin/cc -DCHECK_FUNCTION_EXISTS=XOpenDisplay  CMakeFiles/cmTC_1d424.dir/CheckFunctionExists.c.o -o cmTC_1d424  /usr/lib/x86_64-linux-gnu/libX11.so  /usr/lib/x86_64-linux-gnu/libXext.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/app/extra/clion/bin/cmake/linux/x64/share/cmake-3.29/Modules/CheckFunctionExists.cmake:86 (try_compile)"
+      - "/app/extra/clion/bin/cmake/linux/x64/share/cmake-3.29/Modules/FindX11.cmake:708 (check_function_exists)"
+      - "cmake-build-debug/_deps/sfml-src/cmake/Macros.cmake:383 (find_package)"
+      - "cmake-build-debug/_deps/sfml-src/src/SFML/Window/CMakeLists.txt:294 (sfml_find_package)"
+    checks:
+      - "Looking for gethostbyname"
+    directories:
+      source: "/home/admin/Desktop/chessengine/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ORNTMI"
+      binary: "/home/admin/Desktop/chessengine/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ORNTMI"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/admin/Desktop/chessengine/cmake-build-debug/_deps/sfml-src/cmake/Modules/;/home/admin/Desktop/chessengine/cmake-build-debug/_deps/sfml-src/cmake/Modules/"
+      CMAKE_OSX_DEPLOYMENT_TARGET: "13.0"
+      CMAKE_USER_MAKE_RULES_OVERRIDE: "/home/admin/Desktop/chessengine/cmake-build-debug/_deps/sfml-src/cmake/CompilerOptionsOverride.cmake"
+    buildResult:
+      variable: "CMAKE_HAVE_GETHOSTBYNAME"
+      cached: true
+      stdout: |
+        Change Dir: '/home/admin/Desktop/chessengine/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ORNTMI'
+        
+        Run Build Command(s): /app/extra/clion/bin/ninja/linux/x64/ninja -v cmTC_0e0d6
+        [1/2] /usr/bin/cc   -DCHECK_FUNCTION_EXISTS=gethostbyname -fdiagnostics-color=always -o CMakeFiles/cmTC_0e0d6.dir/CheckFunctionExists.c.o -c /home/admin/Desktop/chessengine/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-ORNTMI/CheckFunctionExists.c
+        [2/2] : && /usr/bin/cc -DCHECK_FUNCTION_EXISTS=gethostbyname  CMakeFiles/cmTC_0e0d6.dir/CheckFunctionExists.c.o -o cmTC_0e0d6   && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/app/extra/clion/bin/cmake/linux/x64/share/cmake-3.29/Modules/CheckFunctionExists.cmake:86 (try_compile)"
+      - "/app/extra/clion/bin/cmake/linux/x64/share/cmake-3.29/Modules/FindX11.cmake:722 (check_function_exists)"
+      - "cmake-build-debug/_deps/sfml-src/cmake/Macros.cmake:383 (find_package)"
+      - "cmake-build-debug/_deps/sfml-src/src/SFML/Window/CMakeLists.txt:294 (sfml_find_package)"
+    checks:
+      - "Looking for connect"
+    directories:
+      source: "/home/admin/Desktop/chessengine/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-IeH7UW"
+      binary: "/home/admin/Desktop/chessengine/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-IeH7UW"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/admin/Desktop/chessengine/cmake-build-debug/_deps/sfml-src/cmake/Modules/;/home/admin/Desktop/chessengine/cmake-build-debug/_deps/sfml-src/cmake/Modules/"
+      CMAKE_OSX_DEPLOYMENT_TARGET: "13.0"
+      CMAKE_USER_MAKE_RULES_OVERRIDE: "/home/admin/Desktop/chessengine/cmake-build-debug/_deps/sfml-src/cmake/CompilerOptionsOverride.cmake"
+    buildResult:
+      variable: "CMAKE_HAVE_CONNECT"
+      cached: true
+      stdout: |
+        Change Dir: '/home/admin/Desktop/chessengine/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-IeH7UW'
+        
+        Run Build Command(s): /app/extra/clion/bin/ninja/linux/x64/ninja -v cmTC_ba870
+        [1/2] /usr/bin/cc   -DCHECK_FUNCTION_EXISTS=connect -fdiagnostics-color=always -o CMakeFiles/cmTC_ba870.dir/CheckFunctionExists.c.o -c /home/admin/Desktop/chessengine/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-IeH7UW/CheckFunctionExists.c
+        [2/2] : && /usr/bin/cc -DCHECK_FUNCTION_EXISTS=connect  CMakeFiles/cmTC_ba870.dir/CheckFunctionExists.c.o -o cmTC_ba870   && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/app/extra/clion/bin/cmake/linux/x64/share/cmake-3.29/Modules/CheckFunctionExists.cmake:86 (try_compile)"
+      - "/app/extra/clion/bin/cmake/linux/x64/share/cmake-3.29/Modules/FindX11.cmake:731 (check_function_exists)"
+      - "cmake-build-debug/_deps/sfml-src/cmake/Macros.cmake:383 (find_package)"
+      - "cmake-build-debug/_deps/sfml-src/src/SFML/Window/CMakeLists.txt:294 (sfml_find_package)"
+    checks:
+      - "Looking for remove"
+    directories:
+      source: "/home/admin/Desktop/chessengine/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-TYOm5o"
+      binary: "/home/admin/Desktop/chessengine/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-TYOm5o"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/admin/Desktop/chessengine/cmake-build-debug/_deps/sfml-src/cmake/Modules/;/home/admin/Desktop/chessengine/cmake-build-debug/_deps/sfml-src/cmake/Modules/"
+      CMAKE_OSX_DEPLOYMENT_TARGET: "13.0"
+      CMAKE_USER_MAKE_RULES_OVERRIDE: "/home/admin/Desktop/chessengine/cmake-build-debug/_deps/sfml-src/cmake/CompilerOptionsOverride.cmake"
+    buildResult:
+      variable: "CMAKE_HAVE_REMOVE"
+      cached: true
+      stdout: |
+        Change Dir: '/home/admin/Desktop/chessengine/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-TYOm5o'
+        
+        Run Build Command(s): /app/extra/clion/bin/ninja/linux/x64/ninja -v cmTC_e8b82
+        [1/2] /usr/bin/cc   -DCHECK_FUNCTION_EXISTS=remove -fdiagnostics-color=always -o CMakeFiles/cmTC_e8b82.dir/CheckFunctionExists.c.o -c /home/admin/Desktop/chessengine/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-TYOm5o/CheckFunctionExists.c
+        [2/2] : && /usr/bin/cc -DCHECK_FUNCTION_EXISTS=remove  CMakeFiles/cmTC_e8b82.dir/CheckFunctionExists.c.o -o cmTC_e8b82   && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/app/extra/clion/bin/cmake/linux/x64/share/cmake-3.29/Modules/CheckFunctionExists.cmake:86 (try_compile)"
+      - "/app/extra/clion/bin/cmake/linux/x64/share/cmake-3.29/Modules/FindX11.cmake:740 (check_function_exists)"
+      - "cmake-build-debug/_deps/sfml-src/cmake/Macros.cmake:383 (find_package)"
+      - "cmake-build-debug/_deps/sfml-src/src/SFML/Window/CMakeLists.txt:294 (sfml_find_package)"
+    checks:
+      - "Looking for shmat"
+    directories:
+      source: "/home/admin/Desktop/chessengine/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-xMl79F"
+      binary: "/home/admin/Desktop/chessengine/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-xMl79F"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/admin/Desktop/chessengine/cmake-build-debug/_deps/sfml-src/cmake/Modules/;/home/admin/Desktop/chessengine/cmake-build-debug/_deps/sfml-src/cmake/Modules/"
+      CMAKE_OSX_DEPLOYMENT_TARGET: "13.0"
+      CMAKE_USER_MAKE_RULES_OVERRIDE: "/home/admin/Desktop/chessengine/cmake-build-debug/_deps/sfml-src/cmake/CompilerOptionsOverride.cmake"
+    buildResult:
+      variable: "CMAKE_HAVE_SHMAT"
+      cached: true
+      stdout: |
+        Change Dir: '/home/admin/Desktop/chessengine/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-xMl79F'
+        
+        Run Build Command(s): /app/extra/clion/bin/ninja/linux/x64/ninja -v cmTC_bf76e
+        [1/2] /usr/bin/cc   -DCHECK_FUNCTION_EXISTS=shmat -fdiagnostics-color=always -o CMakeFiles/cmTC_bf76e.dir/CheckFunctionExists.c.o -c /home/admin/Desktop/chessengine/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-xMl79F/CheckFunctionExists.c
+        [2/2] : && /usr/bin/cc -DCHECK_FUNCTION_EXISTS=shmat  CMakeFiles/cmTC_bf76e.dir/CheckFunctionExists.c.o -o cmTC_bf76e   && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/app/extra/clion/bin/cmake/linux/x64/share/cmake-3.29/Modules/CheckLibraryExists.cmake:69 (try_compile)"
+      - "/app/extra/clion/bin/cmake/linux/x64/share/cmake-3.29/Modules/FindX11.cmake:750 (check_library_exists)"
+      - "cmake-build-debug/_deps/sfml-src/cmake/Macros.cmake:383 (find_package)"
+      - "cmake-build-debug/_deps/sfml-src/src/SFML/Window/CMakeLists.txt:294 (sfml_find_package)"
+    checks:
+      - "Looking for IceConnectionNumber in ICE"
+    directories:
+      source: "/home/admin/Desktop/chessengine/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-7RQyIM"
+      binary: "/home/admin/Desktop/chessengine/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-7RQyIM"
+    cmakeVariables:
+      CMAKE_C_FLAGS: ""
+      CMAKE_C_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_MODULE_PATH: "/home/admin/Desktop/chessengine/cmake-build-debug/_deps/sfml-src/cmake/Modules/;/home/admin/Desktop/chessengine/cmake-build-debug/_deps/sfml-src/cmake/Modules/"
+      CMAKE_OSX_DEPLOYMENT_TARGET: "13.0"
+      CMAKE_USER_MAKE_RULES_OVERRIDE: "/home/admin/Desktop/chessengine/cmake-build-debug/_deps/sfml-src/cmake/CompilerOptionsOverride.cmake"
+    buildResult:
+      variable: "CMAKE_LIB_ICE_HAS_ICECONNECTIONNUMBER"
+      cached: true
+      stdout: |
+        Change Dir: '/home/admin/Desktop/chessengine/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-7RQyIM'
+        
+        Run Build Command(s): /app/extra/clion/bin/ninja/linux/x64/ninja -v cmTC_57708
+        [1/2] /usr/bin/cc   -DCHECK_FUNCTION_EXISTS=IceConnectionNumber -fdiagnostics-color=always -o CMakeFiles/cmTC_57708.dir/CheckFunctionExists.c.o -c /home/admin/Desktop/chessengine/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-7RQyIM/CheckFunctionExists.c
+        [2/2] : && /usr/bin/cc -DCHECK_FUNCTION_EXISTS=IceConnectionNumber  CMakeFiles/cmTC_57708.dir/CheckFunctionExists.c.o -o cmTC_57708  -lICE && :
+        
+      exitCode: 0
+...

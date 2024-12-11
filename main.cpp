@@ -7,7 +7,7 @@
 #include <SFML/Graphics.hpp>
 
 #include "engine/movegen.h"
-#include "ui/BoardWindow.h"
+#include "ui/window.h"
 
 std::string indexToChessNotation(int index) {
     if (index < 0 || index > 63) {
