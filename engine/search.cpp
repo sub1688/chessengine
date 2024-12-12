@@ -1,84 +1,57 @@
 #include "search.h"
-#include <array>
-#include <bits/ctype_base.h>
 
+#include <algorithm>
+#include <array>
 #include "movegen.h"
 
-Move Search::getBestMove(int depth) {
-    std::array<std::optional<Move>, 216> moves = Movegen::generateAllLegalMovesOnBoard();
-    int bestScore = NEGATIVE_INFINITY;
-    Move bestMove = Move(0, 0);
+void Search::orderMoves(std::array<std::optional<Move>, 216> &moves) {
+    // Define a lambda function to calculate the score of a move
+    auto getMoveScore = [](const Move &move) -> int {
+        return getPieceValue(move.capture) * 10 - getPieceValue(move.pieceFrom);
+    };
 
-    int alpha = NEGATIVE_INFINITY;
-    int beta = POSITIVE_INFINITY;
-
-    for (int i = 0; i < 216; i++) {
-        std::optional<Move> moveOptional = moves[i];
-        if (!moveOptional.has_value()) {
-            break;
-        }
-
-        Move move = moveOptional.value();
-
-        if (Board::move(move)) {
-            searchedNodes++;
-
-            int score = -search(depth - 1, alpha, beta);
-
-            Board::undoMove(move);
-
-            // Update best score
-            if (score > bestScore) {
-                bestScore = score;
-                bestMove = move;
-                if (score > NEGATIVE_INFINITY) {
-                    alpha = score;
-                }
-            }
-
-            if (score >= beta)
-                break;
-        }
-    }
-    return bestMove;
+    std::sort(moves.begin(), moves.end(),
+              [&](const std::optional<Move> &a, const std::optional<Move> &b) {
+                  if (!a.has_value()) return false;
+                  if (!b.has_value()) return true;
+                  return getMoveScore(a.value()) > getMoveScore(b.value());
+              });
 }
+
 
 
 int Search::search(int depth) {
-    return search(depth, NEGATIVE_INFINITY, POSITIVE_INFINITY);
+    bestMove = Move(0, 0);
+    return search(depth, depth, NEGATIVE_INFINITY, POSITIVE_INFINITY);
 }
 
-int Search::search(int depth, int alpha, int beta) {
-    // TODO: implement quiescence search
+int Search::search(int rootDepth, int depth, int alpha, int beta) {
     if (depth == 0) {
         return evaluate();
     }
 
     std::array<std::optional<Move>, 216> moves = Movegen::generateAllLegalMovesOnBoard();
-    int bestScore = NEGATIVE_INFINITY;
-    bool foundLegalMove = false;
+    orderMoves(moves);
+    bool noLegalMoves = true;
 
     for (int i = 0; i < 216; i++) {
-        std::optional<Move> moveOptional = moves[i];
-        if (!moveOptional.has_value()) {
+        std::optional<Move> optionalMove = moves[i];
+
+        if (!optionalMove.has_value()) {
             break;
         }
 
-        Move move = moveOptional.value();
-
+        Move move = optionalMove.value();
         if (Board::move(move)) {
-            searchedNodes++;
-            foundLegalMove = true;
-
-            int score = -search(depth - 1, -beta, -alpha);
-
+            noLegalMoves = false;
+            int score = -search(rootDepth, depth - 1, -beta, -alpha);
             Board::undoMove(move);
 
-            // Update best score
-            if (score > bestScore) {
-                bestScore = score;
-                if (score > alpha) {
-                    alpha = score;
+            if (score > alpha) {
+                alpha = score;
+                if (depth == rootDepth) {
+                    currentEval = alpha;
+                    bestMove = move;
                 }
             }
 
@@ -87,15 +60,17 @@ int Search::search(int depth, int alpha, int beta) {
         }
     }
 
-    // Checkmate / Stalemate handling
-    if (!foundLegalMove) {
-        return Movegen::isKingInDanger(Board::whiteToMove)
-            ? NEGATIVE_INFINITY + depth
-            : 0;
+    // Check for checkmate or stalemate
+    if (noLegalMoves) {
+        if (Movegen::isKingInDanger(Board::whiteToMove)) {
+            return NEGATIVE_INFINITY + (rootDepth - depth); // Checkmate
+        }
+        return 0; // Stalemate
     }
 
-    return bestScore;
+    return alpha;
 }
+
 
 int Search::evaluate() {
     int totalValue = 0;

@@ -1,4 +1,7 @@
-"C:\Program Files\JetBrains\CLion 2024.3\bin\cmake\win\x64\bin\cmake.exe" -DCMAKE_BUILD_TYPE=Release -G "MinGW Makefiles" -S C:\Users\Corbis\CLionProjects\chessengine -B C:\Users\Corbis\CLionProjects\chessengine\cmake-build-release
--- Configuring done (2.0s)
--- Generating done (0.1s)
--- Build files have been written to: C:/Users/Corbis/CLionProjects/chessengine/cmake-build-release
+/app/extra/clion/bin/cmake/linux/x64/bin/cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_MAKE_PROGRAM=/app/extra/clion/bin/ninja/linux/x64/ninja -G Ninja -S /home/admin/Desktop/chessengine -B /home/admin/Desktop/chessengine/cmake-build-release
+-- libudev stable: 1
+-- Found UDev: /usr/lib/x86_64-linux-gnu/libudev.so
+--    include: /usr/include
+-- Configuring done (5.8s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/admin/Desktop/chessengine/cmake-build-release

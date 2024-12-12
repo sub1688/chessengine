@@ -22,6 +22,7 @@
 #define PROMOTE_QUEEN 3
 
 struct Move {
+
     uint8_t from;
     uint8_t to;
     uint8_t pieceFrom = 12;

@@ -52,8 +52,8 @@ void BoardWindow::init() {
                     Move move = moves[i].value();
                     if (move.from == draggingSquare && move.to == index) {
                         if (Board::move(move)) {
-
-                            Board::move(Search::getBestMove(6));
+                            std::cout << (Board::whiteToMove ? 1 : -1) * Search::search(7) << std::endl;
+                            Board::move(Search::bestMove);
                             break;
                         }
                     }
@@ -120,6 +120,11 @@ void BoardWindow::update(sf::RenderWindow& window) {
         sprite.setTexture(*pieceTextures[Board::getPiece(draggingSquare)]);
         sprite.setPosition(sf::Vector2f(mouseX - 37.5F, mouseY - 37.5F));
         window.draw(sprite);
+    }
+
+    if (Search::bestMove.from != Search::bestMove.to) {
+        Search::search(Board::whiteToMove ? 6 : 6);
+        Board::move(Search::bestMove);
     }
 }
 
