@@ -88,3 +88,4 @@ int Search::getPieceValue(uint8_t piece) {
     return PIECE_VALUES[piece % 6];
 }
 
+

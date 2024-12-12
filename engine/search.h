@@ -6,7 +6,7 @@
 #include "board.h"
 
 namespace Search {
-
+    //TODO: PIECE SQUARE TABLES
     inline constexpr int PIECE_VALUES[6] = {
         100,
         300,
@@ -18,7 +18,6 @@ namespace Search {
 
     inline constexpr int NEGATIVE_INFINITY = std::numeric_limits<int>::min() + 1;
     inline constexpr int POSITIVE_INFINITY = std::numeric_limits<int>::max() - 1;
-
 
     inline int searchedNodes = 0;
     inline int currentEval = 0;
@@ -34,6 +33,4 @@ namespace Search {
     int evaluate();
 
     int getPieceValue(uint8_t piece);
-
-
 }

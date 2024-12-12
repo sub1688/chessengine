@@ -3,14 +3,26 @@
 #include <array>
 #include <iostream>
 #include <optional>
+#include <thread>
 #include <SFML/Graphics.hpp>
 
 #include "../engine/board.h"
 #include "../engine/movegen.h"
 #include "../engine/search.h"
 
+void BoardWindow::playBotMove() {
+    std::thread([]() {
+        Search::search(7);
+        Board::move(Search::bestMove);
+        lastMove = Search::bestMove;
+        thinking = false;
+    }).detach(); // Detach thread as it's self-contained
+}
+
 void BoardWindow::init() {
-    auto window = sf::RenderWindow({750u, 600u}, "Analysis");
+    font.loadFromFile("arial.ttf");
+
+    auto window = sf::RenderWindow({850u, 600u}, "Analysis");
     window.setFramerateLimit(100);
 
     loadPieceTextures();
@@ -33,7 +45,7 @@ void BoardWindow::init() {
                 int file = mouseX / 75; // Column (0 to 7)
                 int rank = 7 - (mouseY / 75); // Row (0 to 7, flipped for top-down drawing)
                 int index = rank * 8 + file; // Convert to 0-based index
-                if (Board::getPiece(index) == NONE)
+                if (Board::getPiece(index) == NONE || thinking)
                     continue;
                 draggingSquare = index;
             }
@@ -52,8 +64,12 @@ void BoardWindow::init() {
                     Move move = moves[i].value();
                     if (move.from == draggingSquare && move.to == index) {
                         if (Board::move(move)) {
-                            std::cout << (Board::whiteToMove ? 1 : -1) * Search::search(7) << std::endl;
-                            Board::move(Search::bestMove);
+                            lastMove = move;
+                            for (int i = 0; i < 64; i++) {
+                                displayBoard[i] = Board::getPiece(i);
+                            }
+                            thinking = true;
+                            playBotMove();
                             break;
                         }
                     }
@@ -71,6 +87,12 @@ void BoardWindow::init() {
 }
 
 void BoardWindow::update(sf::RenderWindow& window) {
+    if (!thinking) {
+        for (int i = 0; i < 64; i++) {
+            displayBoard[i] = Board::getPiece(i);
+        }
+    }
+
     window.clear(sf::Color(171,126,89));
 
     // Draw Squares
@@ -83,9 +105,28 @@ void BoardWindow::update(sf::RenderWindow& window) {
         window.draw(rect);
     }
 
+    if (lastMove.from != lastMove.to) {
+        {
+            int ix = lastMove.to % 8;
+            int iy = 7 - lastMove.to / 8;
+            sf::RectangleShape rect(sf::Vector2f(75, 75));
+            rect.setFillColor(sf::Color(181,181,25, 75));
+            rect.setPosition(sf::Vector2f(ix * 75.F, iy * 75.F));
+            window.draw(rect);
+        }
+        {
+            int ix = lastMove.from % 8;
+            int iy = 7 - lastMove.from / 8;
+            sf::RectangleShape rect(sf::Vector2f(75, 75));
+            rect.setFillColor(sf::Color(181,181,25, 75));
+            rect.setPosition(sf::Vector2f(ix * 75.F, iy * 75.F));
+            window.draw(rect);
+        }
+    }
+
     // Draw Pieces
     for (int i = 0; i < 64; i++) {
-        int piece = Board::getPiece(i);
+        int piece = displayBoard[i];
         if (piece == NONE || i == draggingSquare)
             continue;
         int ix = i % 8;
@@ -122,10 +163,13 @@ void BoardWindow::update(sf::RenderWindow& window) {
         window.draw(sprite);
     }
 
-    if (Search::bestMove.from != Search::bestMove.to) {
-        Search::search(Board::whiteToMove ? 6 : 6);
-        Board::move(Search::bestMove);
-    }
+    sf::Text text;
+    text.setFillColor(sf::Color::White);
+    text.setFont(font);
+    text.setString("Eval: " + std::to_string(static_cast<float>(Search::currentEval) / 100.F));
+    text.setCharacterSize(25);
+    text.setPosition(sf::Vector2f(75 * 8 + 5, 5));
+    window.draw(text);
 }
 
 void BoardWindow::destroy() {
