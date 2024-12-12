@@ -7,6 +7,7 @@
 #include <SFML/Graphics.hpp>
 
 #include "engine/movegen.h"
+#include "engine/search.h"
 #include "ui/window.h"
 
 std::string indexToChessNotation(int index) {
@@ -64,6 +65,5 @@ int main() {
 
     // init
     Movegen::init();
-
     BoardWindow::init();
 }

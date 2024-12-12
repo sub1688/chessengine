@@ -21,7 +21,9 @@ add_executable(chessengine main.cpp
         engine/movegen.h
         engine/movegen.cpp
         ui/window.h
-        ui/window.cpp)
+        ui/window.cpp
+        engine/search.h
+        engine/search.cpp)
 
 target_link_libraries(chessengine PRIVATE sfml-graphics)
 

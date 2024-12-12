@@ -151,6 +151,8 @@ void Board::undoMove(Move m) {
                 setPiece(56, BLACK_ROOK);
                 setPiece(59, NONE);
             break;
+            default:
+                break;
         }
     }
 

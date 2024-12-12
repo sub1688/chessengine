@@ -1,11 +1,13 @@
 #include "window.h"
 
 #include <array>
+#include <iostream>
 #include <optional>
 #include <SFML/Graphics.hpp>
 
 #include "../engine/board.h"
 #include "../engine/movegen.h"
+#include "../engine/search.h"
 
 void BoardWindow::init() {
     auto window = sf::RenderWindow({750u, 600u}, "Analysis");
@@ -50,6 +52,8 @@ void BoardWindow::init() {
                     Move move = moves[i].value();
                     if (move.from == draggingSquare && move.to == index) {
                         if (Board::move(move)) {
+
+                            Board::move(Search::getBestMove(6));
                             break;
                         }
                     }
