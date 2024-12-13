@@ -271,6 +271,7 @@ uint64_t Movegen::generatePseudoLegalCastleMoves(bool white) {
             !(Board::BITBOARD_OCCUPANCY & 0xE00000000000000ULL) &&
             !isSquareAttacked(59, false)) {
             castleMoves |= 0x400000000000000ULL;
+
         }
     }
 
@@ -575,7 +576,7 @@ uint64_t Movegen::random_uint64() {
 }
 
 uint8_t Movegen::popLeastSignificantBitAndGetIndex(uint64_t &b) {
-    auto index = std::countr_zero(b);
+    auto index = __builtin_ctzll(b);
     b &= b - 1;
     return index;
 }

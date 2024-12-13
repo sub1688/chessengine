@@ -23,7 +23,9 @@ add_executable(chessengine main.cpp
         ui/window.h
         ui/window.cpp
         engine/search.h
-        engine/search.cpp)
+        engine/search.cpp
+        engine/piecesquaretable.h
+        engine/piecesquaretable.cpp)
 
 target_link_libraries(chessengine PRIVATE sfml-graphics)
 

@@ -7,6 +7,7 @@
 #include <SFML/Graphics.hpp>
 
 #include "engine/movegen.h"
+#include "engine/piecesquaretable.h"
 #include "engine/search.h"
 #include "ui/window.h"
 
@@ -62,9 +63,11 @@ void debugPerft(int depth) {
 int main() {
     Board::setStartingPosition();
     Board::printBoard();
+    // Board::importFEN("1r2k1r1/pbppnp1p/1b3P2/8/Q7/B1PB1q2/P4PPP/3R2K1 w - - 1 0");
 
     // init
     Movegen::init();
+    PieceSquareTable::initializePieceSquareTable();
 
     BoardWindow::init();
 }

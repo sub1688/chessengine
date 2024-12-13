@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include "movegen.h"
+#include "piecesquaretable.h"
 
 void Search::orderMoves(std::array<std::optional<Move>, 216> &moves) {
     // Define a lambda function to calculate the score of a move
@@ -17,8 +18,6 @@ void Search::orderMoves(std::array<std::optional<Move>, 216> &moves) {
                   return getMoveScore(a.value()) > getMoveScore(b.value());
               });
 }
-
-
 
 int Search::search(int depth) {
     bestMove = Move(0, 0);
@@ -75,12 +74,23 @@ int Search::search(int rootDepth, int depth, int alpha, int beta) {
 int Search::evaluate() {
     int totalValue = 0;
     for (int i = 0; i < 12; i++) {
-        if (i >= 6) {
-            totalValue -= __builtin_popcountll(Board::BITBOARDS[i]) * getPieceValue(i);
-        }else {
-            totalValue += __builtin_popcountll(Board::BITBOARDS[i]) * getPieceValue(i);
+        uint64_t bitboard = Board::BITBOARDS[i];
+        int pieceValue = getPieceValue(i);
+        while (bitboard) {
+            int index = Movegen::popLeastSignificantBitAndGetIndex(bitboard);
+            if (i >= 6) {
+                totalValue -= pieceValue;
+                totalValue -= PieceSquareTable::PIECE_SQUARE_TABLE[i][index];
+            }else {
+                totalValue += pieceValue;
+                totalValue += PieceSquareTable::PIECE_SQUARE_TABLE[i][index];
+            }
         }
     }
+    totalValue += Board::canWhiteCastleKingside(Board::moveNumber) * 75;
+    totalValue += Board::canWhiteCastleQueenside(Board::moveNumber) * 50;
+    totalValue -= Board::canBlackCastleKingside(Board::moveNumber) * 75;
+    totalValue -= Board::canBlackCastleQueenside(Board::moveNumber) * 50;
     return totalValue * (Board::whiteToMove ? 1 : -1);
 }
 

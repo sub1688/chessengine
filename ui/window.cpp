@@ -11,6 +11,7 @@
 #include "../engine/search.h"
 
 void BoardWindow::playBotMove() {
+    thinking = true;
     std::thread([]() {
         Search::search(7);
         Board::move(Search::bestMove);
@@ -166,10 +167,14 @@ void BoardWindow::update(sf::RenderWindow& window) {
     sf::Text text;
     text.setFillColor(sf::Color::White);
     text.setFont(font);
-    text.setString("Eval: " + std::to_string(static_cast<float>(Search::currentEval) / 100.F));
+    text.setString("Eval: " + std::to_string(static_cast<float>(-Search::currentEval) / 100.F));
     text.setCharacterSize(25);
     text.setPosition(sf::Vector2f(75 * 8 + 5, 5));
     window.draw(text);
+
+    // if (!thinking) {
+        // playBotMove();
+    // }
 }
 
 void BoardWindow::destroy() {
