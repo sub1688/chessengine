@@ -21,16 +21,22 @@ namespace Search {
 
     inline int searchedNodes = 0;
     inline int currentEval = 0;
-    inline Move bestMove = Move(0, -1);
+    inline int currentDepth = 0;
+    inline bool searchCancelled = false;
 
+    inline Move bestMove = Move(0, -1);
 
     void orderMoves(std::array<std::optional<Move>, 216> &moves);
 
-    int search(int rootDepth, int depth, int alpha, int beta);
+    void startIterativeSearch(long time);
 
-    int search(int depth);
+    int search(int rootDepth, int depth, int alpha, int beta, Move iterativeStart);
+
+    int search(int depth, Move iterativeStart);
 
     int evaluate();
 
     int getPieceValue(uint8_t piece);
+
+    bool isInEndgame();
 }

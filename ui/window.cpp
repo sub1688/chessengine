@@ -13,7 +13,7 @@
 void BoardWindow::playBotMove() {
     thinking = true;
     std::thread([]() {
-        Search::search(7);
+        Search::startIterativeSearch(5000);
         Board::move(Search::bestMove);
         lastMove = Search::bestMove;
         thinking = false;
@@ -23,17 +23,14 @@ void BoardWindow::playBotMove() {
 void BoardWindow::init() {
     font.loadFromFile("arial.ttf");
 
-    auto window = sf::RenderWindow({850u, 600u}, "Analysis");
+    auto window = sf::RenderWindow({1000u, 600u}, "Analysis");
     window.setFramerateLimit(100);
 
     loadPieceTextures();
 
-    while (window.isOpen())
-    {
-        for (auto event = sf::Event(); window.pollEvent(event);)
-        {
-            if (event.type == sf::Event::Closed)
-            {
+    while (window.isOpen()) {
+        for (auto event = sf::Event(); window.pollEvent(event);) {
+            if (event.type == sf::Event::Closed) {
                 window.close();
             }
 
@@ -87,21 +84,21 @@ void BoardWindow::init() {
     destroy();
 }
 
-void BoardWindow::update(sf::RenderWindow& window) {
+void BoardWindow::update(sf::RenderWindow &window) {
     if (!thinking) {
         for (int i = 0; i < 64; i++) {
             displayBoard[i] = Board::getPiece(i);
         }
     }
 
-    window.clear(sf::Color(171,126,89));
+    window.clear(sf::Color(171, 126, 89));
 
     // Draw Squares
     for (int i = 0; i < 64; i++) {
         int ix = i % 8;
         int iy = i / 8;
         sf::RectangleShape rect(sf::Vector2f(75, 75));
-        rect.setFillColor((i + iy) % 2 == 0 ? sf::Color(240,217,181) : sf::Color(181,136,99));
+        rect.setFillColor((i + iy) % 2 == 0 ? sf::Color(240, 217, 181) : sf::Color(181, 136, 99));
         rect.setPosition(sf::Vector2f(ix * 75, iy * 75));
         window.draw(rect);
     }
@@ -111,15 +108,14 @@ void BoardWindow::update(sf::RenderWindow& window) {
             int ix = lastMove.to % 8;
             int iy = 7 - lastMove.to / 8;
             sf::RectangleShape rect(sf::Vector2f(75, 75));
-            rect.setFillColor(sf::Color(181,181,25, 75));
+            rect.setFillColor(sf::Color(181, 181, 25, 75));
             rect.setPosition(sf::Vector2f(ix * 75.F, iy * 75.F));
             window.draw(rect);
-        }
-        {
+        } {
             int ix = lastMove.from % 8;
             int iy = 7 - lastMove.from / 8;
             sf::RectangleShape rect(sf::Vector2f(75, 75));
-            rect.setFillColor(sf::Color(181,181,25, 75));
+            rect.setFillColor(sf::Color(181, 181, 25, 75));
             rect.setPosition(sf::Vector2f(ix * 75.F, iy * 75.F));
             window.draw(rect);
         }
@@ -152,7 +148,7 @@ void BoardWindow::update(sf::RenderWindow& window) {
                 int ix = move.to % 8;
                 int iy = 7 - move.to / 8;
                 sf::RectangleShape rect(sf::Vector2f(75, 75));
-                rect.setFillColor(sf::Color(181,24,25, 75));
+                rect.setFillColor(sf::Color(181, 24, 25, 75));
                 rect.setPosition(sf::Vector2f(ix * 75.F, iy * 75.F));
                 window.draw(rect);
             }
@@ -167,7 +163,9 @@ void BoardWindow::update(sf::RenderWindow& window) {
     sf::Text text;
     text.setFillColor(sf::Color::White);
     text.setFont(font);
-    text.setString("Eval: " + std::to_string(static_cast<float>(-Search::currentEval) / 100.F));
+    text.setString(
+        "Depth: " + std::to_string(Search::currentDepth) + " Eval: " + std::to_string(
+            static_cast<float>(-Search::currentEval) / 100.F));
     text.setCharacterSize(25);
     text.setPosition(sf::Vector2f(75 * 8 + 5, 5));
     window.draw(text);

@@ -186,6 +186,10 @@ void Board::setStartingPosition() {
     BITBOARDS[BLACK_QUEEN] = 0x0800000000000000ULL; // Queen on d8
     BITBOARDS[BLACK_KING] = 0x1000000000000000ULL; // King on e8
 
+    moveNumber = 0;
+
+    epMasks[0] = 0ULL;
+
     setWhiteCastleKingside(0, true);
     setWhiteCastleQueenside(0, true);
     setBlackCastleKingside(0, true);
