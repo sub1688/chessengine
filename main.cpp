@@ -86,14 +86,20 @@ int main() {
         {'N', WHITE_KNIGHT}, {'B', WHITE_BISHOP}, {'K', WHITE_KING}, {'Q', WHITE_QUEEN}, {'R', WHITE_ROOK}
     };
 
+    std::unordered_map<char, int> notationPromotion = {
+        {'N', PROMOTE_KNIGHT}, {'B', PROMOTE_BISHOP}, {'Q', PROMOTE_QUEEN}, {'R', PROMOTE_ROOK}
+    };
+
     Board::setStartingPosition();
 
     Movegen::init();
     PieceSquareTable::initializePieceSquareTable();
 
-    BoardWindow::init();
+    // BoardWindow::init();
 
-    while (true) {
+    int flag = 0;
+
+    while (flag++ < 1000000) {
         std::string input;
         std::cin >> input;
 
@@ -105,6 +111,15 @@ int main() {
 
         if (input == "print")
             Board::printBoard();
+
+        if (input.starts_with("search:")) {
+            std::string time = input.substr(7);
+            long millis = std::stol(time);
+
+            Search::startIterativeSearch(millis);
+            Board::move(Search::bestMove);
+            std::cout << "bestMove:" << static_cast<int>(Search::bestMove.from) << "," << static_cast<int>(Search::bestMove.to) << std::endl;
+        }
 
         if (input.starts_with("move:")) {
             std::string move = input.substr(5);
@@ -118,7 +133,12 @@ int main() {
             if (length > 1) {
                 Move resultMove = Move(0, 0);
 
+                int promotion = -1;
+
                 if (move.at(length - 2) == '=') {
+                    promotion = notationPromotion.at(move.at(length - 1));
+                    move = move.substr(0, length - 2);
+                    length -= 2;
                 }
 
                 std::string squareComponent = move.substr(length - 2, length);
@@ -132,8 +152,7 @@ int main() {
 
                     Move moveObj = moves[i].value();
 
-                    if (moveObj.to == toIndex) {
-                        std::cout << toIndex << std::endl;
+                    if (moveObj.to == toIndex && promotion == moveObj.promotion) {
                         if (length == 2) {
                             if (moveObj.capture == NONE && (
                                     moveObj.pieceFrom == WHITE_PAWN || moveObj.pieceFrom == BLACK_PAWN)) {
