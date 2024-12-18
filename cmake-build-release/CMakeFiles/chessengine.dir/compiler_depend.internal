@@ -207,6 +207,7 @@ CMakeFiles/chessengine.dir/engine/movegen.cpp.obj
  C:/Program Files/JetBrains/CLion 2024.3/bin/mingw/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/bits/random.h
  C:/Program Files/JetBrains/CLion 2024.3/bin/mingw/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/bits/random.tcc
  C:/Program Files/JetBrains/CLion 2024.3/bin/mingw/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/bits/range_access.h
+ C:/Program Files/JetBrains/CLion 2024.3/bin/mingw/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/bits/ranges_algobase.h
  C:/Program Files/JetBrains/CLion 2024.3/bin/mingw/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/bits/ranges_base.h
  C:/Program Files/JetBrains/CLion 2024.3/bin/mingw/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/bits/ranges_cmp.h
  C:/Program Files/JetBrains/CLion 2024.3/bin/mingw/lib/gcc/x86_64-w64-mingw32/13.1.0/include/c++/bits/ranges_util.h
@@ -353,6 +354,7 @@ CMakeFiles/chessengine.dir/engine/movegen.cpp.obj
  C:/Program Files/JetBrains/CLion 2024.3/bin/mingw/x86_64-w64-mingw32/include/vadefs.h
  C:/Program Files/JetBrains/CLion 2024.3/bin/mingw/x86_64-w64-mingw32/include/wchar.h
  C:/Program Files/JetBrains/CLion 2024.3/bin/mingw/x86_64-w64-mingw32/include/wctype.h
+ C:/Users/Corbis/CLionProjects/chessengine/util/arrayvec.h
  C:/Users/Corbis/CLionProjects/chessengine/engine/board.h
  C:/Users/Corbis/CLionProjects/chessengine/engine/movegen.h
 
@@ -671,6 +673,7 @@ CMakeFiles/chessengine.dir/engine/search.cpp.obj
  C:/Program Files/JetBrains/CLion 2024.3/bin/mingw/x86_64-w64-mingw32/include/vadefs.h
  C:/Program Files/JetBrains/CLion 2024.3/bin/mingw/x86_64-w64-mingw32/include/wchar.h
  C:/Program Files/JetBrains/CLion 2024.3/bin/mingw/x86_64-w64-mingw32/include/wctype.h
+ C:/Users/Corbis/CLionProjects/chessengine/util/arrayvec.h
  C:/Users/Corbis/CLionProjects/chessengine/engine/board.h
  C:/Users/Corbis/CLionProjects/chessengine/engine/movegen.h
  C:/Users/Corbis/CLionProjects/chessengine/engine/piecesquaretable.h
@@ -966,6 +969,7 @@ CMakeFiles/chessengine.dir/main.cpp.obj
  C:/Users/Corbis/CLionProjects/chessengine/cmake-build-release/_deps/sfml-src/include/SFML/Window/WindowBase.hpp
  C:/Users/Corbis/CLionProjects/chessengine/cmake-build-release/_deps/sfml-src/include/SFML/Window/WindowHandle.hpp
  C:/Users/Corbis/CLionProjects/chessengine/cmake-build-release/_deps/sfml-src/include/SFML/Window/WindowStyle.hpp
+ C:/Users/Corbis/CLionProjects/chessengine/util/arrayvec.h
  C:/Users/Corbis/CLionProjects/chessengine/engine/board.h
  C:/Users/Corbis/CLionProjects/chessengine/engine/movegen.h
  C:/Users/Corbis/CLionProjects/chessengine/engine/piecesquaretable.h
@@ -1259,5 +1263,6 @@ CMakeFiles/chessengine.dir/ui/window.cpp.obj
  C:/Users/Corbis/CLionProjects/chessengine/engine/board.h
  C:/Users/Corbis/CLionProjects/chessengine/engine/movegen.h
  C:/Users/Corbis/CLionProjects/chessengine/engine/search.h
+ C:/Users/Corbis/CLionProjects/chessengine/util/arrayvec.h
  C:/Users/Corbis/CLionProjects/chessengine/ui/window.h
 

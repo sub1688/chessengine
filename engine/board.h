@@ -23,17 +23,17 @@
 
 struct Move {
 
-    uint8_t from;
-    uint8_t to;
+    uint8_t from = 0;
+    uint8_t to = 0;
     uint8_t pieceFrom = 12;
     uint8_t capture = 12;
 
     int promotion = -1;
     int enPassantTarget = -1;
-    bool castle;
+    bool castle = false;
 
-    Move(uint8_t m_from, uint8_t m_to) : from(m_from), to(m_to) {
-    }
+    Move() = default;
+    Move(uint8_t m_from, uint8_t m_to) : from(m_from), to(m_to) {}
 };
 
 namespace Board {
@@ -45,7 +45,7 @@ namespace Board {
     inline uint8_t castleRights[1024];
     inline int moveNumber = 0;
 
-    inline int PIECE_SQUARE_TABLE[64];
+    inline int mailbox[64];
 
     inline uint64_t BITBOARDS[12];
     inline uint64_t BITBOARD_OCCUPANCY;

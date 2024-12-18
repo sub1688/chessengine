@@ -4,6 +4,7 @@
 #include <optional>
 
 #include "board.h"
+#include "../util/arrayvec.h"
 
 namespace Search {
     //TODO: PIECE SQUARE TABLES
@@ -27,7 +28,7 @@ namespace Search {
 
     inline Move bestMove = Move(0, -1);
 
-    void orderMoves(std::array<std::optional<Move>, 216> &moves);
+    void orderMoves(ArrayVec<Move, 218>& moveVector);
 
     void startIterativeSearch(long time);
 

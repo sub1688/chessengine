@@ -13,12 +13,14 @@ void Board::setPiece(int index, uint8_t piece) {
     assert(piece <= 12); // 12 represents NONE
 
     uint64_t mask = 1ULL << index;
-    for (int i = 0; i < 12; i++) {
-        BITBOARDS[i] &= ~mask;
+    if (mailbox[index] != NONE) {
+        BITBOARDS[mailbox[index]] &= ~mask;
     }
     if (piece < 12) {
         BITBOARDS[piece] |= mask;
     }
+
+    mailbox[index] = piece;
 }
 
 bool Board::move(Move m) {
@@ -185,7 +187,22 @@ void Board::setStartingPosition() {
     setBlackCastleQueenside(0, true);
 
     updateOccupancy();
+
+    for (int square = 0; square < 64; square++) {
+        mailbox[square] = NONE;
+        for (int i = 0; i < 12; i++) {
+            uint64_t bitboard = BITBOARDS[i];
+            if (bitboard & 1ULL << square) {
+                mailbox[square] = i;
+            }
+        }
+    }
 }
+
+uint8_t Board::getPiece(int index) {
+    return mailbox[index];
+}
+
 
 void Board::printBoard() {
     const std::string pieces[] = {
@@ -288,6 +305,16 @@ void Board::importFEN(const std::string &fen) {
 
     // Update occupancy bitboards
     updateOccupancy();
+
+    for (int square = 0; square < 64; square++) {
+        mailbox[square] = NONE;
+        for (int i = 0; i < 12; i++) {
+            uint64_t bitboard = BITBOARDS[i];
+            if (bitboard & 1ULL << square) {
+                mailbox[square] = i;
+            }
+        }
+    }
 }
 
 bool Board::canWhiteCastleKingside(int moveNumber) {

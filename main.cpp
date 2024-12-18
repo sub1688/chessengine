@@ -48,13 +48,10 @@ void benchmarkPerft(int depth) {
 }
 
 void debugPerft(int depth) {
-    std::array<std::optional<Move>, 216> moves = Movegen::generateAllLegalMovesOnBoard();
+    ArrayVec<Move, 218> moves = Movegen::generateAllLegalMovesOnBoard();
 
-    for (int i = 0; i < 216; i++) {
-        if (!moves[i].has_value())
-            break;
-
-        Move move = moves[i].value();
+    for (int i = 0; i < moves.elements; i++) {
+        Move move = moves.buffer[i];
 
         if (depth == 1) {
             if (Board::move(move)) {
@@ -94,9 +91,6 @@ int main() {
 
     Movegen::init();
     PieceSquareTable::initializePieceSquareTable();
-
-    benchmarkPerft(6);
-    return 1;
 
     BoardWindow::init();
 
@@ -147,13 +141,10 @@ int main() {
                 std::string squareComponent = move.substr(length - 2, length);
                 int toIndex = notationToIndex(squareComponent.at(0), squareComponent.at(1));
 
-                std::array<std::optional<Move>, 216> moves = Movegen::generateAllLegalMovesOnBoard();
+                ArrayVec<Move, 218> moves = Movegen::generateAllLegalMovesOnBoard();
 
-                for (int i = 0; i < 216; i++) {
-                    if (!moves[i].has_value())
-                        break;
-
-                    Move moveObj = moves[i].value();
+                for (int i = 0; i < moves.elements; i++) {
+                    Move moveObj = moves.buffer[i];
 
                     if (moveObj.to == toIndex && promotion == moveObj.promotion) {
                         if (length == 2) {

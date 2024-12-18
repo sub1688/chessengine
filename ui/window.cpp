@@ -1,8 +1,6 @@
 #include "window.h"
 
 #include <array>
-#include <iostream>
-#include <optional>
 #include <thread>
 #include <SFML/Graphics.hpp>
 
@@ -13,7 +11,6 @@
 void BoardWindow::playBotMove() {
     thinking = true;
     std::thread([]() {
-        Search::quiescence = Board::whiteToMove;
         Search::startIterativeSearch(5000);
         Board::move(Search::bestMove);
         lastMove = Search::bestMove;
@@ -54,13 +51,10 @@ void BoardWindow::init() {
                 int rank = 7 - (mouseY / 75); // Row (0 to 7, flipped for top-down drawing)
                 int index = rank * 8 + file; // Convert to 0-based index
 
-                std::array<std::optional<Move>, 216> moves = Movegen::generateAllLegalMovesOnBoard();
+                ArrayVec<Move, 218> moves = Movegen::generateAllLegalMovesOnBoard();
 
-                for (int i = 0; i < 216; i++) {
-                    if (!moves[i].has_value()) {
-                        break;
-                    }
-                    Move move = moves[i].value();
+                for (int i = 0; i < moves.elements; i++) {
+                    Move move = moves.buffer[i];
                     if (move.from == draggingSquare && move.to == index) {
                         if (Board::move(move)) {
                             lastMove = move;
@@ -136,13 +130,10 @@ void BoardWindow::update(sf::RenderWindow &window) {
     }
 
     if (draggingSquare != -1) {
-        std::array<std::optional<Move>, 216> moves = Movegen::generateAllLegalMovesOnBoard();
+        ArrayVec<Move, 218> moves = Movegen::generateAllLegalMovesOnBoard();
 
-        for (int i = 0; i < 216; i++) {
-            if (!moves[i].has_value()) {
-                break;
-            }
-            Move move = moves[i].value();
+        for (int i = 0; i < moves.elements; i++) {
+            Move move = moves.buffer[i];
             if (move.from == draggingSquare && Board::move(move)) {
                 Board::undoMove(move);
 

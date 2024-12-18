@@ -3,18 +3,17 @@
 #include <iostream>
 #include <optional>
 #include <random>
+#include <bits/ranges_algobase.h>
 
 uint64_t Movegen::perft(int depth) {
     uint64_t perftCount = 0;
 
     // Generate all legal moves for the current position
-    std::array<std::optional<Move>, 216> moves = generateAllLegalMovesOnBoard();
+    ArrayVec<Move, 218> moves = generateAllLegalMovesOnBoard();
 
-    for (const auto &move: moves) {
-        if (!move.has_value())
-            break; // Stop iterating when no more moves are available
-
-        if (Board::move(move.value())) {
+    for (int i = 0; i < moves.elements; i++) {
+        Move move = moves.buffer.at(i);
+        if (Board::move(move)) {
             if (depth == 1) {
                 perftCount++; // At depth 1, count the legal move
             } else {
@@ -22,15 +21,15 @@ uint64_t Movegen::perft(int depth) {
                 perftCount += perft(depth - 1);
             }
             // Undo the move to restore the board state
-            Board::undoMove(move.value());
+            Board::undoMove(move);
         }
     }
 
     return perftCount;
 }
 
-std::array<std::optional<Move>, 216> Movegen::generateAllLegalMovesOnBoard() {
-    std::array<std::optional<Move>, 216> legalMoves;
+ArrayVec<Move, 218> Movegen::generateAllLegalMovesOnBoard() {
+    std::array<Move, 218> legalMoves;
 
     int arrayIndex = 0;
     bool whiteToMove = Board::whiteToMove;
@@ -118,13 +117,12 @@ std::array<std::optional<Move>, 216> Movegen::generateAllLegalMovesOnBoard() {
             legalMoves[arrayIndex++] = move;
         }
     }
-
-    return legalMoves;
+    return ArrayVec(legalMoves, arrayIndex);
 }
 
 
-std::array<std::optional<Move>, 216> Movegen::generateAllCapturesOnBoard() {
-    std::array<std::optional<Move>, 216> legalMoves;
+ArrayVec<Move, 218> Movegen::generateAllCapturesOnBoard() {
+    std::array<Move, 218> legalMoves;
 
     int arrayIndex = 0;
     bool whiteToMove = Board::whiteToMove;
@@ -213,8 +211,7 @@ std::array<std::optional<Move>, 216> Movegen::generateAllCapturesOnBoard() {
             legalMoves[arrayIndex++] = move;
         }
     }
-
-    return legalMoves;
+    return ArrayVec(legalMoves, arrayIndex);
 }
 
 bool Movegen::isKingInDanger(bool white) {

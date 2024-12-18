@@ -8,17 +8,15 @@
 #include "movegen.h"
 #include "piecesquaretable.h"
 
-void Search::orderMoves(std::array<std::optional<Move>, 216> &moves) {
+void Search::orderMoves(ArrayVec<Move, 218>& moveVector) {
     // Define a lambda function to calculate the score of a move
     auto getMoveScore = [](const Move &move) -> int {
         return getPieceValue(move.capture) * 10 - getPieceValue(move.pieceFrom);
     };
 
-    std::sort(moves.begin(), moves.end(),
-              [&](const std::optional<Move> &a, const std::optional<Move> &b) {
-                  if (!a.has_value()) return false;
-                  if (!b.has_value()) return true;
-                  return getMoveScore(a.value()) > getMoveScore(b.value());
+    std::sort(moveVector.buffer.begin(), moveVector.buffer.begin() + moveVector.elements,
+              [&](const Move &a, const Move &b) {
+                  return getMoveScore(a) > getMoveScore(b);
               });
 }
 
@@ -32,7 +30,7 @@ void Search::startIterativeSearch(long time) {
     Move bestMoveThisIteration = Move(0, 0);
     int evalThisIteration = 0;
 
-    for (int i = 1; i <= 64; i++) {
+    for (int i = 1; i <= 256; i++) {
         currentDepth = i;
         currentEval = search(i, bestMoveThisIteration);
         if (!searchCancelled) {
@@ -62,12 +60,10 @@ int Search::quiesce(int alpha, int beta) {
     if (alpha < standingPat)
         alpha = standingPat;
 
-    std::array<std::optional<Move>, 216> captures = Movegen::generateAllCapturesOnBoard();
-    for (int i = 0; i < 216; i++) {
-        if (!captures[i].has_value())
-            break;
+    ArrayVec<Move, 218> captures = Movegen::generateAllCapturesOnBoard();
+    for (int i = 0; i < captures.elements; i++) {
 
-        Move move = captures[i].value();
+        Move move = captures.buffer.at(i);
 
         if (Board::move(move)) {
             int score = -quiesce(-beta, -alpha);
@@ -85,30 +81,26 @@ int Search::quiesce(int alpha, int beta) {
 
 int Search::search(int rootDepth, int depth, int alpha, int beta, Move iterativeStart) {
     if (depth == 0) {
-        return quiescence ? quiesce(alpha, beta) : evaluate();
+        return quiesce(alpha, beta);
     }
 
-    std::array<std::optional<Move>, 216> moves = Movegen::generateAllLegalMovesOnBoard();
+    ArrayVec<Move, 218> moves = Movegen::generateAllLegalMovesOnBoard();
     orderMoves(moves);
     bool noLegalMoves = true;
     bool consideredIterativeStart = false;
 
-    for (int i = 0; i < 216; i++) {
+    for (int i = 0; i < moves.elements; i++) {
         if (searchCancelled) {
             return 0;
         }
 
-        std::optional<Move> optionalMove = moves[i];
         Move move = iterativeStart;
 
         if (!consideredIterativeStart && iterativeStart.from != iterativeStart.to && rootDepth == depth) {
             consideredIterativeStart = true;
             i--;
         }else {
-            if (!optionalMove.has_value()) {
-                break;
-            }
-            move = optionalMove.value();
+            move = moves.buffer[i];
         }
 
         if (Board::move(move)) {
