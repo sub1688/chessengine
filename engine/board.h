@@ -45,6 +45,8 @@ namespace Board {
     inline uint8_t castleRights[1024];
     inline int moveNumber = 0;
 
+    inline int PIECE_SQUARE_TABLE[64];
+
     inline uint64_t BITBOARDS[12];
     inline uint64_t BITBOARD_OCCUPANCY;
     inline uint64_t BITBOARD_WHITE_OCCUPANCY = 0ULL;

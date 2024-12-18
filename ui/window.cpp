@@ -13,6 +13,7 @@
 void BoardWindow::playBotMove() {
     thinking = true;
     std::thread([]() {
+        Search::quiescence = Board::whiteToMove;
         Search::startIterativeSearch(5000);
         Board::move(Search::bestMove);
         lastMove = Search::bestMove;
@@ -170,9 +171,6 @@ void BoardWindow::update(sf::RenderWindow &window) {
     text.setPosition(sf::Vector2f(75 * 8 + 5, 5));
     window.draw(text);
 
-    // if (!thinking) {
-        // playBotMove();
-    // }
 }
 
 void BoardWindow::destroy() {

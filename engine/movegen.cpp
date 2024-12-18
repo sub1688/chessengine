@@ -122,6 +122,101 @@ std::array<std::optional<Move>, 216> Movegen::generateAllLegalMovesOnBoard() {
     return legalMoves;
 }
 
+
+std::array<std::optional<Move>, 216> Movegen::generateAllCapturesOnBoard() {
+    std::array<std::optional<Move>, 216> legalMoves;
+
+    int arrayIndex = 0;
+    bool whiteToMove = Board::whiteToMove;
+
+    uint64_t currentOccupancy = whiteToMove ? Board::BITBOARD_WHITE_OCCUPANCY : Board::BITBOARD_BLACK_OCCUPANCY;
+    uint64_t opponentOccupancy = whiteToMove ? Board::BITBOARD_BLACK_OCCUPANCY : Board::BITBOARD_WHITE_OCCUPANCY;
+    while (currentOccupancy) {
+        int pieceIndex = popLeastSignificantBitAndGetIndex(currentOccupancy);
+        uint64_t pseudoLegalMoves = 0ULL;
+        uint64_t castleMoves = 0ULL;
+        uint64_t pseudoLegalEnPassantMoves = 0ULL;
+        uint8_t piece = Board::getPiece(pieceIndex);
+        bool promotion = false;
+
+        switch (piece) {
+            case BLACK_PAWN: {
+                pseudoLegalMoves = generatePseudoLegalPawnMoves(pieceIndex, false) & opponentOccupancy;
+                pseudoLegalEnPassantMoves = generatePseudoLegalEnPassantMoves(pieceIndex, false) & opponentOccupancy;
+                promotion = pseudoLegalMoves & RANK_1;
+                break;
+            }
+            case WHITE_PAWN: {
+                pseudoLegalMoves = generatePseudoLegalPawnMoves(pieceIndex, true) & opponentOccupancy;
+                pseudoLegalEnPassantMoves = generatePseudoLegalEnPassantMoves(pieceIndex, true) & opponentOccupancy;
+                promotion = pseudoLegalMoves & RANK_8;
+                break;
+            }
+            case BLACK_KNIGHT:
+            case WHITE_KNIGHT:
+                pseudoLegalMoves = generatePseudoLegalKnightMoves(pieceIndex, whiteToMove) & opponentOccupancy;
+                break;
+            case WHITE_BISHOP:
+            case BLACK_BISHOP:
+                pseudoLegalMoves = generatePseudoLegalBishopMoves(pieceIndex, whiteToMove) & opponentOccupancy;
+                break;
+            case WHITE_ROOK:
+            case BLACK_ROOK:
+                pseudoLegalMoves = generatePseudoLegalRookMoves(pieceIndex, whiteToMove) & opponentOccupancy;
+                break;
+            case WHITE_KING:
+            case BLACK_KING:
+                pseudoLegalMoves = generatePseudoLegalKingMoves(pieceIndex, whiteToMove) & opponentOccupancy;
+                castleMoves = generatePseudoLegalCastleMoves(whiteToMove) & opponentOccupancy;
+                break;
+            case BLACK_QUEEN:
+            case WHITE_QUEEN:
+                pseudoLegalMoves = generatePseudoLegalQueenMoves(pieceIndex, whiteToMove) & opponentOccupancy;
+                break;
+            default:
+                continue;
+        }
+
+        while (pseudoLegalMoves) {
+            uint8_t targetIndex = popLeastSignificantBitAndGetIndex(pseudoLegalMoves);
+            if (promotion) {
+                for (int i = 0; i < 4; i++) {
+                    Move move = Move(pieceIndex, targetIndex);
+                    move.capture = Board::getPiece(targetIndex);
+                    move.pieceFrom = piece;
+                    move.promotion = i;
+                    legalMoves[arrayIndex++] = move;
+                }
+            }else {
+                Move move = Move(pieceIndex, targetIndex);
+                move.capture = Board::getPiece(targetIndex);
+                move.pieceFrom = piece;
+                legalMoves[arrayIndex++] = move;
+            }
+        }
+
+        while (pseudoLegalEnPassantMoves) {
+            uint8_t targetIndex = popLeastSignificantBitAndGetIndex(pseudoLegalEnPassantMoves);
+            Move move = Move(pieceIndex, targetIndex);
+            move.enPassantTarget = whiteToMove ? targetIndex - 8 : targetIndex + 8;
+            move.capture = whiteToMove ? BLACK_PAWN : WHITE_PAWN;
+            move.pieceFrom = piece;
+            legalMoves[arrayIndex++] = move;
+        }
+
+        while (castleMoves) {
+            uint8_t targetIndex = popLeastSignificantBitAndGetIndex(castleMoves);
+            Move move = Move(pieceIndex, targetIndex);
+            move.capture = NONE;
+            move.pieceFrom = whiteToMove ? WHITE_KING : BLACK_KING;
+            move.castle = true;
+            legalMoves[arrayIndex++] = move;
+        }
+    }
+
+    return legalMoves;
+}
+
 bool Movegen::isKingInDanger(bool white) {
     uint8_t kingIndex = std::countr_zero(white ? Board::BITBOARDS[WHITE_KING] : Board::BITBOARDS[BLACK_KING]);
     return isSquareAttacked(kingIndex, white);

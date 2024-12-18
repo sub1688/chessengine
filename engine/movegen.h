@@ -126,6 +126,7 @@ namespace Movegen {
     uint8_t popLeastSignificantBitAndGetIndex(uint64_t &num);
 
     std::array<std::optional<Move>, 216> generateAllLegalMovesOnBoard();
+    std::array<std::optional<Move>, 216> generateAllCapturesOnBoard();
 
     bool isSquareAttacked(int kingIndex, bool white);
 

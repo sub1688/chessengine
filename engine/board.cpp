@@ -8,17 +8,6 @@ namespace Movegen {
     bool isKingInDanger(bool white);
 }
 
-uint8_t Board::getPiece(int index) {
-    uint64_t mask = 1ULL << index;
-
-    for (uint8_t i = 0; i < 12; i++) {
-        if (mask & BITBOARDS[i])
-            return i;
-    }
-
-    return NONE;
-}
-
 void Board::setPiece(int index, uint8_t piece) {
     assert(index >= 0 && index < 64);
     assert(piece <= 12); // 12 represents NONE

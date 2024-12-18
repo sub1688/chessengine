@@ -23,6 +23,7 @@ namespace Search {
     inline int currentEval = 0;
     inline int currentDepth = 0;
     inline bool searchCancelled = false;
+    inline bool quiescence = false;
 
     inline Move bestMove = Move(0, -1);
 
@@ -39,4 +40,6 @@ namespace Search {
     int getPieceValue(uint8_t piece);
 
     bool isInEndgame();
+
+    int quiesce(int alpha, int beta);
 }

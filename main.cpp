@@ -95,7 +95,10 @@ int main() {
     Movegen::init();
     PieceSquareTable::initializePieceSquareTable();
 
-    // BoardWindow::init();
+    benchmarkPerft(6);
+    return 1;
+
+    BoardWindow::init();
 
     int flag = 0;
 

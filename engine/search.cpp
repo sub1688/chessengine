@@ -55,9 +55,37 @@ int Search::search(int depth, Move iterativeStart) {
     return search(depth, depth, NEGATIVE_INFINITY, POSITIVE_INFINITY, iterativeStart);
 }
 
+int Search::quiesce(int alpha, int beta) {
+    int standingPat = evaluate();
+    if (standingPat >= beta)
+        return beta;
+    if (alpha < standingPat)
+        alpha = standingPat;
+
+    std::array<std::optional<Move>, 216> captures = Movegen::generateAllCapturesOnBoard();
+    for (int i = 0; i < 216; i++) {
+        if (!captures[i].has_value())
+            break;
+
+        Move move = captures[i].value();
+
+        if (Board::move(move)) {
+            int score = -quiesce(-beta, -alpha);
+            Board::undoMove(move);
+
+            if (score >= beta)
+                return beta;
+            if (score > alpha)
+                alpha = score;
+        }
+    }
+
+    return alpha;
+}
+
 int Search::search(int rootDepth, int depth, int alpha, int beta, Move iterativeStart) {
     if (depth == 0) {
-        return evaluate();
+        return quiescence ? quiesce(alpha, beta) : evaluate();
     }
 
     std::array<std::optional<Move>, 216> moves = Movegen::generateAllLegalMovesOnBoard();
