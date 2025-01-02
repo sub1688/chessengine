@@ -11,7 +11,7 @@
 void Search::orderMoves(ArrayVec<Move, 218>& moveVector) {
     // Define a lambda function to calculate the score of a move
     auto getMoveScore = [](const Move &move) -> int {
-        return getPieceValue(move.capture) * 10 - getPieceValue(move.pieceFrom);
+        return getPieceValue(move.capture) * 10 - getPieceValue(move.pieceFrom) + move.promotion;
     };
 
     std::sort(moveVector.buffer.begin(), moveVector.buffer.begin() + moveVector.elements,
@@ -61,6 +61,7 @@ int Search::quiesce(int alpha, int beta) {
         alpha = standingPat;
 
     ArrayVec<Move, 218> captures = Movegen::generateAllCapturesOnBoard();
+    orderMoves(captures);
     for (int i = 0; i < captures.elements; i++) {
 
         Move move = captures.buffer.at(i);
@@ -85,7 +86,7 @@ int Search::search(int rootDepth, int depth, int alpha, int beta, Move iterative
     }
 
     ArrayVec<Move, 218> moves = Movegen::generateAllLegalMovesOnBoard();
-    orderMoves(moves);
+     orderMoves(moves);
     bool noLegalMoves = true;
     bool consideredIterativeStart = false;
 

@@ -29,7 +29,7 @@ uint64_t Movegen::perft(int depth) {
 }
 
 ArrayVec<Move, 218> Movegen::generateAllLegalMovesOnBoard() {
-    std::array<Move, 218> legalMoves;
+    ArrayVec<Move, 218> legalMoves(0);
 
     int arrayIndex = 0;
     bool whiteToMove = Board::whiteToMove;
@@ -89,13 +89,13 @@ ArrayVec<Move, 218> Movegen::generateAllLegalMovesOnBoard() {
                     move.capture = Board::getPiece(targetIndex);
                     move.pieceFrom = piece;
                     move.promotion = i;
-                    legalMoves[arrayIndex++] = move;
+                    legalMoves.buffer[arrayIndex++] = move;
                 }
             }else {
                 Move move = Move(pieceIndex, targetIndex);
                 move.capture = Board::getPiece(targetIndex);
                 move.pieceFrom = piece;
-                legalMoves[arrayIndex++] = move;
+                legalMoves.buffer[arrayIndex++] = move;
             }
         }
 
@@ -105,7 +105,7 @@ ArrayVec<Move, 218> Movegen::generateAllLegalMovesOnBoard() {
             move.enPassantTarget = whiteToMove ? targetIndex - 8 : targetIndex + 8;
             move.capture = whiteToMove ? BLACK_PAWN : WHITE_PAWN;
             move.pieceFrom = piece;
-            legalMoves[arrayIndex++] = move;
+            legalMoves.buffer[arrayIndex++] = move;
         }
 
         while (castleMoves) {
@@ -114,10 +114,11 @@ ArrayVec<Move, 218> Movegen::generateAllLegalMovesOnBoard() {
             move.capture = NONE;
             move.pieceFrom = whiteToMove ? WHITE_KING : BLACK_KING;
             move.castle = true;
-            legalMoves[arrayIndex++] = move;
+            legalMoves.buffer[arrayIndex++] = move;
         }
     }
-    return ArrayVec(legalMoves, arrayIndex);
+    legalMoves.elements = arrayIndex;
+    return legalMoves;
 }
 
 
