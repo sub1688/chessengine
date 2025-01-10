@@ -3,11 +3,11 @@
 #include <limits>
 #include <optional>
 
-#include "board.h"
-#include "../util/arrayvec.h"
+#include "../board.h"
+#include "../../util/arrayvec.h"
 
-namespace Search {
-
+namespace OldSearch {
+    //TODO: PIECE SQUARE TABLES
     inline constexpr int PIECE_VALUES[6] = {
         100,
         300,
@@ -19,10 +19,6 @@ namespace Search {
 
     inline constexpr int NEGATIVE_INFINITY = std::numeric_limits<int>::min() + 1;
     inline constexpr int POSITIVE_INFINITY = std::numeric_limits<int>::max() - 1;
-
-    inline constexpr int LOSING_CAPTURE_BIAS = 2000000;
-    inline constexpr int WINNING_CAPTURE_BIAS = 8000000;
-    inline constexpr int PROMOTE_BIAS = 6000000;
 
     inline int searchedNodes = 0;
     inline int currentEval = 0;

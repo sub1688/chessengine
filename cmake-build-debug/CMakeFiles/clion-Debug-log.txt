@@ -2,6 +2,6 @@
 -- libudev stable: 1
 -- Found UDev: /usr/lib/x86_64-linux-gnu/libudev.so
 --    include: /usr/include
--- Configuring done (0.7s)
--- Generating done (0.1s)
+-- Configuring done (0.5s)
+-- Generating done (0.0s)
 -- Build files have been written to: /home/admin/Desktop/chessengine/cmake-build-debug

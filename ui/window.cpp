@@ -7,21 +7,29 @@
 #include "../engine/board.h"
 #include "../engine/movegen.h"
 #include "../engine/search.h"
+#include "../engine/old/oldsearch.h"
 
 void BoardWindow::playBotMove() {
     thinking = true;
     std::thread([]() {
-        Search::startIterativeSearch(5000);
-        Board::move(Search::bestMove);
-        lastMove = Search::bestMove;
-        thinking = false;
+        if (Board::whiteToMove) {
+            Search::startIterativeSearch(2000);
+            Board::move(Search::bestMove);
+            lastMove = Search::bestMove;
+            thinking = false;
+        }else {
+            OldSearch::startIterativeSearch(2000);
+            Board::move(OldSearch::bestMove);
+            lastMove = OldSearch::bestMove;
+            thinking = false;
+        }
     }).detach(); // Detach thread as it's self-contained
 }
 
 void BoardWindow::init() {
     font.loadFromFile("arial.ttf");
 
-    auto window = sf::RenderWindow({1000u, 600u}, "Analysis");
+    auto window = sf::RenderWindow({1200u, 600u}, "Analysis");
     window.setFramerateLimit(100);
 
     loadPieceTextures();
@@ -83,6 +91,9 @@ void BoardWindow::update(sf::RenderWindow &window) {
     if (!thinking) {
         for (int i = 0; i < 64; i++) {
             displayBoard[i] = Board::getPiece(i);
+        }
+        if (!Movegen::inCheckmate()) {
+            playBotMove();
         }
     }
 
@@ -156,12 +167,11 @@ void BoardWindow::update(sf::RenderWindow &window) {
     text.setFillColor(sf::Color::White);
     text.setFont(font);
     text.setString(
-        "Depth: " + std::to_string(Search::currentDepth) + " Eval: " + std::to_string(
-            static_cast<float>(-Search::currentEval) / 100.F));
+        "Depth: " + std::to_string(Search::currentDepth) + " BlackDepth: " + std::to_string(OldSearch::currentDepth) + " Eval: " + std::to_string(
+            static_cast<float>(Board::whiteToMove ? Search::currentEval : -Search::currentEval) / 100.F) + ((!thinking && Movegen::inCheckmate()) ? " mate" : ""));
     text.setCharacterSize(25);
     text.setPosition(sf::Vector2f(75 * 8 + 5, 5));
     window.draw(text);
-
 }
 
 void BoardWindow::destroy() {

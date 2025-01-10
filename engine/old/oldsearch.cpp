@@ -1,27 +1,17 @@
-#include "search.h"
+#include "oldsearch.h"
 
 #include <algorithm>
 #include <array>
 #include <iostream>
 #include <thread>
 
-#include "movegen.h"
-#include "piecesquaretable.h"
+#include "../movegen.h"
+#include "../piecesquaretable.h"
 
-void Search::orderMoves(ArrayVec<Move, 218>& moveVector) {
+void OldSearch::orderMoves(ArrayVec<Move, 218>& moveVector) {
     // Define a lambda function to calculate the score of a move
     auto getMoveScore = [](const Move &move) -> int {
-        int score = 0;
-        if (move.capture != NONE) {
-            int materialDelta = getPieceValue(move.capture) - getPieceValue(move.pieceFrom);
-            score += (materialDelta >= 0 ? WINNING_CAPTURE_BIAS : LOSING_CAPTURE_BIAS) + materialDelta;
-        }
-
-        if (move.promotion != -1) {
-            score += PROMOTE_BIAS;
-        }
-
-        return score;
+        return getPieceValue(move.capture) * 100 - getPieceValue(move.pieceFrom) * 10 + move.promotion + getPieceValue(move.pieceFrom);
     };
 
     std::sort(moveVector.buffer.begin(), moveVector.buffer.begin() + moveVector.elements,
@@ -30,7 +20,7 @@ void Search::orderMoves(ArrayVec<Move, 218>& moveVector) {
               });
 }
 
-void Search::startIterativeSearch(long time) {
+void OldSearch::startIterativeSearch(long time) {
     searchCancelled = false;
     std::thread timerThread([time]() {
         std::this_thread::sleep_for(std::chrono::milliseconds(time));
@@ -41,8 +31,8 @@ void Search::startIterativeSearch(long time) {
     int evalThisIteration = 0;
 
     for (int i = 1; i <= 256; i++) {
-        currentEval = search(i, bestMoveThisIteration);
         currentDepth = i;
+        currentEval = search(i, bestMoveThisIteration);
         if (!searchCancelled) {
             bestMoveThisIteration = bestMove;
             evalThisIteration = currentEval;
@@ -59,11 +49,11 @@ void Search::startIterativeSearch(long time) {
     bestMove = bestMoveThisIteration;
 }
 
-int Search::search(int depth, Move iterativeStart) {
+int OldSearch::search(int depth, Move iterativeStart) {
     return search(depth, depth, NEGATIVE_INFINITY, POSITIVE_INFINITY, iterativeStart);
 }
 
-int Search::quiesce(int alpha, int beta) {
+int OldSearch::quiesce(int alpha, int beta) {
     int standingPat = evaluate();
     if (standingPat >= beta)
         return beta;
@@ -71,7 +61,7 @@ int Search::quiesce(int alpha, int beta) {
         alpha = standingPat;
 
     ArrayVec<Move, 218> captures = Movegen::generateAllCapturesOnBoard();
-    orderMoves(captures);
+    // orderMoves(captures);
     for (int i = 0; i < captures.elements; i++) {
 
         Move move = captures.buffer.at(i);
@@ -90,13 +80,13 @@ int Search::quiesce(int alpha, int beta) {
     return alpha;
 }
 
-int Search::search(int rootDepth, int depth, int alpha, int beta, Move iterativeStart) {
+int OldSearch::search(int rootDepth, int depth, int alpha, int beta, Move iterativeStart) {
     if (depth == 0) {
         return quiesce(alpha, beta);
     }
 
     ArrayVec<Move, 218> moves = Movegen::generateAllLegalMovesOnBoard();
-    orderMoves(moves);
+    // orderMoves(moves);
     bool noLegalMoves = true;
     bool consideredIterativeStart = false;
 
@@ -144,7 +134,7 @@ int Search::search(int rootDepth, int depth, int alpha, int beta, Move iterative
 }
 
 
-int Search::evaluate() {
+int OldSearch::evaluate() {
     int totalValue = 0;
     bool endgame = isInEndgame();
     for (int i = 0; i < 12; i++) {
@@ -168,11 +158,11 @@ int Search::evaluate() {
     return totalValue * (Board::whiteToMove ? 1 : -1);
 }
 
-bool Search::isInEndgame() {
+bool OldSearch::isInEndgame() {
     return __builtin_popcountll(Board::BITBOARD_OCCUPANCY) <= 14;
 }
 
-int Search::getPieceValue(uint8_t piece) {
+int OldSearch::getPieceValue(uint8_t piece) {
     return PIECE_VALUES[piece % 6];
 }
 

@@ -199,6 +199,7 @@ void Board::setStartingPosition() {
     }
 }
 
+
 uint8_t Board::getPiece(int index) {
     return mailbox[index];
 }

@@ -163,7 +163,26 @@ build CMakeFiles/chessengine.dir/engine/piecesquaretable.cpp.o: CXX_COMPILER__ch
   OBJECT_FILE_DIR = CMakeFiles/chessengine.dir/engine
   dyndep = CMakeFiles/chessengine.dir/CXX.dd
 
-build CMakeFiles/chessengine.dir/CXX.dd | /home/admin/Desktop/chessengine/cmake-build-debug/CMakeFiles/chessengine.dir/CXXModules.json CMakeFiles/chessengine.dir/main.cpp.o.modmap CMakeFiles/chessengine.dir/engine/board.cpp.o.modmap CMakeFiles/chessengine.dir/engine/movegen.cpp.o.modmap CMakeFiles/chessengine.dir/ui/window.cpp.o.modmap CMakeFiles/chessengine.dir/engine/search.cpp.o.modmap CMakeFiles/chessengine.dir/engine/piecesquaretable.cpp.o.modmap: CXX_DYNDEP__chessengine_Debug CMakeFiles/chessengine.dir/main.cpp.o.ddi CMakeFiles/chessengine.dir/engine/board.cpp.o.ddi CMakeFiles/chessengine.dir/engine/movegen.cpp.o.ddi CMakeFiles/chessengine.dir/ui/window.cpp.o.ddi CMakeFiles/chessengine.dir/engine/search.cpp.o.ddi CMakeFiles/chessengine.dir/engine/piecesquaretable.cpp.o.ddi | /home/admin/Desktop/chessengine/cmake-build-debug/CMakeFiles/chessengine.dir/CXXDependInfo.json
+build CMakeFiles/chessengine.dir/engine/old/oldsearch.cpp.o.ddi: CXX_SCAN__chessengine_Debug /home/admin/Desktop/chessengine/engine/old/oldsearch.cpp || cmake_object_order_depends_target_chessengine
+  DEFINES = -DSFML_STATIC
+  DEP_FILE = CMakeFiles/chessengine.dir/engine/old/oldsearch.cpp.o.ddi.d
+  DYNDEP_INTERMEDIATE_FILE = CMakeFiles/chessengine.dir/engine/old/oldsearch.cpp.o.ddi
+  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always
+  INCLUDES = -I/home/admin/Desktop/chessengine/chessengine -isystem /home/admin/Desktop/chessengine/cmake-build-debug/_deps/sfml-src/include
+  OBJ_FILE = CMakeFiles/chessengine.dir/engine/old/oldsearch.cpp.o
+  PREPROCESSED_OUTPUT_FILE = CMakeFiles/chessengine.dir/engine/old/oldsearch.cpp.o.ddi.i
+
+build CMakeFiles/chessengine.dir/engine/old/oldsearch.cpp.o: CXX_COMPILER__chessengine_scanned_Debug /home/admin/Desktop/chessengine/engine/old/oldsearch.cpp | CMakeFiles/chessengine.dir/engine/old/oldsearch.cpp.o.modmap || cmake_object_order_depends_target_chessengine CMakeFiles/chessengine.dir/CXX.dd
+  DEFINES = -DSFML_STATIC
+  DEP_FILE = CMakeFiles/chessengine.dir/engine/old/oldsearch.cpp.o.d
+  DYNDEP_MODULE_MAP_FILE = CMakeFiles/chessengine.dir/engine/old/oldsearch.cpp.o.modmap
+  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always
+  INCLUDES = -I/home/admin/Desktop/chessengine/chessengine -isystem /home/admin/Desktop/chessengine/cmake-build-debug/_deps/sfml-src/include
+  OBJECT_DIR = CMakeFiles/chessengine.dir
+  OBJECT_FILE_DIR = CMakeFiles/chessengine.dir/engine/old
+  dyndep = CMakeFiles/chessengine.dir/CXX.dd
+
+build CMakeFiles/chessengine.dir/CXX.dd | /home/admin/Desktop/chessengine/cmake-build-debug/CMakeFiles/chessengine.dir/CXXModules.json CMakeFiles/chessengine.dir/main.cpp.o.modmap CMakeFiles/chessengine.dir/engine/board.cpp.o.modmap CMakeFiles/chessengine.dir/engine/movegen.cpp.o.modmap CMakeFiles/chessengine.dir/ui/window.cpp.o.modmap CMakeFiles/chessengine.dir/engine/search.cpp.o.modmap CMakeFiles/chessengine.dir/engine/piecesquaretable.cpp.o.modmap CMakeFiles/chessengine.dir/engine/old/oldsearch.cpp.o.modmap: CXX_DYNDEP__chessengine_Debug CMakeFiles/chessengine.dir/main.cpp.o.ddi CMakeFiles/chessengine.dir/engine/board.cpp.o.ddi CMakeFiles/chessengine.dir/engine/movegen.cpp.o.ddi CMakeFiles/chessengine.dir/ui/window.cpp.o.ddi CMakeFiles/chessengine.dir/engine/search.cpp.o.ddi CMakeFiles/chessengine.dir/engine/piecesquaretable.cpp.o.ddi CMakeFiles/chessengine.dir/engine/old/oldsearch.cpp.o.ddi | /home/admin/Desktop/chessengine/cmake-build-debug/CMakeFiles/chessengine.dir/CXXDependInfo.json
 
 
 # =============================================================================
@@ -173,7 +192,7 @@ build CMakeFiles/chessengine.dir/CXX.dd | /home/admin/Desktop/chessengine/cmake-
 #############################################
 # Link the executable chessengine
 
-build chessengine: CXX_EXECUTABLE_LINKER__chessengine_Debug CMakeFiles/chessengine.dir/main.cpp.o CMakeFiles/chessengine.dir/engine/board.cpp.o CMakeFiles/chessengine.dir/engine/movegen.cpp.o CMakeFiles/chessengine.dir/ui/window.cpp.o CMakeFiles/chessengine.dir/engine/search.cpp.o CMakeFiles/chessengine.dir/engine/piecesquaretable.cpp.o | _deps/sfml-build/lib/libsfml-graphics-s-d.a _deps/sfml-build/lib/libsfml-window-s-d.a /usr/lib/x86_64-linux-gnu/libX11.so /usr/lib/x86_64-linux-gnu/libXrandr.so /usr/lib/x86_64-linux-gnu/libXcursor.so _deps/sfml-build/lib/libsfml-system-s-d.a /usr/lib/x86_64-linux-gnu/libGL.so /usr/lib/x86_64-linux-gnu/libudev.so /usr/lib/x86_64-linux-gnu/libfreetype.so || _deps/sfml-build/lib/libsfml-graphics-s-d.a _deps/sfml-build/lib/libsfml-system-s-d.a _deps/sfml-build/lib/libsfml-window-s-d.a
+build chessengine: CXX_EXECUTABLE_LINKER__chessengine_Debug CMakeFiles/chessengine.dir/main.cpp.o CMakeFiles/chessengine.dir/engine/board.cpp.o CMakeFiles/chessengine.dir/engine/movegen.cpp.o CMakeFiles/chessengine.dir/ui/window.cpp.o CMakeFiles/chessengine.dir/engine/search.cpp.o CMakeFiles/chessengine.dir/engine/piecesquaretable.cpp.o CMakeFiles/chessengine.dir/engine/old/oldsearch.cpp.o | _deps/sfml-build/lib/libsfml-graphics-s-d.a _deps/sfml-build/lib/libsfml-window-s-d.a /usr/lib/x86_64-linux-gnu/libX11.so /usr/lib/x86_64-linux-gnu/libXrandr.so /usr/lib/x86_64-linux-gnu/libXcursor.so _deps/sfml-build/lib/libsfml-system-s-d.a /usr/lib/x86_64-linux-gnu/libGL.so /usr/lib/x86_64-linux-gnu/libudev.so /usr/lib/x86_64-linux-gnu/libfreetype.so || _deps/sfml-build/lib/libsfml-graphics-s-d.a _deps/sfml-build/lib/libsfml-system-s-d.a _deps/sfml-build/lib/libsfml-window-s-d.a
   FLAGS = -g
   LINK_LIBRARIES = _deps/sfml-build/lib/libsfml-graphics-s-d.a  _deps/sfml-build/lib/libsfml-window-s-d.a  /usr/lib/x86_64-linux-gnu/libX11.so  /usr/lib/x86_64-linux-gnu/libXrandr.so  /usr/lib/x86_64-linux-gnu/libXcursor.so  _deps/sfml-build/lib/libsfml-system-s-d.a  -lpthread  -lrt  /usr/lib/x86_64-linux-gnu/libGL.so  /usr/lib/x86_64-linux-gnu/libudev.so  -ldl  /usr/lib/x86_64-linux-gnu/libfreetype.so
   OBJECT_DIR = CMakeFiles/chessengine.dir

@@ -70,6 +70,12 @@ void debugPerft(int depth) {
     }
 }
 
+void printMoves(ArrayVec<Move, 218> moves) {
+    for (int i = 0; i < moves.elements; i++) {
+        std::cout << indexToChessNotation(moves.buffer[i].from) << " " << indexToChessNotation(moves.buffer[i].to) << std::endl;
+    }
+}
+
 void replaceAll(std::string &str, const std::string &from, const std::string &to) {
     size_t startPos = 0;
     while ((startPos = str.find(from, startPos)) != std::string::npos) {
@@ -88,6 +94,7 @@ int main() {
     };
 
     Board::setStartingPosition();
+    Board::importFEN("1k6/2p1p3/3nb3/8/8/5P2/1P1BN3/1K6 w - - 0 1");
 
     Movegen::init();
     PieceSquareTable::initializePieceSquareTable();

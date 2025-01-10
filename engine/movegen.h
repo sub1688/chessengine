@@ -76,6 +76,8 @@ namespace Movegen {
     inline uint64_t ROOK_MOVE_TABLE[64][4096];
     inline uint64_t BISHOP_MOVE_TABLE[64][4096];
 
+    bool inCheckmate();
+
     uint64_t perft(int depth);
 
     uint64_t generatePseudoLegalBishopMoves(uint8_t squareIndex, bool white);

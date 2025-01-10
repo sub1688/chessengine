@@ -91,7 +91,7 @@ ArrayVec<Move, 218> Movegen::generateAllLegalMovesOnBoard() {
                     move.promotion = i;
                     legalMoves.buffer[arrayIndex++] = move;
                 }
-            }else {
+            } else {
                 Move move = Move(pieceIndex, targetIndex);
                 move.capture = Board::getPiece(targetIndex);
                 move.pieceFrom = piece;
@@ -186,7 +186,7 @@ ArrayVec<Move, 218> Movegen::generateAllCapturesOnBoard() {
                     move.promotion = i;
                     legalMoves[arrayIndex++] = move;
                 }
-            }else {
+            } else {
                 Move move = Move(pieceIndex, targetIndex);
                 move.capture = Board::getPiece(targetIndex);
                 move.pieceFrom = piece;
@@ -364,7 +364,6 @@ uint64_t Movegen::generatePseudoLegalCastleMoves(bool white) {
             !(Board::BITBOARD_OCCUPANCY & 0xE00000000000000ULL) &&
             !isSquareAttacked(59, false)) {
             castleMoves |= 0x400000000000000ULL;
-
         }
     }
 
@@ -374,6 +373,20 @@ uint64_t Movegen::generatePseudoLegalCastleMoves(bool white) {
 uint64_t Movegen::generatePseudoLegalKnightMoves(uint8_t squareIndex, bool white) {
     uint64_t movementMask = KNIGHT_MOVEMENT_MASKS[squareIndex];
     return movementMask & (white ? ~Board::BITBOARD_WHITE_OCCUPANCY : ~Board::BITBOARD_BLACK_OCCUPANCY);
+}
+
+bool Movegen::inCheckmate() {
+    if (!isKingInDanger(Board::whiteToMove))
+        return false;
+
+    ArrayVec<Move, 218> moves = generateAllLegalMovesOnBoard();
+    for (int i = 0; i < moves.elements; i++) {
+        if (Board::move(moves.buffer[i])) {
+            Board::undoMove(moves.buffer[i]);
+            return false;
+        }
+    }
+    return true;
 }
 
 void Movegen::precomputeMovementMasks() {
@@ -679,4 +692,3 @@ void Movegen::init() {
     precomputeRookMovegenTable();
     precomputeBishopMovegenTable();
 }
-

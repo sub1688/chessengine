@@ -27,7 +27,9 @@ add_executable(chessengine main.cpp
         engine/search.cpp
         engine/piecesquaretable.h
         engine/piecesquaretable.cpp
-        util/arrayvec.h)
+        util/arrayvec.h
+        engine/old/oldsearch.h
+        engine/old/oldsearch.cpp)
 
 target_link_libraries(chessengine PRIVATE sfml-graphics)
 
