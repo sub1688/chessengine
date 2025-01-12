@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.29)
 project(chessengine)
 
 set(CMAKE_CXX_STANDARD 20)
-#set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
 option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
 
 include(FetchContent)
@@ -29,7 +29,9 @@ add_executable(chessengine main.cpp
         engine/piecesquaretable.cpp
         util/arrayvec.h
         engine/old/oldsearch.h
-        engine/old/oldsearch.cpp)
+        engine/old/oldsearch.cpp
+        engine/zobrist.h
+        engine/zobrist.cpp)
 
 target_link_libraries(chessengine PRIVATE sfml-graphics)
 

@@ -29,12 +29,13 @@ namespace Search {
     inline int currentDepth = 0;
     inline bool searchCancelled = false;
     inline bool quiescence = false;
+    inline bool lastSearchTurnIsWhite = true;
 
     inline Move bestMove = Move(0, -1);
 
     void orderMoves(ArrayVec<Move, 218>& moveVector);
 
-    void startIterativeSearch(long time);
+    void startIterativeSearch(long time, Move& lastMove);
 
     int search(int rootDepth, int depth, int alpha, int beta, Move iterativeStart);
 

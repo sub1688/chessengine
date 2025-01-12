@@ -30,10 +30,14 @@ void Search::orderMoves(ArrayVec<Move, 218>& moveVector) {
               });
 }
 
-void Search::startIterativeSearch(long time) {
+void Search::startIterativeSearch(long time, Move& lastMove) {
     searchCancelled = false;
+    lastSearchTurnIsWhite = Board::whiteToMove;
     std::thread timerThread([time]() {
-        std::this_thread::sleep_for(std::chrono::milliseconds(time));
+        long currentTime = 0;
+        while (!searchCancelled && (currentTime += 10) <= time) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
         searchCancelled = true;
     });
 
@@ -45,6 +49,7 @@ void Search::startIterativeSearch(long time) {
         currentDepth = i;
         if (!searchCancelled) {
             bestMoveThisIteration = bestMove;
+            lastMove = bestMoveThisIteration;
             evalThisIteration = currentEval;
         }else {
             break;

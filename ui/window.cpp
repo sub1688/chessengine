@@ -7,22 +7,14 @@
 #include "../engine/board.h"
 #include "../engine/movegen.h"
 #include "../engine/search.h"
-#include "../engine/old/oldsearch.h"
 
 void BoardWindow::playBotMove() {
     thinking = true;
     std::thread([]() {
-        if (Board::whiteToMove) {
-            Search::startIterativeSearch(2000);
-            Board::move(Search::bestMove);
-            lastMove = Search::bestMove;
-            thinking = false;
-        }else {
-            OldSearch::startIterativeSearch(2000);
-            Board::move(OldSearch::bestMove);
-            lastMove = OldSearch::bestMove;
-            thinking = false;
-        }
+        Search::startIterativeSearch(4000, lastMove);
+        Board::move(Search::bestMove);
+        lastMove = Search::bestMove;
+        thinking = false;
     }).detach(); // Detach thread as it's self-contained
 }
 
@@ -49,9 +41,10 @@ void BoardWindow::init() {
                 int file = mouseX / 75; // Column (0 to 7)
                 int rank = 7 - (mouseY / 75); // Row (0 to 7, flipped for top-down drawing)
                 int index = rank * 8 + file; // Convert to 0-based index
-                if (Board::getPiece(index) == NONE || thinking)
+                if (displayBoard[index] == NONE)
                     continue;
                 draggingSquare = index;
+                Search::searchCancelled = true;
             }
 
             if (event.type == sf::Event::MouseButtonReleased) {
@@ -69,8 +62,7 @@ void BoardWindow::init() {
                             for (int i = 0; i < 64; i++) {
                                 displayBoard[i] = Board::getPiece(i);
                             }
-                            thinking = true;
-                            playBotMove();
+                            thinking = false;
                             break;
                         }
                     }
@@ -92,9 +84,12 @@ void BoardWindow::update(sf::RenderWindow &window) {
         for (int i = 0; i < 64; i++) {
             displayBoard[i] = Board::getPiece(i);
         }
-        if (!Movegen::inCheckmate()) {
-            playBotMove();
-        }
+
+        thinking = true;
+        std::thread([]() {
+            Search::startIterativeSearch(20000, lastMove);
+            lastMove = Search::bestMove;
+        }).detach();
     }
 
     window.clear(sf::Color(171, 126, 89));
@@ -167,11 +162,27 @@ void BoardWindow::update(sf::RenderWindow &window) {
     text.setFillColor(sf::Color::White);
     text.setFont(font);
     text.setString(
-        "Depth: " + std::to_string(Search::currentDepth) + " BlackDepth: " + std::to_string(OldSearch::currentDepth) + " Eval: " + std::to_string(
-            static_cast<float>(Board::whiteToMove ? Search::currentEval : -Search::currentEval) / 100.F) + ((!thinking && Movegen::inCheckmate()) ? " mate" : ""));
+        "Depth: " + std::to_string(Search::currentDepth) + " Eval: " + std::to_string(
+            static_cast<float>((Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval) / 100.F) + (Search::searchCancelled ? " Cancelled" : ""));
     text.setCharacterSize(25);
-    text.setPosition(sf::Vector2f(75 * 8 + 5, 5));
+    text.setPosition(sf::Vector2f(75 * 8 + 35, 5));
     window.draw(text);
+
+    sf::RectangleShape evalBackground(sf::Vector2f(30, 600));
+    evalBackground.setFillColor(sf::Color(45, 45, 45, 255));
+    evalBackground.setPosition(sf::Vector2f(75 * 8, 0));
+    window.draw(evalBackground);
+
+    //y=\frac{300}{-\left(\frac{x}{5}+1\right)}+300
+
+    float trueEval = static_cast<float>((Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval) / 100.F;
+    float evalOffset = trueEval >= 0 ? 300.F + 300.F / -(trueEval / 5.F + 1.F) : -(300 + 300.F / -(-trueEval / 5.F + 1.F));
+    smoothEvalOffset += (evalOffset - smoothEvalOffset) / 12.F;
+    float evalHeight = 300.F + smoothEvalOffset;
+    sf::RectangleShape evalWhite(sf::Vector2f(30, evalHeight));
+    evalBackground.setFillColor(sf::Color(255, 255, 255, 255));
+    evalBackground.setPosition(sf::Vector2f(75 * 8, 600 - evalHeight));
+    window.draw(evalBackground);
 }
 
 void BoardWindow::destroy() {

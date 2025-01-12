@@ -2,6 +2,7 @@
 #include <chrono>
 #include <iostream>
 #include <optional>
+#include <random>
 #include <string>
 #include <unordered_map>
 
@@ -10,6 +11,7 @@
 #include "engine/movegen.h"
 #include "engine/piecesquaretable.h"
 #include "engine/search.h"
+#include "engine/zobrist.h"
 #include "ui/window.h"
 
 std::string indexToChessNotation(int index) {
@@ -80,11 +82,34 @@ void replaceAll(std::string &str, const std::string &from, const std::string &to
     size_t startPos = 0;
     while ((startPos = str.find(from, startPos)) != std::string::npos) {
         str.replace(startPos, from.length(), to);
-        startPos += to.length(); // Advance past the replacement
+        startPos += to.length(); // Advance past the replacementpr
+    }
+}
+
+void test_secure_distribution(int num_samples, int num_buckets) {
+    std::vector<int> buckets(num_buckets, 0);
+    uint64_t bucket_size = UINT64_MAX / num_buckets;
+
+    // Generate random numbers and count how many fall in each bucket
+    for (int i = 0; i < num_samples; ++i) {
+        uint64_t random_number = Zobrist::secureRandomUnsigned64();
+        int bucket_index = random_number / bucket_size;
+        buckets[bucket_index]++;
+    }
+
+    // Display the distribution
+    std::cout << "Bucket distribution (using std::random_device):\n";
+    for (int i = 0; i < num_buckets; ++i) {
+        double percentage = (buckets[i] * 100.0) / num_samples;
+        std::cout << "Bucket " << i << ": " << buckets[i]
+                  << " (" << std::fixed << std::setprecision(2)
+                  << percentage << "%)\n";
     }
 }
 
 int main() {
+    test_secure_distribution(100000, 100);
+
     std::unordered_map<char, int> notationPieces = {
         {'N', WHITE_KNIGHT}, {'B', WHITE_BISHOP}, {'K', WHITE_KING}, {'Q', WHITE_QUEEN}, {'R', WHITE_ROOK}
     };
@@ -94,13 +119,12 @@ int main() {
     };
 
     Board::setStartingPosition();
-    Board::importFEN("1k6/2p1p3/3nb3/8/8/5P2/1P1BN3/1K6 w - - 0 1");
 
     Movegen::init();
     PieceSquareTable::initializePieceSquareTable();
 
     BoardWindow::init();
-
+    return 0;
     int flag = 0;
 
     while (flag++ < 1000000) {
@@ -120,7 +144,7 @@ int main() {
             std::string time = input.substr(7);
             long millis = std::stol(time);
 
-            Search::startIterativeSearch(millis);
+            // Search::startIterativeSearch(millis);
             Board::move(Search::bestMove);
             std::cout << "bestMove:" << static_cast<int>(Search::bestMove.from) << "," << static_cast<int>(Search::bestMove.to) << std::endl;
         }
