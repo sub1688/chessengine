@@ -108,8 +108,6 @@ void test_secure_distribution(int num_samples, int num_buckets) {
 }
 
 int main() {
-    test_secure_distribution(100000, 100);
-
     std::unordered_map<char, int> notationPieces = {
         {'N', WHITE_KNIGHT}, {'B', WHITE_BISHOP}, {'K', WHITE_KING}, {'Q', WHITE_QUEEN}, {'R', WHITE_ROOK}
     };
@@ -118,8 +116,8 @@ int main() {
         {'N', PROMOTE_KNIGHT}, {'B', PROMOTE_BISHOP}, {'Q', PROMOTE_QUEEN}, {'R', PROMOTE_ROOK}
     };
 
+    Zobrist::init();
     Board::setStartingPosition();
-
     Movegen::init();
     PieceSquareTable::initializePieceSquareTable();
 

@@ -7,7 +7,6 @@
 #include "../util/arrayvec.h"
 
 namespace Search {
-
     inline constexpr int PIECE_VALUES[6] = {
         100,
         300,
@@ -33,9 +32,9 @@ namespace Search {
 
     inline Move bestMove = Move(0, -1);
 
-    void orderMoves(ArrayVec<Move, 218>& moveVector);
+    void orderMoves(ArrayVec<Move, 218> &moveVector);
 
-    void startIterativeSearch(long time, Move& lastMove);
+    void startIterativeSearch(long time, Move &lastMove);
 
     int search(int rootDepth, int depth, int alpha, int beta, Move iterativeStart);
 

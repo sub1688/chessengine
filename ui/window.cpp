@@ -1,12 +1,15 @@
 #include "window.h"
 
 #include <array>
+#include <charconv>
 #include <thread>
 #include <SFML/Graphics.hpp>
 
 #include "../engine/board.h"
 #include "../engine/movegen.h"
 #include "../engine/search.h"
+#include "../engine/zobrist.h"
+#include "../engine/old/oldsearch.h"
 
 void BoardWindow::playBotMove() {
     thinking = true;
@@ -85,11 +88,13 @@ void BoardWindow::update(sf::RenderWindow &window) {
             displayBoard[i] = Board::getPiece(i);
         }
 
+        zobristKey = Zobrist::calculateZobristKey();
+
         thinking = true;
-        std::thread([]() {
-            Search::startIterativeSearch(20000, lastMove);
-            lastMove = Search::bestMove;
-        }).detach();
+        // std::thread([]() {
+            // Search::startIterativeSearch(20000, lastMove);
+            // lastMove = Search::bestMove;
+        // }).detach();
     }
 
     window.clear(sf::Color(171, 126, 89));
@@ -136,7 +141,7 @@ void BoardWindow::update(sf::RenderWindow &window) {
     }
 
     if (draggingSquare != -1) {
-        ArrayVec<Move, 218> moves = Movegen::generateAllLegalMovesOnBoard();
+   /*     ArrayVec<Move, 218> moves = Movegen::generateAllLegalMovesOnBoard();
 
         for (int i = 0; i < moves.elements; i++) {
             Move move = moves.buffer[i];
@@ -150,7 +155,7 @@ void BoardWindow::update(sf::RenderWindow &window) {
                 rect.setPosition(sf::Vector2f(ix * 75.F, iy * 75.F));
                 window.draw(rect);
             }
-        }
+        }*/
 
         sf::Sprite sprite;
         sprite.setTexture(*pieceTextures[Board::getPiece(draggingSquare)]);
@@ -161,9 +166,13 @@ void BoardWindow::update(sf::RenderWindow &window) {
     sf::Text text;
     text.setFillColor(sf::Color::White);
     text.setFont(font);
-    text.setString(
-        "Depth: " + std::to_string(Search::currentDepth) + " Eval: " + std::to_string(
-            static_cast<float>((Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval) / 100.F) + (Search::searchCancelled ? " Cancelled" : ""));
+    std::string str = std::to_string(
+            static_cast<float>((Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval) / 100.F);
+    if (abs((Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval / 100.F) > 200000) {
+        str = "M" + std::to_string((int) (Search::POSITIVE_INFINITY / 100.F - abs(static_cast<float>((Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval) / 100.F)) / 2 + 1);
+    }
+    text.setString("Zobrist Key: " + std::to_string(Board::currentZobristKey) + "\nCalculated Zobrist: " + std::to_string(zobristKey) +
+        "\nDepth: " + std::to_string(Search::currentDepth) + " Eval: " + str + (Search::searchCancelled ? " Cancelled" : ""));
     text.setCharacterSize(25);
     text.setPosition(sf::Vector2f(75 * 8 + 35, 5));
     window.draw(text);

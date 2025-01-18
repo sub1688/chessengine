@@ -8,7 +8,7 @@
 #include "movegen.h"
 #include "piecesquaretable.h"
 
-void Search::orderMoves(ArrayVec<Move, 218>& moveVector) {
+void Search::orderMoves(ArrayVec<Move, 218> &moveVector) {
     // Define a lambda function to calculate the score of a move
     auto getMoveScore = [](const Move &move) -> int {
         int score = 0;
@@ -30,7 +30,7 @@ void Search::orderMoves(ArrayVec<Move, 218>& moveVector) {
               });
 }
 
-void Search::startIterativeSearch(long time, Move& lastMove) {
+void Search::startIterativeSearch(long time, Move &lastMove) {
     searchCancelled = false;
     lastSearchTurnIsWhite = Board::whiteToMove;
     std::thread timerThread([time]() {
@@ -51,7 +51,7 @@ void Search::startIterativeSearch(long time, Move& lastMove) {
             bestMoveThisIteration = bestMove;
             lastMove = bestMoveThisIteration;
             evalThisIteration = currentEval;
-        }else {
+        } else {
             break;
         }
     }
@@ -78,7 +78,6 @@ int Search::quiesce(int alpha, int beta) {
     ArrayVec<Move, 218> captures = Movegen::generateAllCapturesOnBoard();
     orderMoves(captures);
     for (int i = 0; i < captures.elements; i++) {
-
         Move move = captures.buffer.at(i);
 
         if (Board::move(move)) {
@@ -115,7 +114,7 @@ int Search::search(int rootDepth, int depth, int alpha, int beta, Move iterative
         if (!consideredIterativeStart && iterativeStart.from != iterativeStart.to && rootDepth == depth) {
             consideredIterativeStart = true;
             i--;
-        }else {
+        } else {
             move = moves.buffer[i];
         }
 
@@ -140,7 +139,7 @@ int Search::search(int rootDepth, int depth, int alpha, int beta, Move iterative
     // Check for checkmate or stalemate
     if (noLegalMoves) {
         if (Movegen::isKingInDanger(Board::whiteToMove)) {
-            return NEGATIVE_INFINITY + (rootDepth - depth); // Checkmate
+            return NEGATIVE_INFINITY + (rootDepth - depth) * 100; // Checkmate
         }
         return 0; // Stalemate
     }
@@ -159,10 +158,14 @@ int Search::evaluate() {
             int index = Movegen::popLeastSignificantBitAndGetIndex(bitboard);
             if (i >= 6) {
                 totalValue -= pieceValue;
-                totalValue -= endgame ? PieceSquareTable::PIECE_SQUARE_TABLE_ENDGAME[i][index] : PieceSquareTable::PIECE_SQUARE_TABLE[i][index];
-            }else {
+                totalValue -= endgame
+                                  ? PieceSquareTable::PIECE_SQUARE_TABLE_ENDGAME[i][index]
+                                  : PieceSquareTable::PIECE_SQUARE_TABLE[i][index];
+            } else {
                 totalValue += pieceValue;
-                totalValue += endgame ? PieceSquareTable::PIECE_SQUARE_TABLE_ENDGAME[i][index] : PieceSquareTable::PIECE_SQUARE_TABLE[i][index];
+                totalValue += endgame
+                                  ? PieceSquareTable::PIECE_SQUARE_TABLE_ENDGAME[i][index]
+                                  : PieceSquareTable::PIECE_SQUARE_TABLE[i][index];
             }
         }
     }

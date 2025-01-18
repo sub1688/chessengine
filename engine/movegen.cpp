@@ -1,9 +1,7 @@
 #include "movegen.h"
 #include <array>
 #include <iostream>
-#include <optional>
 #include <random>
-#include <bits/ranges_algobase.h>
 
 uint64_t Movegen::perft(int depth) {
     uint64_t perftCount = 0;

@@ -4,6 +4,8 @@
 #include <iostream>
 #include <string>
 
+#include "zobrist.h"
+
 namespace Movegen {
     bool isKingInDanger(bool white);
 }
@@ -27,22 +29,23 @@ bool Board::move(Move m) {
     switch (m.promotion) {
         case PROMOTE_QUEEN:
             setPiece(m.to, whiteToMove ? WHITE_QUEEN : BLACK_QUEEN);
-        break;
+            break;
         case PROMOTE_BISHOP:
             setPiece(m.to, whiteToMove ? WHITE_BISHOP : BLACK_KNIGHT);
-        break;
+            break;
         case PROMOTE_KNIGHT:
             setPiece(m.to, whiteToMove ? WHITE_KNIGHT : BLACK_KNIGHT);
-        break;
+            break;
         case PROMOTE_ROOK:
             setPiece(m.to, whiteToMove ? WHITE_ROOK : BLACK_ROOK);
-        break;
+            break;
         default:
             setPiece(m.to, m.pieceFrom);
     }
     setPiece(m.from, NONE);
 
     if (m.enPassantTarget != -1) {
+        currentZobristKey ^= Zobrist::pieceSquareKeys[m.enPassantTarget][mailbox[m.enPassantTarget]];
         setPiece(m.enPassantTarget, NONE);
     }
 
@@ -51,19 +54,19 @@ bool Board::move(Move m) {
             case 6:
                 setPiece(7, NONE);
                 setPiece(5, WHITE_ROOK);
-            break;
+                break;
             case 2:
                 setPiece(0, NONE);
                 setPiece(3, WHITE_ROOK);
-            break;
+                break;
             case 62:
                 setPiece(63, NONE);
                 setPiece(61, BLACK_ROOK);
-            break;
+                break;
             case 58:
                 setPiece(56, NONE);
                 setPiece(59, BLACK_ROOK);
-            break;
+                break;
         }
     }
 
@@ -80,6 +83,7 @@ bool Board::move(Move m) {
     // en passant
     if (abs(m.to - m.from) == 16 && (m.pieceFrom == WHITE_PAWN || m.pieceFrom == BLACK_PAWN)) {
         epMasks[moveNumber] = 1ULL << (whiteToMove ? m.from + 8 : m.from - 8);
+        currentZobristKey ^= Zobrist::enPassantKeys[m.to % 8];
     } else {
         epMasks[moveNumber] = 0ULL;
     }
@@ -100,18 +104,32 @@ bool Board::move(Move m) {
     } else if (m.pieceFrom == WHITE_ROOK) {
         if (m.from == 7) {
             setWhiteCastleKingside(moveNumber, false);
-        }else if (m.from == 0) {
+        } else if (m.from == 0) {
             setWhiteCastleQueenside(moveNumber, false);
         }
     } else if (m.pieceFrom == BLACK_ROOK) {
         if (m.from == 63) {
             setBlackCastleKingside(moveNumber, false);
-        }else if (m.from == 56) {
+        } else if (m.from == 56) {
             setBlackCastleQueenside(moveNumber, false);
         }
     }
 
     whiteToMove = !whiteToMove;
+
+    currentZobristKey ^= Zobrist::whiteToMove;
+    if (m.capture != NONE) {
+        currentZobristKey ^= Zobrist::pieceSquareKeys[m.to][m.capture];
+    }
+    currentZobristKey ^= Zobrist::pieceSquareKeys[m.from][m.pieceFrom];
+    currentZobristKey ^= Zobrist::pieceSquareKeys[m.to][mailbox[m.to]];
+
+    uint64_t prevEnPassantMask = epMasks[moveNumber - 1];
+    if (prevEnPassantMask != 0) {
+        int index = __builtin_ctzll(prevEnPassantMask);
+        int file = index % 8;
+        currentZobristKey ^= Zobrist::enPassantKeys[file];
+    }
     return true;
 }
 
@@ -129,19 +147,19 @@ void Board::undoMove(Move m) {
             case 6:
                 setPiece(7, WHITE_ROOK);
                 setPiece(5, NONE);
-            break;
+                break;
             case 2:
                 setPiece(0, WHITE_ROOK);
                 setPiece(3, NONE);
-            break;
+                break;
             case 62:
                 setPiece(63, BLACK_ROOK);
                 setPiece(61, NONE);
-            break;
+                break;
             case 58:
                 setPiece(56, BLACK_ROOK);
                 setPiece(59, NONE);
-            break;
+                break;
             default:
                 break;
         }
@@ -149,6 +167,17 @@ void Board::undoMove(Move m) {
 
     // en passant
     moveNumber--;
+
+    currentZobristKey ^= Zobrist::whiteToMove;
+    currentZobristKey ^= Zobrist::pieceSquareKeys[m.from][m.pieceFrom];
+    currentZobristKey ^= Zobrist::pieceSquareKeys[m.to][mailbox[m.to]];
+
+    uint64_t prevEnPassantMask = epMasks[moveNumber - 1];
+    if (prevEnPassantMask != 0) {
+        int index = __builtin_ctzll(prevEnPassantMask);
+        int file = index % 8;
+        currentZobristKey ^= Zobrist::enPassantKeys[file];
+    }
 
     updateOccupancy();
     whiteToMove = !whiteToMove;
@@ -197,6 +226,7 @@ void Board::setStartingPosition() {
             }
         }
     }
+    currentZobristKey = Zobrist::calculateZobristKey();
 }
 
 
@@ -285,7 +315,7 @@ void Board::importFEN(const std::string &fen) {
 
     index++;
 
-    Board::whiteToMove = fen[index] == 'w';
+    whiteToMove = fen[index] == 'w';
     index += 2;
 
     // Parse castling rights
@@ -293,10 +323,14 @@ void Board::importFEN(const std::string &fen) {
     while (fen[index] != ' ') {
         char c = fen[index];
         switch (c) {
-            case 'K': setWhiteCastleKingside(moveNumber, true); break;
-            case 'Q': setWhiteCastleQueenside(moveNumber, true); break;
-            case 'k': setBlackCastleKingside(moveNumber, true); break;
-            case 'q': setBlackCastleQueenside(moveNumber, true); break;
+            case 'K': setWhiteCastleKingside(moveNumber, true);
+                break;
+            case 'Q': setWhiteCastleQueenside(moveNumber, true);
+                break;
+            case 'k': setBlackCastleKingside(moveNumber, true);
+                break;
+            case 'q': setBlackCastleQueenside(moveNumber, true);
+                break;
             case '-': break; // No castling rights
             default:
                 throw std::invalid_argument("Invalid castling rights character: " + std::string(1, c));

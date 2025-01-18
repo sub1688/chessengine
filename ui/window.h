@@ -7,6 +7,7 @@ namespace BoardWindow {
     inline sf::Font font;
     inline sf::Texture* pieceTextures[12];
 
+    inline uint64_t zobristKey;
     inline float smoothEvalOffset = 0.0F;
     inline int mouseX = -1;
     inline int mouseY = -1;
