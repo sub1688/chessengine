@@ -11,16 +11,16 @@ uint64_t Zobrist::secureRandomUnsigned64() {
 
 void Zobrist::init() {
     for (auto &pieceSquareKey: pieceSquareKeys) {
-        for (unsigned long &j: pieceSquareKey) {
+        for (uint64_t &j: pieceSquareKey) {
             j = secureRandomUnsigned64();
         }
     }
 
-    for (unsigned long &castleRightsKey: castleRightsKeys) {
+    for (uint64_t &castleRightsKey: castleRightsKeys) {
         castleRightsKey = secureRandomUnsigned64();
     }
 
-    for (unsigned long &enPassantKey: enPassantKeys) {
+    for (uint64_t &enPassantKey: enPassantKeys) {
         enPassantKey = secureRandomUnsigned64();
     }
 

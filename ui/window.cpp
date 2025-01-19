@@ -9,12 +9,11 @@
 #include "../engine/movegen.h"
 #include "../engine/search.h"
 #include "../engine/zobrist.h"
-#include "../engine/old/oldsearch.h"
 
 void BoardWindow::playBotMove() {
     thinking = true;
     std::thread([]() {
-        Search::startIterativeSearch(4000, lastMove);
+        Search::startIterativeSearch(1000, lastMove);
         Board::move(Search::bestMove);
         lastMove = Search::bestMove;
         thinking = false;
@@ -90,7 +89,7 @@ void BoardWindow::update(sf::RenderWindow &window) {
 
         zobristKey = Zobrist::calculateZobristKey();
 
-        thinking = true;
+        // thinking = true;
         // std::thread([]() {
             // Search::startIterativeSearch(20000, lastMove);
             // lastMove = Search::bestMove;
@@ -141,7 +140,7 @@ void BoardWindow::update(sf::RenderWindow &window) {
     }
 
     if (draggingSquare != -1) {
-   /*     ArrayVec<Move, 218> moves = Movegen::generateAllLegalMovesOnBoard();
+        ArrayVec<Move, 218> moves = Movegen::generateAllLegalMovesOnBoard();
 
         for (int i = 0; i < moves.elements; i++) {
             Move move = moves.buffer[i];
@@ -155,7 +154,7 @@ void BoardWindow::update(sf::RenderWindow &window) {
                 rect.setPosition(sf::Vector2f(ix * 75.F, iy * 75.F));
                 window.draw(rect);
             }
-        }*/
+        }
 
         sf::Sprite sprite;
         sprite.setTexture(*pieceTextures[Board::getPiece(draggingSquare)]);

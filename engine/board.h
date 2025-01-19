@@ -58,6 +58,7 @@ namespace Board {
     bool move(Move m);
 
     void undoMove(Move m);
+    void undoMove(Move m, bool noZobrist);
 
     void updateOccupancy();
 

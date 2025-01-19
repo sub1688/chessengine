@@ -42,16 +42,18 @@ void Search::startIterativeSearch(long time, Move &lastMove) {
     });
 
     Move bestMoveThisIteration = Move(0, 0);
-    int evalThisIteration = 0;
 
+    int prevEval = 0;
     for (int i = 1; i <= 256; i++) {
-        currentEval = search(i, bestMoveThisIteration);
+        currentEval = search(i);
         currentDepth = i;
         if (!searchCancelled) {
             bestMoveThisIteration = bestMove;
             lastMove = bestMoveThisIteration;
-            evalThisIteration = currentEval;
+            prevEval = currentEval;
         } else {
+            currentEval = prevEval;
+            currentDepth--;
             break;
         }
     }
@@ -60,12 +62,11 @@ void Search::startIterativeSearch(long time, Move &lastMove) {
         timerThread.join();
     }
 
-    currentEval = evalThisIteration;
     bestMove = bestMoveThisIteration;
 }
 
-int Search::search(int depth, Move iterativeStart) {
-    return search(depth, depth, NEGATIVE_INFINITY, POSITIVE_INFINITY, iterativeStart);
+int Search::search(int depth) {
+    return search(depth, depth, NEGATIVE_INFINITY, POSITIVE_INFINITY);
 }
 
 int Search::quiesce(int alpha, int beta) {
@@ -94,7 +95,7 @@ int Search::quiesce(int alpha, int beta) {
     return alpha;
 }
 
-int Search::search(int rootDepth, int depth, int alpha, int beta, Move iterativeStart) {
+int Search::search(int rootDepth, int depth, int alpha, int beta) {
     if (depth == 0) {
         return quiesce(alpha, beta);
     }
@@ -102,31 +103,22 @@ int Search::search(int rootDepth, int depth, int alpha, int beta, Move iterative
     ArrayVec<Move, 218> moves = Movegen::generateAllLegalMovesOnBoard();
     orderMoves(moves);
     bool noLegalMoves = true;
-    bool consideredIterativeStart = false;
 
     for (int i = 0; i < moves.elements; i++) {
         if (searchCancelled) {
             return 0;
         }
 
-        Move move = iterativeStart;
-
-        if (!consideredIterativeStart && iterativeStart.from != iterativeStart.to && rootDepth == depth) {
-            consideredIterativeStart = true;
-            i--;
-        } else {
-            move = moves.buffer[i];
-        }
+        Move move = moves.buffer[i];
 
         if (Board::move(move)) {
             noLegalMoves = false;
-            int score = -search(rootDepth, depth - 1, -beta, -alpha, iterativeStart);
+            int score = -search(rootDepth, depth - 1, -beta, -alpha);
             Board::undoMove(move);
 
             if (score > alpha) {
                 alpha = score;
                 if (depth == rootDepth) {
-                    currentEval = alpha;
                     bestMove = move;
                 }
             }
@@ -139,10 +131,15 @@ int Search::search(int rootDepth, int depth, int alpha, int beta, Move iterative
     // Check for checkmate or stalemate
     if (noLegalMoves) {
         if (Movegen::isKingInDanger(Board::whiteToMove)) {
-            return NEGATIVE_INFINITY + (rootDepth - depth) * 100; // Checkmate
+            alpha = NEGATIVE_INFINITY + (rootDepth - depth) * 100; // Checkmate
+        }else {
+            // Stalemate
+            alpha = 0;
         }
-        return 0; // Stalemate
     }
+
+    // add to a list of prioritized moved for iterative deepening and move ordering.
+
 
     return alpha;
 }

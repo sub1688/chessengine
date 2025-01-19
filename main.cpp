@@ -118,6 +118,7 @@ int main() {
 
     Zobrist::init();
     Board::setStartingPosition();
+
     Movegen::init();
     PieceSquareTable::initializePieceSquareTable();
 

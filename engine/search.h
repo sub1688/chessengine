@@ -27,7 +27,6 @@ namespace Search {
     inline int currentEval = 0;
     inline int currentDepth = 0;
     inline bool searchCancelled = false;
-    inline bool quiescence = false;
     inline bool lastSearchTurnIsWhite = true;
 
     inline Move bestMove = Move(0, -1);
@@ -36,9 +35,9 @@ namespace Search {
 
     void startIterativeSearch(long time, Move &lastMove);
 
-    int search(int rootDepth, int depth, int alpha, int beta, Move iterativeStart);
+    int search(int rootDepth, int depth, int alpha, int beta);
 
-    int search(int depth, Move iterativeStart);
+    int search(int depth);
 
     int evaluate();
 
