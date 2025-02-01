@@ -6,6 +6,11 @@
 
 #include "zobrist.h"
 
+namespace TranspositionTable {
+    void incrementRepetitionEntry(uint64_t zobristKey);
+    void decrementRepetitionEntry(uint64_t zobristKey);
+}
+
 namespace Movegen {
     bool isKingInDanger(bool white);
 }
@@ -31,7 +36,7 @@ bool Board::move(Move m) {
             setPiece(m.to, whiteToMove ? WHITE_QUEEN : BLACK_QUEEN);
             break;
         case PROMOTE_BISHOP:
-            setPiece(m.to, whiteToMove ? WHITE_BISHOP : BLACK_KNIGHT);
+            setPiece(m.to, whiteToMove ? WHITE_BISHOP : BLACK_BISHOP);
             break;
         case PROMOTE_KNIGHT:
             setPiece(m.to, whiteToMove ? WHITE_KNIGHT : BLACK_KNIGHT);
@@ -84,6 +89,7 @@ bool Board::move(Move m) {
         undoMove(m, true);
         return false;
     }
+
 
     if (m.castle) {
         currentZobristKey ^= Zobrist::pieceSquareKeys[from][white ? WHITE_ROOK : BLACK_ROOK];
@@ -150,6 +156,9 @@ bool Board::move(Move m) {
 
     currentZobristKey ^= Zobrist::castleRightsKeys[castleRights[moveNumber - 1]];
     currentZobristKey ^= Zobrist::castleRightsKeys[castleRights[moveNumber]];
+
+    TranspositionTable::incrementRepetitionEntry(currentZobristKey);
+
     return true;
 }
 
@@ -158,6 +167,10 @@ void Board::undoMove(Move m) {
 }
 
 void Board::undoMove(Move m, bool noZobrist) {
+    if (!noZobrist) {
+        TranspositionTable::decrementRepetitionEntry(currentZobristKey);
+    }
+
     setPiece(m.from, m.pieceFrom);
     if (m.enPassantTarget != -1) {
         setPiece(m.enPassantTarget, m.capture);
@@ -170,25 +183,33 @@ void Board::undoMove(Move m, bool noZobrist) {
     }
 
     if (m.castle) {
+        int from = 0, to = 0;
+        bool white = false;
         switch (m.to) {
             case 6:
-                setPiece(7, WHITE_ROOK);
-                setPiece(5, NONE);
+                from = 7;
+                to = 5;
+                white = true;
                 break;
             case 2:
-                setPiece(0, WHITE_ROOK);
-                setPiece(3, NONE);
+                from = 0;
+                to = 3;
+                white = true;
                 break;
             case 62:
-                setPiece(63, BLACK_ROOK);
-                setPiece(61, NONE);
+                from = 63;
+                to = 61;
                 break;
             case 58:
-                setPiece(56, BLACK_ROOK);
-                setPiece(59, NONE);
+                from = 56;
+                to = 59;
                 break;
-            default:
-                break;
+        }
+        setPiece(from, white ? WHITE_ROOK : BLACK_ROOK);
+        setPiece(to, NONE);
+        if (!noZobrist) {
+            currentZobristKey ^= Zobrist::pieceSquareKeys[from][white ? WHITE_ROOK : BLACK_ROOK];
+            currentZobristKey ^= Zobrist::pieceSquareKeys[to][white ? WHITE_ROOK : BLACK_ROOK];
         }
     }
 
@@ -196,18 +217,51 @@ void Board::undoMove(Move m, bool noZobrist) {
     moveNumber--;
     if (!noZobrist) {
         currentZobristKey ^= Zobrist::whiteToMove;
+        if (m.promotion != -1) {
+            int piecePromotion = m.promotion;
+            switch (m.promotion) {
+                case PROMOTE_KNIGHT:
+                    piecePromotion = whiteToMove ? BLACK_KNIGHT : WHITE_KNIGHT;
+                    break;
+                case PROMOTE_BISHOP:
+                    piecePromotion = whiteToMove ? BLACK_BISHOP : WHITE_BISHOP;
+                    break;
+                case PROMOTE_QUEEN:
+                    piecePromotion = whiteToMove ? BLACK_QUEEN : WHITE_QUEEN;
+                    break;
+                case PROMOTE_ROOK:
+                    piecePromotion = whiteToMove ? BLACK_ROOK : WHITE_ROOK;
+                    break;
+            }
+            currentZobristKey ^= Zobrist::pieceSquareKeys[m.to][piecePromotion];
+        } else {
+            currentZobristKey ^= Zobrist::pieceSquareKeys[m.to][m.pieceFrom];
+        }
         currentZobristKey ^= Zobrist::pieceSquareKeys[m.from][m.pieceFrom];
-        currentZobristKey ^= Zobrist::pieceSquareKeys[m.to][m.pieceFrom];
-        if (m.capture != NONE && m.enPassantTarget != -1) {
+
+        if (m.capture != NONE && m.enPassantTarget == -1) {
             currentZobristKey ^= Zobrist::pieceSquareKeys[m.to][m.capture];
         }
 
-        // uint64_t prevEnPassantMask = epMasks[moveNumber + 1];
-        // if (prevEnPassantMask != 0) {
-        // int index = __builtin_ctzll(prevEnPassantMask);
-        // int file = index % 8;
-        // currentZobristKey ^= Zobrist::enPassantKeys[file];
-        // }
+        // Remove en passant hash from the last move
+        uint64_t prevEnPassantMask = epMasks[moveNumber + 1];
+        if (prevEnPassantMask != 0) {
+            int index = __builtin_ctzll(prevEnPassantMask);
+            int file = index % 8;
+            currentZobristKey ^= Zobrist::enPassantKeys[file];
+        }
+
+        // Restore en passant hash from before the move
+        uint64_t oldEnPassantMask = epMasks[moveNumber];
+        if (oldEnPassantMask != 0) {
+            int index = __builtin_ctzll(oldEnPassantMask);
+            int file = index % 8;
+            currentZobristKey ^= Zobrist::enPassantKeys[file];
+        }
+
+        currentZobristKey ^= Zobrist::castleRightsKeys[castleRights[moveNumber + 1]];
+        currentZobristKey ^= Zobrist::castleRightsKeys[castleRights[moveNumber]];
+
     }
 
     updateOccupancy();
@@ -381,6 +435,7 @@ void Board::importFEN(const std::string &fen) {
             }
         }
     }
+    currentZobristKey = Zobrist::calculateZobristKey();
 }
 
 bool Board::canWhiteCastleKingside(int moveNumber) {

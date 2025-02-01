@@ -3,6 +3,8 @@
 #include <iostream>
 #include <random>
 
+#include "zobrist.h"
+
 uint64_t Movegen::perft(int depth) {
     uint64_t perftCount = 0;
 
