@@ -3,6 +3,10 @@
 
 void TranspositionTable::addEntry(uint64_t zobristKey, Move bestMove, int depthSearched, int score, int nodeType) {
     size_t index = zobristKey & TRANSPOSITION_TABLE_MASK;
+    TranspositionEntry& entry = getEntry(zobristKey);
+    if (entry.zobristKey == zobristKey && entry.depthSearched >= depthSearched) {
+        return;
+    }
     transpositionTableBuffer[index] = TranspositionEntry(zobristKey, bestMove, depthSearched, score, nodeType);
     tableEntries++;
 }

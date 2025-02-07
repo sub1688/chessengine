@@ -10,9 +10,14 @@
 #include "transpositiontable.h"
 #include "zobrist.h"
 
-void Search::orderMoves(ArrayVec<Move, 218> &moveVector) {
-    auto getMoveScore = [](const Move &move) -> int {
+void Search::orderMoves(ArrayVec<Move, 218> &moveVector, Move ttMove) {
+    auto getMoveScore = [&](const Move &move) -> int {
         int score = 0;
+
+        if (move.from == ttMove.from && move.to == ttMove.to) {
+            score += TRANSPOSITION_TABLE_BIAS; // Give TT move a big boost
+        }
+
         if (move.capture != NONE) {
             int materialDelta = getPieceValue(move.capture) - getPieceValue(move.pieceFrom);
             score += (materialDelta >= 0 ? WINNING_CAPTURE_BIAS : LOSING_CAPTURE_BIAS) + materialDelta;
@@ -31,10 +36,12 @@ void Search::orderMoves(ArrayVec<Move, 218> &moveVector) {
               });
 }
 
+
 void Search::startIterativeSearch(long time, Move &lastMove) {
     TranspositionTable::clear();
     searchCancelled = false;
     lastSearchTurnIsWhite = Board::whiteToMove;
+
     std::thread timerThread([time]() {
         long currentTime = 0;
         while (!searchCancelled && (currentTime += 10) <= time) {
@@ -43,17 +50,24 @@ void Search::startIterativeSearch(long time, Move &lastMove) {
         searchCancelled = true;
     });
 
-    Move bestMoveThisIteration = Move(0, 0);
-
+    Move bestMoveThisIteration = Move();
     int prevEval = 0;
+
     for (int i = 1; i <= 256; i++) {
         currentEval = search(i);
         currentDepth = i;
+
         if (!searchCancelled) {
             bestMoveThisIteration = bestMove;
             lastMove = bestMoveThisIteration;
             prevEval = currentEval;
+            if (abs(currentEval) > 2000000000) {
+                searchCancelled = true;
+                break;
+            }
         } else {
+            if (bestMoveThisIteration.from  != bestMoveThisIteration.to) // Preserve last valid move
+                bestMove = bestMoveThisIteration;
             currentEval = prevEval;
             currentDepth--;
             break;
@@ -64,7 +78,7 @@ void Search::startIterativeSearch(long time, Move &lastMove) {
         timerThread.join();
     }
 
-    bestMove = bestMoveThisIteration;
+    bestMove = bestMoveThisIteration; // Ensure best move is finalized
 }
 
 int Search::search(int depth) {
@@ -79,7 +93,7 @@ int Search::quiesce(int alpha, int beta) {
         alpha = standingPat;
 
     ArrayVec<Move, 218> captures = Movegen::generateAllCapturesOnBoard();
-    orderMoves(captures);
+    orderMoves(captures, Move());
 
     for (int i = 0; i < captures.elements; i++) {
         Move move = captures.buffer.at(i);
@@ -105,20 +119,17 @@ int Search::search(int rootDepth, int depth, int alpha, int beta) {
     uint64_t zobristKey = Board::currentZobristKey;
     TranspositionEntry &entry = TranspositionTable::getEntry(zobristKey);
 
-    // Step 1: Look up transposition table
     if (entry.zobristKey == zobristKey && entry.depthSearched >= depth) {
-        if (entry.nodeType == EXACT_BOUND) return entry.score;
-        if (entry.nodeType == LOWER_BOUND && entry.score >= beta) return beta;
-        if (entry.nodeType == UPPER_BOUND && entry.score <= alpha) return alpha;
+        return entry.score;
     }
 
     ArrayVec<Move, 218> moves = Movegen::generateAllLegalMovesOnBoard();
-    orderMoves(moves);
-
     bool noLegalMoves = true;
-    Move bestMoveLocal = Move(); // Track the best move found in this search
-    int originalAlpha = alpha;   // Store original alpha
+    orderMoves(moves, depth == rootDepth ? bestMove : entry.bestMove);
 
+    Move bestMoveLocal = Move(); // Track the best move found in this search
+
+    int evaluationBound = UPPER_BOUND;
     for (int i = 0; i < moves.elements; i++) {
         if (searchCancelled) {
             return 0; // Exit early, keeping previous bestMove
@@ -131,41 +142,42 @@ int Search::search(int rootDepth, int depth, int alpha, int beta) {
             int score = -search(rootDepth, depth - 1, -beta, -alpha);
             Board::undoMove(move);
 
-            if (score > alpha) {
-                alpha = score;
+            if (score > alpha) { // Use '>' instead of '>=' to avoid unnecessary overwrites
+                evaluationBound = EXACT_BOUND;
                 bestMoveLocal = move;
-                if (depth == rootDepth) bestMove = move; // Update bestMove only if not canceled
+                alpha = score;
+                if (!searchCancelled && rootDepth == depth) {
+                    bestMove = move;
+                }
             }
 
             if (score >= beta) {
-                TranspositionTable::addEntry(zobristKey, move, depth, beta, LOWER_BOUND);
+                if (!searchCancelled) {
+                    TranspositionTable::addEntry(zobristKey, bestMoveLocal, depth, beta, LOWER_BOUND);
+                }
                 return beta;
             }
         }
     }
 
-    // Check for checkmate or stalemate
+    if (Board::isDrawnByRepetition())
+        return 0;
+
     if (noLegalMoves) {
         if (Movegen::isKingInDanger(Board::whiteToMove)) {
             alpha = NEGATIVE_INFINITY + (rootDepth - depth) * 100; // Checkmate
         } else {
             alpha = 0; // Stalemate
         }
+        return alpha;
     }
-
-    // If no move was better than alpha, don't overwrite bestMove
-    if (alpha > originalAlpha) {
-        int nodeType = (alpha <= entry.score) ? UPPER_BOUND : (alpha >= beta ? LOWER_BOUND : EXACT_BOUND);
-        TranspositionTable::addEntry(zobristKey, bestMoveLocal, depth, alpha, nodeType);
-    }
+    if (!searchCancelled)
+        TranspositionTable::addEntry(zobristKey, bestMoveLocal, depth, alpha, evaluationBound);
 
     return alpha;
 }
 
 int Search::evaluate() {
-    if (TranspositionTable::getRepetitionEntry(Board::currentZobristKey) >= 3)
-        return 0;
-
     int totalValue = 0;
     bool endgame = isInEndgame();
     for (int i = 0; i < 12; i++) {
@@ -200,5 +212,3 @@ bool Search::isInEndgame() {
 int Search::getPieceValue(uint8_t piece) {
     return PIECE_VALUES[piece % 6];
 }
-
-

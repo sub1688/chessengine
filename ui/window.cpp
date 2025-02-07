@@ -14,9 +14,15 @@
 void BoardWindow::playBotMove() {
     thinking = true;
     std::thread([]() {
-        Search::startIterativeSearch(100, bestMove);
-        Board::move(Search::bestMove);
-        bestMove = Search::bestMove;
+        // if (Board::whiteToMove) {
+            Search::startIterativeSearch(1000, bestMove);
+            Board::move(Search::bestMove);
+            bestMove = Search::bestMove;
+        // } else {
+            // OldSearch::startIterativeSearch(1000);
+            // Board::move(OldSearch::bestMove);
+            // bestMove = OldSearch::bestMove;
+        // }
         thinking = false;
     }).detach(); // Detach thread as it's self-contained
 }
@@ -95,15 +101,18 @@ void BoardWindow::update(sf::RenderWindow &window) {
             displayBoard[i] = Board::getPiece(i);
         }
 
-        zobristKey = Zobrist::calculateZobristKey();
+        if (!Movegen::inCheckmate()) {
+            zobristKey = Zobrist::calculateZobristKey();
 
-            // thinking = true;
-        // std::thread([]() {
-            // Search::startIterativeSearch(20000, bestMove);
-            // bestMove = Search::bestMove;
-        // }).detach();
-playBotMove();
-        // Fix zobrist hashing
+            thinking = true;
+            std::thread([]() {
+                Search::startIterativeSearch(20000, bestMove);
+                bestMove = Search::bestMove;
+            }).detach();
+            // if (!Board::whiteToMove) {
+                // playBotMove();
+            // }
+        }   
     }
 
     window.clear(sf::Color(171, 126, 89));
@@ -194,12 +203,18 @@ playBotMove();
     text.setFillColor(sf::Color::White);
     text.setFont(font);
     std::string str = std::to_string(
-            static_cast<float>((Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval) / 100.F);
+        static_cast<float>((Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval) / 100.F);
     if (abs((Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval / 100.F) > 200000) {
-        str = "M" + std::to_string((int) (Search::POSITIVE_INFINITY / 100.F - abs(static_cast<float>((Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval) / 100.F)) / 2 + 1);
+        str = "M" + std::to_string((int) (Search::POSITIVE_INFINITY / 100.F - abs(
+                                              static_cast<float>(
+                                                  (Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval) /
+                                              100.F)) / 2 + 1);
     }
-    text.setString("Zobrist Key: " + std::to_string(Board::currentZobristKey) + "\nCalculated Zobrist: " + std::to_string(zobristKey) +
-        "\nDepth: " + std::to_string(Search::currentDepth) + " Eval: " + str + (Search::searchCancelled ? " Cancelled" : "") + "\nTranspositions: "
+    text.setString(
+        "Zobrist Key: " + std::to_string(Board::currentZobristKey) + "\nCalculated Zobrist: " +
+        std::to_string(zobristKey) +
+        "\nDepth: " + std::to_string(Search::currentDepth) + " Eval: " + str + (
+            Search::searchCancelled ? " Cancelled" : "") + "\nTranspositions: "
         + std::to_string(TranspositionTable::tableEntries));
     text.setCharacterSize(25);
     text.setPosition(sf::Vector2f(75 * 8 + 35, 5));
@@ -213,7 +228,9 @@ playBotMove();
     //y=\frac{300}{-\left(\frac{x}{5}+1\right)}+300
 
     float trueEval = static_cast<float>((Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval) / 100.F;
-    float evalOffset = trueEval >= 0 ? 300.F + 300.F / -(trueEval / 5.F + 1.F) : -(300 + 300.F / -(-trueEval / 5.F + 1.F));
+    float evalOffset = trueEval >= 0
+                           ? 300.F + 300.F / -(trueEval / 5.F + 1.F)
+                           : -(300 + 300.F / -(-trueEval / 5.F + 1.F));
     smoothEvalOffset += (evalOffset - smoothEvalOffset) / 12.F;
     float evalHeight = 300.F + smoothEvalOffset;
     sf::RectangleShape evalWhite(sf::Vector2f(30, evalHeight));

@@ -9,6 +9,7 @@
 namespace TranspositionTable {
     void incrementRepetitionEntry(uint64_t zobristKey);
     void decrementRepetitionEntry(uint64_t zobristKey);
+    uint8_t getRepetitionEntry(uint64_t zobristKey);
 }
 
 namespace Movegen {
@@ -484,4 +485,8 @@ void Board::setBlackCastleQueenside(int moveNumber, bool value) {
     } else {
         castleRights[moveNumber] &= ~(1U << 3); // Clear bit 3
     }
+}
+
+bool Board::isDrawnByRepetition() {
+    return TranspositionTable::getRepetitionEntry(Board::currentZobristKey) >= 3;
 }

@@ -108,117 +108,12 @@ void test_secure_distribution(int num_samples, int num_buckets) {
 }
 
 int main() {
-    std::unordered_map<char, int> notationPieces = {
-        {'N', WHITE_KNIGHT}, {'B', WHITE_BISHOP}, {'K', WHITE_KING}, {'Q', WHITE_QUEEN}, {'R', WHITE_ROOK}
-    };
-
-    std::unordered_map<char, int> notationPromotion = {
-        {'N', PROMOTE_KNIGHT}, {'B', PROMOTE_BISHOP}, {'Q', PROMOTE_QUEEN}, {'R', PROMOTE_ROOK}
-    };
-
     Zobrist::init();
     Board::setStartingPosition();
-    // Board::importFEN("1k4q1/8/8/8/8/2P5/8/1K1RR3 b - - 0 1");
 
     Movegen::init();
     PieceSquareTable::initializePieceSquareTable();
 
     BoardWindow::init();
     return 0;
-    int flag = 0;
-
-    while (flag++ < 1000000) {
-        std::string input;
-        std::cin >> input;
-
-        if (input == "exit")
-            break;
-
-        if (input == "reset")
-            Board::setStartingPosition();
-
-        if (input == "print")
-            Board::printBoard();
-
-        if (input.starts_with("search:")) {
-            std::string time = input.substr(7);
-            long millis = std::stol(time);
-
-            // Search::startIterativeSearch(millis);
-            Board::move(Search::bestMove);
-            std::cout << "bestMove:" << static_cast<int>(Search::bestMove.from) << "," << static_cast<int>(Search::bestMove.to) << std::endl;
-        }
-
-        if (input.starts_with("move:")) {
-            std::string move = input.substr(5);
-
-            replaceAll(move, "+", "");
-            replaceAll(move, "x", "");
-            replaceAll(move, "#", "");
-
-            int length = move.length();
-
-            if (length > 1) {
-                Move resultMove = Move(0, 0);
-
-                int promotion = -1;
-
-                if (move.at(length - 2) == '=') {
-                    promotion = notationPromotion.at(move.at(length - 1));
-                    move = move.substr(0, length - 2);
-                    length -= 2;
-                }
-
-                std::string squareComponent = move.substr(length - 2, length);
-                int toIndex = notationToIndex(squareComponent.at(0), squareComponent.at(1));
-
-                ArrayVec<Move, 218> moves = Movegen::generateAllLegalMovesOnBoard();
-
-                for (int i = 0; i < moves.elements; i++) {
-                    Move moveObj = moves.buffer[i];
-
-                    if (moveObj.to == toIndex && promotion == moveObj.promotion) {
-                        if (length == 2) {
-                            if (moveObj.capture == NONE && (
-                                    moveObj.pieceFrom == WHITE_PAWN || moveObj.pieceFrom == BLACK_PAWN)) {
-                                resultMove = moveObj;
-                                break;
-                            }
-                        } else {
-                            if (length == 3) {
-                                if (std::islower(move.at(0))) {
-                                    if (moveObj.pieceFrom == WHITE_PAWN || moveObj.pieceFrom == BLACK_PAWN) {
-                                        int file = notationToFile(move.at(0));
-                                        if (moveObj.from % 8 == file) {
-                                            resultMove = moveObj;
-                                            break;
-                                        }
-                                    }
-                                } else {
-                                    int piece = notationPieces.at(move.at(0)) + (Board::whiteToMove ? 0 : 6);
-                                    if (piece == moveObj.pieceFrom) {
-                                        resultMove = moveObj;
-                                        break;
-                                    }
-                                }
-                            }
-                            if (length == 4) {
-                                int piece = notationPieces.at(move.at(0)) + (Board::whiteToMove ? 0 : 6);
-                                int file = notationToFile(move.at(1));
-
-                                if (piece == moveObj.pieceFrom && file == (moveObj.from % 8)) {
-                                    resultMove = moveObj;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                std::cout << indexToChessNotation(resultMove.from) << indexToChessNotation(resultMove.to) << std::endl;
-                Board::move(resultMove);
-                Board::printBoard();
-            }
-        }
-    }
 }

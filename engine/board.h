@@ -58,13 +58,12 @@ namespace Board {
     bool move(Move m);
 
     void undoMove(Move m);
+
     void undoMove(Move m, bool noZobrist);
 
     void updateOccupancy();
 
     void setStartingPosition();
-
-    uint8_t getPiece(int index);
 
     void setPiece(int index, uint8_t piece);
 
@@ -87,4 +86,8 @@ namespace Board {
     void setBlackCastleKingside(int moveNumber, bool value);
 
     void setBlackCastleQueenside(int moveNumber, bool value);
+
+    bool isDrawnByRepetition();
+
+    uint8_t getPiece(int index);
 }

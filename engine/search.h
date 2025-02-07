@@ -19,6 +19,7 @@ namespace Search {
     inline constexpr int NEGATIVE_INFINITY = std::numeric_limits<int>::min() + 1;
     inline constexpr int POSITIVE_INFINITY = std::numeric_limits<int>::max() - 1;
 
+    inline constexpr int TRANSPOSITION_TABLE_BIAS = 10000000;
     inline constexpr int LOSING_CAPTURE_BIAS = 2000000;
     inline constexpr int WINNING_CAPTURE_BIAS = 8000000;
     inline constexpr int PROMOTE_BIAS = 6000000;
@@ -31,7 +32,7 @@ namespace Search {
 
     inline Move bestMove = Move(0, -1);
 
-    void orderMoves(ArrayVec<Move, 218> &moveVector);
+    void orderMoves(ArrayVec<Move, 218> &moveVector, Move ttMove);
 
     void startIterativeSearch(long time, Move &lastMove);
 
