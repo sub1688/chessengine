@@ -15,7 +15,7 @@ void BoardWindow::playBotMove() {
     thinking = true;
     std::thread([]() {
         // if (Board::whiteToMove) {
-            Search::startIterativeSearch(1000, bestMove);
+            Search::startIterativeSearch(3000, bestMove);
             Board::move(Search::bestMove);
             bestMove = Search::bestMove;
         // } else {
@@ -105,12 +105,12 @@ void BoardWindow::update(sf::RenderWindow &window) {
             zobristKey = Zobrist::calculateZobristKey();
 
             thinking = true;
-            std::thread([]() {
-                Search::startIterativeSearch(20000, bestMove);
-                bestMove = Search::bestMove;
-            }).detach();
+            // std::thread([]() {
+                // Search::startIterativeSearch(20000, bestMove);
+                // bestMove = Search::bestMove;
+            // }).detach();
             // if (!Board::whiteToMove) {
-                // playBotMove();
+                playBotMove();
             // }
         }   
     }

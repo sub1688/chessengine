@@ -61,10 +61,6 @@ void Search::startIterativeSearch(long time, Move &lastMove) {
             bestMoveThisIteration = bestMove;
             lastMove = bestMoveThisIteration;
             prevEval = currentEval;
-            if (abs(currentEval) > 2000000000) {
-                searchCancelled = true;
-                break;
-            }
         } else {
             if (bestMoveThisIteration.from  != bestMoveThisIteration.to) // Preserve last valid move
                 bestMove = bestMoveThisIteration;

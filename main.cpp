@@ -110,6 +110,7 @@ void test_secure_distribution(int num_samples, int num_buckets) {
 int main() {
     Zobrist::init();
     Board::setStartingPosition();
+    Board::importFEN("3k4/8/8/8/8/8/8/KR6 w - - 0 1");
 
     Movegen::init();
     PieceSquareTable::initializePieceSquareTable();
