@@ -16,7 +16,8 @@ uint64_t Movegen::perft(int depth) {
         if (Board::move(move)) {
             if (depth == 1) {
                 perftCount++; // At depth 1, count the legal move
-            } else {
+            }
+            else {
                 // Recursively count moves at the next depth
                 perftCount += perft(depth - 1);
             }
@@ -44,54 +45,57 @@ ArrayVec<Move, 218> Movegen::generateAllLegalMovesOnBoard() {
         bool promotion = false;
 
         switch (piece) {
-            case BLACK_PAWN: {
+        case BLACK_PAWN:
+            {
                 pseudoLegalMoves = generatePseudoLegalPawnMoves(pieceIndex, false);
                 pseudoLegalEnPassantMoves = generatePseudoLegalEnPassantMoves(pieceIndex, false);
                 promotion = pseudoLegalMoves & RANK_1;
                 break;
             }
-            case WHITE_PAWN: {
+        case WHITE_PAWN:
+            {
                 pseudoLegalMoves = generatePseudoLegalPawnMoves(pieceIndex, true);
                 pseudoLegalEnPassantMoves = generatePseudoLegalEnPassantMoves(pieceIndex, true);
                 promotion = pseudoLegalMoves & RANK_8;
                 break;
             }
-            case BLACK_KNIGHT:
-            case WHITE_KNIGHT:
-                pseudoLegalMoves = generatePseudoLegalKnightMoves(pieceIndex, whiteToMove);
-                break;
-            case WHITE_BISHOP:
-            case BLACK_BISHOP:
-                pseudoLegalMoves = generatePseudoLegalBishopMoves(pieceIndex, whiteToMove);
-                break;
-            case WHITE_ROOK:
-            case BLACK_ROOK:
-                pseudoLegalMoves = generatePseudoLegalRookMoves(pieceIndex, whiteToMove);
-                break;
-            case WHITE_KING:
-            case BLACK_KING:
-                pseudoLegalMoves = generatePseudoLegalKingMoves(pieceIndex, whiteToMove);
-                castleMoves = generatePseudoLegalCastleMoves(whiteToMove);
-                break;
-            case BLACK_QUEEN:
-            case WHITE_QUEEN:
-                pseudoLegalMoves = generatePseudoLegalQueenMoves(pieceIndex, whiteToMove);
-                break;
-            default:
-                continue;
+        case BLACK_KNIGHT:
+        case WHITE_KNIGHT:
+            pseudoLegalMoves = generatePseudoLegalKnightMoves(pieceIndex, whiteToMove);
+            break;
+        case WHITE_BISHOP:
+        case BLACK_BISHOP:
+            pseudoLegalMoves = generatePseudoLegalBishopMoves(pieceIndex, whiteToMove);
+            break;
+        case WHITE_ROOK:
+        case BLACK_ROOK:
+            pseudoLegalMoves = generatePseudoLegalRookMoves(pieceIndex, whiteToMove);
+            break;
+        case WHITE_KING:
+        case BLACK_KING:
+            pseudoLegalMoves = generatePseudoLegalKingMoves(pieceIndex, whiteToMove);
+            castleMoves = generatePseudoLegalCastleMoves(whiteToMove);
+            break;
+        case BLACK_QUEEN:
+        case WHITE_QUEEN:
+            pseudoLegalMoves = generatePseudoLegalQueenMoves(pieceIndex, whiteToMove);
+            break;
+        default:
+            continue;
         }
 
         while (pseudoLegalMoves) {
             uint8_t targetIndex = popLeastSignificantBitAndGetIndex(pseudoLegalMoves);
             if (promotion) {
-                for (int i = 0; i < 4; i++) {
+                for (uint8_t promote : whiteToMove ? PROMOTE_PIECES_WHITE : PROMOTE_PIECES_BLACK) {
                     Move move = Move(pieceIndex, targetIndex);
                     move.capture = Board::getPiece(targetIndex);
                     move.pieceFrom = piece;
-                    move.promotion = i;
+                    move.promotion = promote;
                     legalMoves.buffer[arrayIndex++] = move;
                 }
-            } else {
+            }
+            else {
                 Move move = Move(pieceIndex, targetIndex);
                 move.capture = Board::getPiece(targetIndex);
                 move.pieceFrom = piece;
@@ -123,7 +127,7 @@ ArrayVec<Move, 218> Movegen::generateAllLegalMovesOnBoard() {
 
 
 ArrayVec<Move, 218> Movegen::generateAllCapturesOnBoard() {
-    std::array<Move, 218> legalMoves;
+    ArrayVec<Move, 218> legalMoves(0);
 
     int arrayIndex = 0;
     bool whiteToMove = Board::whiteToMove;
@@ -139,58 +143,61 @@ ArrayVec<Move, 218> Movegen::generateAllCapturesOnBoard() {
         bool promotion = false;
 
         switch (piece) {
-            case BLACK_PAWN: {
+        case BLACK_PAWN:
+            {
                 pseudoLegalMoves = generatePseudoLegalPawnMoves(pieceIndex, false) & opponentOccupancy;
                 pseudoLegalEnPassantMoves = generatePseudoLegalEnPassantMoves(pieceIndex, false) & opponentOccupancy;
                 promotion = pseudoLegalMoves & RANK_1;
                 break;
             }
-            case WHITE_PAWN: {
+        case WHITE_PAWN:
+            {
                 pseudoLegalMoves = generatePseudoLegalPawnMoves(pieceIndex, true) & opponentOccupancy;
                 pseudoLegalEnPassantMoves = generatePseudoLegalEnPassantMoves(pieceIndex, true) & opponentOccupancy;
                 promotion = pseudoLegalMoves & RANK_8;
                 break;
             }
-            case BLACK_KNIGHT:
-            case WHITE_KNIGHT:
-                pseudoLegalMoves = generatePseudoLegalKnightMoves(pieceIndex, whiteToMove) & opponentOccupancy;
-                break;
-            case WHITE_BISHOP:
-            case BLACK_BISHOP:
-                pseudoLegalMoves = generatePseudoLegalBishopMoves(pieceIndex, whiteToMove) & opponentOccupancy;
-                break;
-            case WHITE_ROOK:
-            case BLACK_ROOK:
-                pseudoLegalMoves = generatePseudoLegalRookMoves(pieceIndex, whiteToMove) & opponentOccupancy;
-                break;
-            case WHITE_KING:
-            case BLACK_KING:
-                pseudoLegalMoves = generatePseudoLegalKingMoves(pieceIndex, whiteToMove) & opponentOccupancy;
-                castleMoves = generatePseudoLegalCastleMoves(whiteToMove) & opponentOccupancy;
-                break;
-            case BLACK_QUEEN:
-            case WHITE_QUEEN:
-                pseudoLegalMoves = generatePseudoLegalQueenMoves(pieceIndex, whiteToMove) & opponentOccupancy;
-                break;
-            default:
-                continue;
+        case BLACK_KNIGHT:
+        case WHITE_KNIGHT:
+            pseudoLegalMoves = generatePseudoLegalKnightMoves(pieceIndex, whiteToMove) & opponentOccupancy;
+            break;
+        case WHITE_BISHOP:
+        case BLACK_BISHOP:
+            pseudoLegalMoves = generatePseudoLegalBishopMoves(pieceIndex, whiteToMove) & opponentOccupancy;
+            break;
+        case WHITE_ROOK:
+        case BLACK_ROOK:
+            pseudoLegalMoves = generatePseudoLegalRookMoves(pieceIndex, whiteToMove) & opponentOccupancy;
+            break;
+        case WHITE_KING:
+        case BLACK_KING:
+            pseudoLegalMoves = generatePseudoLegalKingMoves(pieceIndex, whiteToMove) & opponentOccupancy;
+            castleMoves = generatePseudoLegalCastleMoves(whiteToMove) & opponentOccupancy;
+            break;
+        case BLACK_QUEEN:
+        case WHITE_QUEEN:
+            pseudoLegalMoves = generatePseudoLegalQueenMoves(pieceIndex, whiteToMove) & opponentOccupancy;
+            break;
+        default:
+            continue;
         }
 
         while (pseudoLegalMoves) {
             uint8_t targetIndex = popLeastSignificantBitAndGetIndex(pseudoLegalMoves);
             if (promotion) {
-                for (int i = 0; i < 4; i++) {
+                for (uint8_t promote : whiteToMove ? PROMOTE_PIECES_WHITE : PROMOTE_PIECES_BLACK) {
                     Move move = Move(pieceIndex, targetIndex);
                     move.capture = Board::getPiece(targetIndex);
                     move.pieceFrom = piece;
-                    move.promotion = i;
-                    legalMoves[arrayIndex++] = move;
+                    move.promotion = promote;
+                    legalMoves.buffer[arrayIndex++] = move;
                 }
-            } else {
+            }
+            else {
                 Move move = Move(pieceIndex, targetIndex);
                 move.capture = Board::getPiece(targetIndex);
                 move.pieceFrom = piece;
-                legalMoves[arrayIndex++] = move;
+                legalMoves.buffer[arrayIndex++] = move;
             }
         }
 
@@ -200,7 +207,7 @@ ArrayVec<Move, 218> Movegen::generateAllCapturesOnBoard() {
             move.enPassantTarget = whiteToMove ? targetIndex - 8 : targetIndex + 8;
             move.capture = whiteToMove ? BLACK_PAWN : WHITE_PAWN;
             move.pieceFrom = piece;
-            legalMoves[arrayIndex++] = move;
+            legalMoves.buffer[arrayIndex++] = move;
         }
 
         while (castleMoves) {
@@ -209,10 +216,11 @@ ArrayVec<Move, 218> Movegen::generateAllCapturesOnBoard() {
             move.capture = NONE;
             move.pieceFrom = whiteToMove ? WHITE_KING : BLACK_KING;
             move.castle = true;
-            legalMoves[arrayIndex++] = move;
+            legalMoves.buffer[arrayIndex++] = move;
         }
     }
-    return ArrayVec(legalMoves, arrayIndex);
+    legalMoves.elements = arrayIndex;
+    return legalMoves;
 }
 
 bool Movegen::isKingInDanger(bool white) {
@@ -220,7 +228,7 @@ bool Movegen::isKingInDanger(bool white) {
     return isSquareAttacked(kingIndex, white);
 }
 
-bool Movegen::isSquareAttacked(int kingIndex, bool white) {
+bool Movegen::isSquareAttacked(uint8_t kingIndex, bool white) {
     uint64_t bishopMoves = generatePseudoLegalBishopMoves(kingIndex, white);
 
     uint64_t opposingQueenBitboard = white ? Board::BITBOARDS[BLACK_QUEEN] : Board::BITBOARDS[WHITE_QUEEN];
@@ -255,7 +263,8 @@ bool Movegen::isSquareAttacked(int kingIndex, bool white) {
 
         if (pawnMoves & opposingPawnBitboard)
             return true;
-    } else {
+    }
+    else {
         pawnMoves |= 1ULL << (kingIndex - 9) & opposingPawnBitboard & NOT_FILE_H;
         pawnMoves |= 1ULL << (kingIndex - 7) & opposingPawnBitboard & NOT_FILE_A;
 
@@ -274,7 +283,8 @@ uint64_t Movegen::generatePseudoLegalEnPassantMoves(uint8_t squareIndex, bool wh
     if (white) {
         moves |= 1ULL << (squareIndex + 9) & Board::epMasks[Board::moveNumber] & NOT_FILE_A;
         moves |= 1ULL << (squareIndex + 7) & Board::epMasks[Board::moveNumber] & NOT_FILE_H;
-    } else {
+    }
+    else {
         moves |= 1ULL << (squareIndex - 9) & Board::epMasks[Board::moveNumber] & NOT_FILE_H;
         moves |= 1ULL << (squareIndex - 7) & Board::epMasks[Board::moveNumber] & NOT_FILE_A;
     }
@@ -295,7 +305,8 @@ uint64_t Movegen::generatePseudoLegalPawnMoves(uint8_t squareIndex, bool white) 
 
         moves |= 1ULL << (squareIndex + 9) & opponentBitboard & NOT_FILE_A;
         moves |= 1ULL << (squareIndex + 7) & opponentBitboard & NOT_FILE_H;
-    } else {
+    }
+    else {
         uint64_t singlePush = 1ULL << (squareIndex - 8) & emptyBitboard;
         moves |= singlePush;
         if (singlePush & RANK_6) {
@@ -353,7 +364,8 @@ uint64_t Movegen::generatePseudoLegalCastleMoves(bool white) {
             !isSquareAttacked(3, true)) {
             castleMoves |= 0x4ULL;
         }
-    } else {
+    }
+    else {
         if (0x8000000000000000ULL & Board::BITBOARDS[BLACK_ROOK] && Board::canBlackCastleKingside(Board::moveNumber) &&
             !(Board::BITBOARD_OCCUPANCY & 0x6000000000000000ULL) &&
             !isSquareAttacked(61, false)) {
@@ -401,7 +413,7 @@ void Movegen::precomputeMovementMasks() {
 void Movegen::precomputeRookMovegenTable() {
     for (int i = 0; i < 64; i++) {
         uint64_t movementMask = generateRookMovementMask(i);
-        for (uint64_t blocker: generateAllBlockers(movementMask)) {
+        for (uint64_t blocker : generateAllBlockers(movementMask)) {
             uint64_t index = blocker * ROOK_MAGICS[i] >> 52;
             ROOK_MOVE_TABLE[i][index] = precomputeRookMovesWithBlocker(i, blocker);
         }
@@ -411,7 +423,7 @@ void Movegen::precomputeRookMovegenTable() {
 void Movegen::precomputeBishopMovegenTable() {
     for (int i = 0; i < 64; i++) {
         uint64_t movementMask = generateBishopMovementMask(i);
-        for (uint64_t blocker: generateAllBlockers(movementMask)) {
+        for (uint64_t blocker : generateAllBlockers(movementMask)) {
             uint64_t index = blocker * BISHOP_MAGICS[i] >> 52;
             BISHOP_MOVE_TABLE[i][index] = precomputeBishopMovesWithBlocker(i, blocker);
         }
@@ -504,7 +516,7 @@ uint64_t Movegen::generateMagicNumber(uint8_t squareIndex, bool bishop) {
         uint64_t candidateMagic = generateRandomMagic();
         std::array<uint8_t, 4096> occupied = {}; // Use uint8_t to avoid bit-packing
         bool valid = true;
-        for (uint64_t blocker: blockers) {
+        for (uint64_t blocker : blockers) {
             // Generate the index for this blocker
             uint64_t index = (blocker * candidateMagic) >> 52;
             if (index >= 4096) {
@@ -659,7 +671,8 @@ void Movegen::printMovementMask(uint64_t movementMask) {
             int squareIndex = rank * 8 + file;
             if (movementMask & (1ULL << squareIndex)) {
                 std::cout << "1  ";
-            } else {
+            }
+            else {
                 std::cout << ".  ";
             }
         }
@@ -681,7 +694,7 @@ uint64_t Movegen::random_uint64() {
     return u1 | (u2 << 16) | (u3 << 32) | (u4 << 48);
 }
 
-uint8_t Movegen::popLeastSignificantBitAndGetIndex(uint64_t &b) {
+uint8_t Movegen::popLeastSignificantBitAndGetIndex(uint64_t& b) {
     auto index = __builtin_ctzll(b);
     b &= b - 1;
     return index;

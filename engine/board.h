@@ -16,19 +16,14 @@
 #define BLACK_KING 10
 #define BLACK_ROOK 11
 
-#define PROMOTE_KNIGHT 0
-#define PROMOTE_BISHOP 1
-#define PROMOTE_ROOK 2
-#define PROMOTE_QUEEN 3
-
 struct Move {
     uint8_t from = 0;
     uint8_t to = 0;
-    uint8_t pieceFrom = 12;
-    uint8_t capture = 12;
+    uint8_t enPassantTarget = 0;
+    uint8_t pieceFrom = NONE;
+    uint8_t capture = NONE;
+    uint8_t promotion = NONE;
 
-    int promotion = -1;
-    int enPassantTarget = -1;
     bool castle = false;
 
     Move() = default;
@@ -44,9 +39,9 @@ namespace Board {
     // If the number of moves per game exceeds 1024, we are in deep trouble...
     inline uint64_t epMasks[1024];
     inline uint8_t castleRights[1024];
-    inline int moveNumber = 0;
+    inline uint32_t moveNumber = 0;
 
-    inline int mailbox[64];
+    inline uint8_t mailbox[64];
 
     inline uint64_t BITBOARDS[12];
     inline uint64_t BITBOARD_OCCUPANCY;
@@ -59,7 +54,7 @@ namespace Board {
 
     void undoMove(Move m);
 
-    void undoMove(Move m, bool noZobrist);
+    void undoMove(Move m, bool ignoreZobrist);
 
     void updateOccupancy();
 
@@ -69,7 +64,7 @@ namespace Board {
 
     void printBoard();
 
-    void importFEN(const std::string &fen);
+    void importFEN(const std::string& fen);
 
     bool canWhiteCastleKingside(int moveNumber);
 

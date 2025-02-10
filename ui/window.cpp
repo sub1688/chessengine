@@ -14,15 +14,9 @@
 void BoardWindow::playBotMove() {
     thinking = true;
     std::thread([]() {
-        // if (Board::whiteToMove) {
-            Search::startIterativeSearch(3000, bestMove);
-            Board::move(Search::bestMove);
-            bestMove = Search::bestMove;
-        // } else {
-            // OldSearch::startIterativeSearch(1000);
-            // Board::move(OldSearch::bestMove);
-            // bestMove = OldSearch::bestMove;
-        // }
+        Search::startIterativeSearch(3000, bestMove);
+        Board::move(Search::bestMove);
+        bestMove = Search::bestMove;
         thinking = false;
     }).detach(); // Detach thread as it's self-contained
 }
@@ -95,7 +89,7 @@ void BoardWindow::init() {
     destroy();
 }
 
-void BoardWindow::update(sf::RenderWindow &window) {
+void BoardWindow::update(sf::RenderWindow& window) {
     if (!thinking) {
         for (int i = 0; i < 64; i++) {
             displayBoard[i] = Board::getPiece(i);
@@ -104,15 +98,15 @@ void BoardWindow::update(sf::RenderWindow &window) {
         if (!Movegen::inCheckmate()) {
             zobristKey = Zobrist::calculateZobristKey();
 
-            thinking = true;
+            // thinking = true;
             // std::thread([]() {
-                // Search::startIterativeSearch(20000, bestMove);
-                // bestMove = Search::bestMove;
+            // Search::startIterativeSearch(20000, bestMove);
+            // bestMove = Search::bestMove;
             // }).detach();
             // if (!Board::whiteToMove) {
-                playBotMove();
+            // playBotMove();
             // }
-        }   
+        }
     }
 
     window.clear(sf::Color(171, 126, 89));
@@ -135,7 +129,8 @@ void BoardWindow::update(sf::RenderWindow &window) {
             rect.setFillColor(sf::Color(181, 181, 25, 75));
             rect.setPosition(sf::Vector2f(ix * 75.F, iy * 75.F));
             window.draw(rect);
-        } {
+        }
+        {
             int ix = lastMove[Board::moveNumber].from % 8;
             int iy = 7 - lastMove[Board::moveNumber].from / 8;
             sf::RectangleShape rect(sf::Vector2f(75, 75));
@@ -153,7 +148,8 @@ void BoardWindow::update(sf::RenderWindow &window) {
             rect.setFillColor(sf::Color(25, 181, 25, 75));
             rect.setPosition(sf::Vector2f(ix * 75.F, iy * 75.F));
             window.draw(rect);
-        } {
+        }
+        {
             int ix = bestMove.from % 8;
             int iy = 7 - bestMove.from / 8;
             sf::RectangleShape rect(sf::Vector2f(75, 75));
@@ -205,10 +201,10 @@ void BoardWindow::update(sf::RenderWindow &window) {
     std::string str = std::to_string(
         static_cast<float>((Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval) / 100.F);
     if (abs((Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval / 100.F) > 200000) {
-        str = "M" + std::to_string((int) (Search::POSITIVE_INFINITY / 100.F - abs(
-                                              static_cast<float>(
-                                                  (Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval) /
-                                              100.F)) / 2 + 1);
+        str = "M" + std::to_string((int)(Search::POSITIVE_INFINITY / 100.F - abs(
+            static_cast<float>(
+                (Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval) /
+            100.F)) / 2 + 1);
     }
     text.setString(
         "Zobrist Key: " + std::to_string(Board::currentZobristKey) + "\nCalculated Zobrist: " +

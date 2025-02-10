@@ -46,7 +46,7 @@ void benchmarkPerft(int depth) {
     // Calculate nodes per second
     double nodesPerSecond = perft / duration;
     std::cout << "Perft nodes: " << perft
-            << " Speed: " << std::fixed << std::setprecision(2) << (nodesPerSecond / 1'000) << " Kn/s" << std::endl;
+        << " Speed: " << std::fixed << std::setprecision(2) << (nodesPerSecond / 1'000) << " Kn/s" << std::endl;
 }
 
 void debugPerft(int depth) {
@@ -74,11 +74,12 @@ void debugPerft(int depth) {
 
 void printMoves(ArrayVec<Move, 218> moves) {
     for (int i = 0; i < moves.elements; i++) {
-        std::cout << indexToChessNotation(moves.buffer[i].from) << " " << indexToChessNotation(moves.buffer[i].to) << std::endl;
+        std::cout << indexToChessNotation(moves.buffer[i].from) << " " << indexToChessNotation(moves.buffer[i].to) <<
+            std::endl;
     }
 }
 
-void replaceAll(std::string &str, const std::string &from, const std::string &to) {
+void replaceAll(std::string& str, const std::string& from, const std::string& to) {
     size_t startPos = 0;
     while ((startPos = str.find(from, startPos)) != std::string::npos) {
         str.replace(startPos, from.length(), to);
@@ -102,8 +103,8 @@ void test_secure_distribution(int num_samples, int num_buckets) {
     for (int i = 0; i < num_buckets; ++i) {
         double percentage = (buckets[i] * 100.0) / num_samples;
         std::cout << "Bucket " << i << ": " << buckets[i]
-                  << " (" << std::fixed << std::setprecision(2)
-                  << percentage << "%)\n";
+            << " (" << std::fixed << std::setprecision(2)
+            << percentage << "%)\n";
     }
 }
 

@@ -32,26 +32,11 @@ void Board::setPiece(int index, uint8_t piece) {
 }
 
 bool Board::move(Move m) {
-    switch (m.promotion) {
-        case PROMOTE_QUEEN:
-            setPiece(m.to, whiteToMove ? WHITE_QUEEN : BLACK_QUEEN);
-            break;
-        case PROMOTE_BISHOP:
-            setPiece(m.to, whiteToMove ? WHITE_BISHOP : BLACK_BISHOP);
-            break;
-        case PROMOTE_KNIGHT:
-            setPiece(m.to, whiteToMove ? WHITE_KNIGHT : BLACK_KNIGHT);
-            break;
-        case PROMOTE_ROOK:
-            setPiece(m.to, whiteToMove ? WHITE_ROOK : BLACK_ROOK);
-            break;
-        default:
-            setPiece(m.to, m.pieceFrom);
-    }
+    setPiece(m.to, m.promotion != NONE ? m.promotion : m.pieceFrom);
     setPiece(m.from, NONE);
 
     int enPassantZobrist = NONE;
-    if (m.enPassantTarget != -1) {
+    if (m.enPassantTarget != 0) {
         enPassantZobrist = mailbox[m.enPassantTarget];
         setPiece(m.enPassantTarget, NONE);
     }
@@ -60,24 +45,24 @@ bool Board::move(Move m) {
     bool white = false;
     if (m.castle) {
         switch (m.to) {
-            case 6:
-                from = 7;
-                to = 5;
-                white = true;
-                break;
-            case 2:
-                from = 0;
-                to = 3;
-                white = true;
-                break;
-            case 62:
-                from = 63;
-                to = 61;
-                break;
-            case 58:
-                from = 56;
-                to = 59;
-                break;
+        case 6:
+            from = 7;
+            to = 5;
+            white = true;
+            break;
+        case 2:
+            from = 0;
+            to = 3;
+            white = true;
+            break;
+        case 62:
+            from = 63;
+            to = 61;
+            break;
+        case 58:
+            from = 56;
+            to = 59;
+            break;
         }
         setPiece(from, NONE);
         setPiece(to, white ? WHITE_ROOK : BLACK_ROOK);
@@ -115,7 +100,8 @@ bool Board::move(Move m) {
     if (abs(m.to - m.from) == 16 && (m.pieceFrom == WHITE_PAWN || m.pieceFrom == BLACK_PAWN)) {
         epMasks[moveNumber] = 1ULL << (whiteToMove ? m.from + 8 : m.from - 8);
         currentZobristKey ^= Zobrist::enPassantKeys[m.to % 8];
-    } else {
+    }
+    else {
         epMasks[moveNumber] = 0ULL;
     }
 
@@ -129,19 +115,24 @@ bool Board::move(Move m) {
     if (m.pieceFrom == WHITE_KING) {
         setWhiteCastleKingside(moveNumber, false);
         setWhiteCastleQueenside(moveNumber, false);
-    } else if (m.pieceFrom == BLACK_KING) {
+    }
+    else if (m.pieceFrom == BLACK_KING) {
         setBlackCastleKingside(moveNumber, false);
         setBlackCastleQueenside(moveNumber, false);
-    } else if (m.pieceFrom == WHITE_ROOK) {
+    }
+    else if (m.pieceFrom == WHITE_ROOK) {
         if (m.from == 7) {
             setWhiteCastleKingside(moveNumber, false);
-        } else if (m.from == 0) {
+        }
+        else if (m.from == 0) {
             setWhiteCastleQueenside(moveNumber, false);
         }
-    } else if (m.pieceFrom == BLACK_ROOK) {
+    }
+    else if (m.pieceFrom == BLACK_ROOK) {
         if (m.from == 63) {
             setBlackCastleKingside(moveNumber, false);
-        } else if (m.from == 56) {
+        }
+        else if (m.from == 56) {
             setBlackCastleQueenside(moveNumber, false);
         }
     }
@@ -149,7 +140,7 @@ bool Board::move(Move m) {
     whiteToMove = !whiteToMove;
 
     currentZobristKey ^= Zobrist::whiteToMove;
-    if (m.capture != NONE && m.enPassantTarget == -1) {
+    if (m.capture != NONE && m.enPassantTarget == 0) {
         currentZobristKey ^= Zobrist::pieceSquareKeys[m.to][m.capture];
     }
     currentZobristKey ^= Zobrist::pieceSquareKeys[m.from][m.pieceFrom];
@@ -173,13 +164,14 @@ void Board::undoMove(Move m, bool noZobrist) {
     }
 
     setPiece(m.from, m.pieceFrom);
-    if (m.enPassantTarget != -1) {
+    if (m.enPassantTarget != 0) {
         setPiece(m.enPassantTarget, m.capture);
         setPiece(m.to, NONE);
         if (!noZobrist) {
             currentZobristKey ^= Zobrist::pieceSquareKeys[m.enPassantTarget][m.capture];
         }
-    } else {
+    }
+    else {
         setPiece(m.to, m.capture);
     }
 
@@ -187,24 +179,24 @@ void Board::undoMove(Move m, bool noZobrist) {
         int from = 0, to = 0;
         bool white = false;
         switch (m.to) {
-            case 6:
-                from = 7;
-                to = 5;
-                white = true;
-                break;
-            case 2:
-                from = 0;
-                to = 3;
-                white = true;
-                break;
-            case 62:
-                from = 63;
-                to = 61;
-                break;
-            case 58:
-                from = 56;
-                to = 59;
-                break;
+        case 6:
+            from = 7;
+            to = 5;
+            white = true;
+            break;
+        case 2:
+            from = 0;
+            to = 3;
+            white = true;
+            break;
+        case 62:
+            from = 63;
+            to = 61;
+            break;
+        case 58:
+            from = 56;
+            to = 59;
+            break;
         }
         setPiece(from, white ? WHITE_ROOK : BLACK_ROOK);
         setPiece(to, NONE);
@@ -218,29 +210,15 @@ void Board::undoMove(Move m, bool noZobrist) {
     moveNumber--;
     if (!noZobrist) {
         currentZobristKey ^= Zobrist::whiteToMove;
-        if (m.promotion != -1) {
-            int piecePromotion = m.promotion;
-            switch (m.promotion) {
-                case PROMOTE_KNIGHT:
-                    piecePromotion = whiteToMove ? BLACK_KNIGHT : WHITE_KNIGHT;
-                    break;
-                case PROMOTE_BISHOP:
-                    piecePromotion = whiteToMove ? BLACK_BISHOP : WHITE_BISHOP;
-                    break;
-                case PROMOTE_QUEEN:
-                    piecePromotion = whiteToMove ? BLACK_QUEEN : WHITE_QUEEN;
-                    break;
-                case PROMOTE_ROOK:
-                    piecePromotion = whiteToMove ? BLACK_ROOK : WHITE_ROOK;
-                    break;
-            }
-            currentZobristKey ^= Zobrist::pieceSquareKeys[m.to][piecePromotion];
-        } else {
+        if (m.promotion != NONE) {
+            currentZobristKey ^= Zobrist::pieceSquareKeys[m.to][m.promotion];
+        }
+        else {
             currentZobristKey ^= Zobrist::pieceSquareKeys[m.to][m.pieceFrom];
         }
         currentZobristKey ^= Zobrist::pieceSquareKeys[m.from][m.pieceFrom];
 
-        if (m.capture != NONE && m.enPassantTarget == -1) {
+        if (m.capture != NONE && m.enPassantTarget == 0) {
             currentZobristKey ^= Zobrist::pieceSquareKeys[m.to][m.capture];
         }
 
@@ -262,7 +240,6 @@ void Board::undoMove(Move m, bool noZobrist) {
 
         currentZobristKey ^= Zobrist::castleRightsKeys[castleRights[moveNumber + 1]];
         currentZobristKey ^= Zobrist::castleRightsKeys[castleRights[moveNumber]];
-
     }
 
     updateOccupancy();
@@ -271,9 +248,9 @@ void Board::undoMove(Move m, bool noZobrist) {
 
 void Board::updateOccupancy() {
     BITBOARD_WHITE_OCCUPANCY = BITBOARDS[WHITE_PAWN] | BITBOARDS[WHITE_KNIGHT] | BITBOARDS[WHITE_BISHOP] |
-                               BITBOARDS[WHITE_QUEEN] | BITBOARDS[WHITE_KING] | BITBOARDS[WHITE_ROOK];
+        BITBOARDS[WHITE_QUEEN] | BITBOARDS[WHITE_KING] | BITBOARDS[WHITE_ROOK];
     BITBOARD_BLACK_OCCUPANCY = BITBOARDS[BLACK_PAWN] | BITBOARDS[BLACK_KNIGHT] | BITBOARDS[BLACK_BISHOP] |
-                               BITBOARDS[BLACK_QUEEN] | BITBOARDS[BLACK_KING] | BITBOARDS[BLACK_ROOK];
+        BITBOARDS[BLACK_QUEEN] | BITBOARDS[BLACK_KING] | BITBOARDS[BLACK_ROOK];
     BITBOARD_OCCUPANCY = BITBOARD_WHITE_OCCUPANCY | BITBOARD_BLACK_OCCUPANCY;
 }
 
@@ -339,7 +316,7 @@ void Board::printBoard() {
     std::cout << "\n";
 }
 
-void Board::importFEN(const std::string &fen) {
+void Board::importFEN(const std::string& fen) {
     // Clear all bitboards
     for (int i = 0; i < 12; i++) {
         BITBOARDS[i] = 0ULL;
@@ -356,43 +333,45 @@ void Board::importFEN(const std::string &fen) {
             // Move to the next rank
             rank--;
             file = 0;
-        } else if (isdigit(c)) {
+        }
+        else if (isdigit(c)) {
             // Empty squares
             file += c - '0';
-        } else {
+        }
+        else {
             // Map the character to the corresponding bitboard
             int square = rank * 8 + file;
             uint64_t mask = 1ULL << square;
 
             switch (c) {
-                case 'P': BITBOARDS[WHITE_PAWN] |= mask;
-                    break;
-                case 'N': BITBOARDS[WHITE_KNIGHT] |= mask;
-                    break;
-                case 'B': BITBOARDS[WHITE_BISHOP] |= mask;
-                    break;
-                case 'R': BITBOARDS[WHITE_ROOK] |= mask;
-                    break;
-                case 'Q': BITBOARDS[WHITE_QUEEN] |= mask;
-                    break;
-                case 'K': BITBOARDS[WHITE_KING] |= mask;
-                    break;
+            case 'P': BITBOARDS[WHITE_PAWN] |= mask;
+                break;
+            case 'N': BITBOARDS[WHITE_KNIGHT] |= mask;
+                break;
+            case 'B': BITBOARDS[WHITE_BISHOP] |= mask;
+                break;
+            case 'R': BITBOARDS[WHITE_ROOK] |= mask;
+                break;
+            case 'Q': BITBOARDS[WHITE_QUEEN] |= mask;
+                break;
+            case 'K': BITBOARDS[WHITE_KING] |= mask;
+                break;
 
-                case 'p': BITBOARDS[BLACK_PAWN] |= mask;
-                    break;
-                case 'n': BITBOARDS[BLACK_KNIGHT] |= mask;
-                    break;
-                case 'b': BITBOARDS[BLACK_BISHOP] |= mask;
-                    break;
-                case 'r': BITBOARDS[BLACK_ROOK] |= mask;
-                    break;
-                case 'q': BITBOARDS[BLACK_QUEEN] |= mask;
-                    break;
-                case 'k': BITBOARDS[BLACK_KING] |= mask;
-                    break;
+            case 'p': BITBOARDS[BLACK_PAWN] |= mask;
+                break;
+            case 'n': BITBOARDS[BLACK_KNIGHT] |= mask;
+                break;
+            case 'b': BITBOARDS[BLACK_BISHOP] |= mask;
+                break;
+            case 'r': BITBOARDS[BLACK_ROOK] |= mask;
+                break;
+            case 'q': BITBOARDS[BLACK_QUEEN] |= mask;
+                break;
+            case 'k': BITBOARDS[BLACK_KING] |= mask;
+                break;
 
-                default:
-                    throw std::invalid_argument("Invalid FEN character: " + std::string(1, c));
+            default:
+                throw std::invalid_argument("Invalid FEN character: " + std::string(1, c));
             }
             file++;
         }
@@ -409,17 +388,17 @@ void Board::importFEN(const std::string &fen) {
     while (fen[index] != ' ') {
         char c = fen[index];
         switch (c) {
-            case 'K': setWhiteCastleKingside(moveNumber, true);
-                break;
-            case 'Q': setWhiteCastleQueenside(moveNumber, true);
-                break;
-            case 'k': setBlackCastleKingside(moveNumber, true);
-                break;
-            case 'q': setBlackCastleQueenside(moveNumber, true);
-                break;
-            case '-': break; // No castling rights
-            default:
-                throw std::invalid_argument("Invalid castling rights character: " + std::string(1, c));
+        case 'K': setWhiteCastleKingside(moveNumber, true);
+            break;
+        case 'Q': setWhiteCastleQueenside(moveNumber, true);
+            break;
+        case 'k': setBlackCastleKingside(moveNumber, true);
+            break;
+        case 'q': setBlackCastleQueenside(moveNumber, true);
+            break;
+        case '-': break; // No castling rights
+        default:
+            throw std::invalid_argument("Invalid castling rights character: " + std::string(1, c));
         }
         index++;
     }
@@ -458,7 +437,8 @@ bool Board::canBlackCastleQueenside(int moveNumber) {
 void Board::setWhiteCastleKingside(int moveNumber, bool value) {
     if (value) {
         castleRights[moveNumber] |= 1U; // Set bit 0
-    } else {
+    }
+    else {
         castleRights[moveNumber] &= ~1U; // Clear bit 0
     }
 }
@@ -466,7 +446,8 @@ void Board::setWhiteCastleKingside(int moveNumber, bool value) {
 void Board::setWhiteCastleQueenside(int moveNumber, bool value) {
     if (value) {
         castleRights[moveNumber] |= (1U << 1); // Set bit 1
-    } else {
+    }
+    else {
         castleRights[moveNumber] &= ~(1U << 1); // Clear bit 1
     }
 }
@@ -474,7 +455,8 @@ void Board::setWhiteCastleQueenside(int moveNumber, bool value) {
 void Board::setBlackCastleKingside(int moveNumber, bool value) {
     if (value) {
         castleRights[moveNumber] |= (1U << 2); // Set bit 2
-    } else {
+    }
+    else {
         castleRights[moveNumber] &= ~(1U << 2); // Clear bit 2
     }
 }
@@ -482,7 +464,8 @@ void Board::setBlackCastleKingside(int moveNumber, bool value) {
 void Board::setBlackCastleQueenside(int moveNumber, bool value) {
     if (value) {
         castleRights[moveNumber] |= (1U << 3); // Set bit 3
-    } else {
+    }
+    else {
         castleRights[moveNumber] &= ~(1U << 3); // Clear bit 3
     }
 }

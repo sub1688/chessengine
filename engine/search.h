@@ -6,6 +6,14 @@
 #include "board.h"
 #include "../util/arrayvec.h"
 
+struct SearchResult {
+    int evaluation;
+    Move bestMove;
+
+    SearchResult(int m_evaluation, Move m_bestMove) : evaluation(m_evaluation), bestMove(m_bestMove) {
+    }
+};
+
 namespace Search {
     inline constexpr int PIECE_VALUES[6] = {
         100,
@@ -32,19 +40,19 @@ namespace Search {
 
     inline Move bestMove = Move(0, -1);
 
-    void orderMoves(ArrayVec<Move, 218> &moveVector, Move ttMove);
+    void orderMoves(ArrayVec<Move, 218>& moveVector, Move ttMove);
 
-    void startIterativeSearch(long time, Move &lastMove);
+    void startIterativeSearch(long time);
 
-    int search(int rootDepth, int depth, int alpha, int beta);
+    SearchResult search(int rootDepth, int depth, int alpha, int beta);
 
-    int search(int depth);
+    SearchResult search(int depth);
 
     int evaluate();
+
+    int quiesce(int alpha, int beta);
 
     int getPieceValue(uint8_t piece);
 
     bool isInEndgame();
-
-    int quiesce(int alpha, int beta);
 }

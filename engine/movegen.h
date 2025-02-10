@@ -38,6 +38,14 @@ namespace Movegen {
     constexpr uint64_t RANK_6 = 0x0000FF0000000000ULL;
     constexpr uint64_t RANK_8 = 0xFF00000000000000ULL;
 
+    inline constexpr uint8_t PROMOTE_PIECES_WHITE[4] = {
+        WHITE_KNIGHT, WHITE_BISHOP, WHITE_ROOK, WHITE_QUEEN
+    };
+
+    inline constexpr uint8_t PROMOTE_PIECES_BLACK[4] = {
+        BLACK_KNIGHT, BLACK_BISHOP, BLACK_ROOK, BLACK_QUEEN
+    };
+
     inline constexpr uint64_t ROOK_MAGICS[64] = {
         0x480001080c00320, 0x208008810c00143, 0x410006000906500, 0x20162410002004, 0xa200010210200a00,
         0x804040002984010, 0x1100210020441200, 0x2100008141000422, 0x80900810a0800400, 0x20424024204000,
@@ -126,12 +134,12 @@ namespace Movegen {
 
     void printMovementMask(uint64_t mask);
 
-    uint8_t popLeastSignificantBitAndGetIndex(uint64_t &num);
+    uint8_t popLeastSignificantBitAndGetIndex(uint64_t& num);
 
     ArrayVec<Move, 218> generateAllLegalMovesOnBoard();
     ArrayVec<Move, 218> generateAllCapturesOnBoard();
 
-    bool isSquareAttacked(int kingIndex, bool white);
+    bool isSquareAttacked(uint8_t kingIndex, bool white);
 
     bool isKingInDanger(bool white);
 
