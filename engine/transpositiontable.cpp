@@ -3,12 +3,13 @@
 
 void TranspositionTable::addEntry(uint64_t zobristKey, Move bestMove, int depthSearched, int score, int nodeType) {
     size_t index = zobristKey & TRANSPOSITION_TABLE_MASK;
-    TranspositionEntry& entry = getEntry(zobristKey);
-    if (entry.zobristKey == zobristKey && entry.depthSearched >= depthSearched) {
-        return;
+    TranspositionEntry& entry = transpositionTableBuffer[index];
+
+    // Replace if empty or different key (collision), or if the new depth is greater
+    if (entry.zobristKey != zobristKey || depthSearched >= entry.depthSearched) {
+        transpositionTableBuffer[index] = TranspositionEntry(zobristKey, bestMove, depthSearched, score, nodeType);
+        tableEntries++;
     }
-    transpositionTableBuffer[index] = TranspositionEntry(zobristKey, bestMove, depthSearched, score, nodeType);
-    tableEntries++;
 }
 
 TranspositionEntry& TranspositionTable::getEntry(uint64_t zobristKey) {
@@ -37,8 +38,4 @@ void TranspositionTable::decrementRepetitionEntry(uint64_t zobristKey) {
 uint8_t TranspositionTable::getRepetitionEntry(uint64_t zobristKey) {
     return repetitionTableBuffer[zobristKey & REPETITION_TABLE_MASK];
 }
-
-
-
-
 

@@ -19,16 +19,17 @@ struct TranspositionEntry {
 };
 
 namespace TranspositionTable {
-    inline constexpr size_t TRANSPOSITION_TABLE_SIZE = 1 << 24; // 32 million entries... around 1.6GB
+    inline constexpr size_t TRANSPOSITION_TABLE_SIZE = 1 << 24;
     inline constexpr size_t TRANSPOSITION_TABLE_MASK = TRANSPOSITION_TABLE_SIZE - 1;
 
-    inline constexpr size_t REPETITION_TABLE_SIZE = 1 << 24; // 32 million repetition entries, should be more than enough
+    inline constexpr size_t REPETITION_TABLE_SIZE = 1 << 24;
     inline constexpr size_t REPETITION_TABLE_MASK = REPETITION_TABLE_SIZE - 1;
 
     static TranspositionEntry transpositionTableBuffer[TRANSPOSITION_TABLE_SIZE];
     static uint8_t repetitionTableBuffer[REPETITION_TABLE_SIZE];
 
     inline int tableEntries = 0;
+    inline int cutoffs = 0;
 
     TranspositionEntry& getEntry(uint64_t zobristKey);
 

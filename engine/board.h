@@ -66,21 +66,21 @@ namespace Board {
 
     void importFEN(const std::string& fen);
 
-    bool canWhiteCastleKingside(int moveNumber);
+    bool canWhiteCastleKingside(uint32_t moveNumber);
 
-    bool canWhiteCastleQueenside(int moveNumber);
+    bool canWhiteCastleQueenside(uint32_t moveNumber);
 
-    bool canBlackCastleKingside(int moveNumber);
+    bool canBlackCastleKingside(uint32_t moveNumber);
 
-    bool canBlackCastleQueenside(int moveNumber);
+    bool canBlackCastleQueenside(uint32_t moveNumber);
 
-    void setWhiteCastleKingside(int moveNumber, bool value);
+    void setWhiteCastleKingside(uint32_t moveNumber, bool value);
 
-    void setWhiteCastleQueenside(int moveNumber, bool value);
+    void setWhiteCastleQueenside(uint32_t moveNumber, bool value);
 
-    void setBlackCastleKingside(int moveNumber, bool value);
+    void setBlackCastleKingside(uint32_t moveNumber, bool value);
 
-    void setBlackCastleQueenside(int moveNumber, bool value);
+    void setBlackCastleQueenside(uint32_t moveNumber, bool value);
 
     bool isDrawnByRepetition();
 

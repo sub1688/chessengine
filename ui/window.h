@@ -15,7 +15,6 @@ namespace BoardWindow {
     inline bool thinking = false;
     inline int displayBoard[64];
     inline Move lastMove[1024];
-    inline Move bestMove = Move(0, 0);
 
     void init();
     void update(sf::RenderWindow& window);

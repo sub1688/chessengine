@@ -15,14 +15,25 @@ struct SearchResult {
 };
 
 namespace Search {
-    inline constexpr int PIECE_VALUES[6] = {
+    inline constexpr Move NULL_MOVE = Move();
+
+    inline constexpr int PIECE_VALUES[12] = {
         100,
         300,
         300,
         910,
         100000,
-        500
+        500,
+        -100,
+        -300,
+        -300,
+        -910,
+        -100000,
+        -500
     };
+
+    inline constexpr int MATE_THRESHOLD = 200000000;
+    inline constexpr int MATE_SCORE = 200000000;
 
     inline constexpr int NEGATIVE_INFINITY = std::numeric_limits<int>::min() + 1;
     inline constexpr int POSITIVE_INFINITY = std::numeric_limits<int>::max() - 1;
@@ -38,7 +49,7 @@ namespace Search {
     inline bool searchCancelled = false;
     inline bool lastSearchTurnIsWhite = true;
 
-    inline Move bestMove = Move(0, -1);
+    inline Move bestMove = NULL_MOVE;
 
     void orderMoves(ArrayVec<Move, 218>& moveVector, Move ttMove);
 
@@ -55,4 +66,6 @@ namespace Search {
     int getPieceValue(uint8_t piece);
 
     bool isInEndgame();
+
+    bool isNullMove(Move move);
 }

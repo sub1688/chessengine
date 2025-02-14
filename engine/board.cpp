@@ -418,23 +418,23 @@ void Board::importFEN(const std::string& fen) {
     currentZobristKey = Zobrist::calculateZobristKey();
 }
 
-bool Board::canWhiteCastleKingside(int moveNumber) {
+bool Board::canWhiteCastleKingside(uint32_t moveNumber) {
     return 1U & castleRights[moveNumber];
 }
 
-bool Board::canWhiteCastleQueenside(int moveNumber) {
+bool Board::canWhiteCastleQueenside(uint32_t moveNumber) {
     return 1U & (castleRights[moveNumber] >> 1);
 }
 
-bool Board::canBlackCastleKingside(int moveNumber) {
+bool Board::canBlackCastleKingside(uint32_t moveNumber) {
     return 1U & (castleRights[moveNumber] >> 2);
 }
 
-bool Board::canBlackCastleQueenside(int moveNumber) {
+bool Board::canBlackCastleQueenside(uint32_t moveNumber) {
     return 1U & (castleRights[moveNumber] >> 3);
 }
 
-void Board::setWhiteCastleKingside(int moveNumber, bool value) {
+void Board::setWhiteCastleKingside(uint32_t moveNumber, bool value) {
     if (value) {
         castleRights[moveNumber] |= 1U; // Set bit 0
     }
@@ -443,7 +443,7 @@ void Board::setWhiteCastleKingside(int moveNumber, bool value) {
     }
 }
 
-void Board::setWhiteCastleQueenside(int moveNumber, bool value) {
+void Board::setWhiteCastleQueenside(uint32_t moveNumber, bool value) {
     if (value) {
         castleRights[moveNumber] |= (1U << 1); // Set bit 1
     }
@@ -452,7 +452,7 @@ void Board::setWhiteCastleQueenside(int moveNumber, bool value) {
     }
 }
 
-void Board::setBlackCastleKingside(int moveNumber, bool value) {
+void Board::setBlackCastleKingside(uint32_t moveNumber, bool value) {
     if (value) {
         castleRights[moveNumber] |= (1U << 2); // Set bit 2
     }
@@ -461,7 +461,7 @@ void Board::setBlackCastleKingside(int moveNumber, bool value) {
     }
 }
 
-void Board::setBlackCastleQueenside(int moveNumber, bool value) {
+void Board::setBlackCastleQueenside(uint32_t moveNumber, bool value) {
     if (value) {
         castleRights[moveNumber] |= (1U << 3); // Set bit 3
     }
