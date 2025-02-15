@@ -8,14 +8,16 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "C:/Users/Corbis/CLionProjects/chessengine/engine/board.cpp" "CMakeFiles/chessengine.dir/engine/board.cpp.obj" "gcc" "CMakeFiles/chessengine.dir/engine/board.cpp.obj.d"
-  "C:/Users/Corbis/CLionProjects/chessengine/engine/movegen.cpp" "CMakeFiles/chessengine.dir/engine/movegen.cpp.obj" "gcc" "CMakeFiles/chessengine.dir/engine/movegen.cpp.obj.d"
-  "C:/Users/Corbis/CLionProjects/chessengine/engine/old/oldsearch.cpp" "CMakeFiles/chessengine.dir/engine/old/oldsearch.cpp.obj" "gcc" "CMakeFiles/chessengine.dir/engine/old/oldsearch.cpp.obj.d"
-  "C:/Users/Corbis/CLionProjects/chessengine/engine/piecesquaretable.cpp" "CMakeFiles/chessengine.dir/engine/piecesquaretable.cpp.obj" "gcc" "CMakeFiles/chessengine.dir/engine/piecesquaretable.cpp.obj.d"
-  "C:/Users/Corbis/CLionProjects/chessengine/engine/search.cpp" "CMakeFiles/chessengine.dir/engine/search.cpp.obj" "gcc" "CMakeFiles/chessengine.dir/engine/search.cpp.obj.d"
-  "C:/Users/Corbis/CLionProjects/chessengine/engine/zobrist.cpp" "CMakeFiles/chessengine.dir/engine/zobrist.cpp.obj" "gcc" "CMakeFiles/chessengine.dir/engine/zobrist.cpp.obj.d"
-  "C:/Users/Corbis/CLionProjects/chessengine/main.cpp" "CMakeFiles/chessengine.dir/main.cpp.obj" "gcc" "CMakeFiles/chessengine.dir/main.cpp.obj.d"
-  "C:/Users/Corbis/CLionProjects/chessengine/ui/window.cpp" "CMakeFiles/chessengine.dir/ui/window.cpp.obj" "gcc" "CMakeFiles/chessengine.dir/ui/window.cpp.obj.d"
+  "C:/Users/Corbis/Desktop/chessengine/engine/board.cpp" "CMakeFiles/chessengine.dir/engine/board.cpp.obj" "gcc" "CMakeFiles/chessengine.dir/engine/board.cpp.obj.d"
+  "C:/Users/Corbis/Desktop/chessengine/engine/movegen.cpp" "CMakeFiles/chessengine.dir/engine/movegen.cpp.obj" "gcc" "CMakeFiles/chessengine.dir/engine/movegen.cpp.obj.d"
+  "C:/Users/Corbis/Desktop/chessengine/engine/old/oldsearch.cpp" "CMakeFiles/chessengine.dir/engine/old/oldsearch.cpp.obj" "gcc" "CMakeFiles/chessengine.dir/engine/old/oldsearch.cpp.obj.d"
+  "C:/Users/Corbis/Desktop/chessengine/engine/piecesquaretable.cpp" "CMakeFiles/chessengine.dir/engine/piecesquaretable.cpp.obj" "gcc" "CMakeFiles/chessengine.dir/engine/piecesquaretable.cpp.obj.d"
+  "C:/Users/Corbis/Desktop/chessengine/engine/san.cpp" "CMakeFiles/chessengine.dir/engine/san.cpp.obj" "gcc" "CMakeFiles/chessengine.dir/engine/san.cpp.obj.d"
+  "C:/Users/Corbis/Desktop/chessengine/engine/search.cpp" "CMakeFiles/chessengine.dir/engine/search.cpp.obj" "gcc" "CMakeFiles/chessengine.dir/engine/search.cpp.obj.d"
+  "C:/Users/Corbis/Desktop/chessengine/engine/transpositiontable.cpp" "CMakeFiles/chessengine.dir/engine/transpositiontable.cpp.obj" "gcc" "CMakeFiles/chessengine.dir/engine/transpositiontable.cpp.obj.d"
+  "C:/Users/Corbis/Desktop/chessengine/engine/zobrist.cpp" "CMakeFiles/chessengine.dir/engine/zobrist.cpp.obj" "gcc" "CMakeFiles/chessengine.dir/engine/zobrist.cpp.obj.d"
+  "C:/Users/Corbis/Desktop/chessengine/main.cpp" "CMakeFiles/chessengine.dir/main.cpp.obj" "gcc" "CMakeFiles/chessengine.dir/main.cpp.obj.d"
+  "C:/Users/Corbis/Desktop/chessengine/ui/window.cpp" "CMakeFiles/chessengine.dir/ui/window.cpp.obj" "gcc" "CMakeFiles/chessengine.dir/ui/window.cpp.obj.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

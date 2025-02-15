@@ -1,41 +1,47 @@
 #include "transpositiontable.h"
 #include <cstring>
 
-void TranspositionTable::addEntry(uint64_t zobristKey, Move bestMove, int depthSearched, int score, int nodeType) {
-    size_t index = zobristKey & TRANSPOSITION_TABLE_MASK;
-    TranspositionEntry& entry = transpositionTableBuffer[index];
+#include "search.h"
 
-    // Replace if empty or different key (collision), or if the new depth is greater
-    if (entry.zobristKey != zobristKey || depthSearched >= entry.depthSearched) {
-        transpositionTableBuffer[index] = TranspositionEntry(zobristKey, bestMove, depthSearched, score, nodeType);
-        tableEntries++;
+void TranspositionTable::addEntry(uint64_t zobristKey, Move bestMove, int rootDepth, int depthSearched, int score,
+                                  int nodeType) {
+    uint64_t index = zobristKey & TRANSPOSITION_TABLE_MASK;
+
+    TranspositionEntry entry = getEntry(zobristKey);
+    if (entry.zobristKey != 0 && entry.zobristKey != zobristKey) {
+        collisions++;
+        return;
     }
+    // Replace if empty or different key (collision), or if the new depth is greater
+    transpositionTableBuffer[index] = TranspositionEntry(zobristKey, bestMove, depthSearched,
+                                                         correctScoreForStorage(score, rootDepth), nodeType);
+    if (tableEntries < TRANSPOSITION_TABLE_SIZE)
+        tableEntries++;
 }
 
-TranspositionEntry& TranspositionTable::getEntry(uint64_t zobristKey) {
-    size_t index = zobristKey & TRANSPOSITION_TABLE_MASK;
+int TranspositionTable::correctScoreForRetrieval(int score, int rootDepth) {
+    if (abs(score) >= MATE_THRESHOLD) {
+        int sign = score > 0 ? 1 : -1;
+        return (score * sign - rootDepth * 100) * sign;
+    }
+    return score;
+}
+
+int TranspositionTable::correctScoreForStorage(int score, int rootDepth) {
+    if (abs(score) >= MATE_THRESHOLD) {
+        int sign = score > 0 ? 1 : -1;
+        return (score * sign + rootDepth * 100) * sign;
+    }
+    return score;
+}
+
+TranspositionEntry &TranspositionTable::getEntry(uint64_t zobristKey) {
+    uint64_t index = zobristKey & TRANSPOSITION_TABLE_MASK;
     return transpositionTableBuffer[index];
 }
 
 
 void TranspositionTable::clear() {
-    std::memset(transpositionTableBuffer, 0, sizeof(transpositionTableBuffer));
+    std::memset(transpositionTableBuffer, 0, TRANSPOSITION_TABLE_SIZE * sizeof(TranspositionEntry));
     tableEntries = 0;
 }
-
-void TranspositionTable::incrementRepetitionEntry(uint64_t zobristKey) {
-    size_t index = zobristKey & REPETITION_TABLE_MASK;
-    repetitionTableBuffer[index]++;
-}
-
-void TranspositionTable::decrementRepetitionEntry(uint64_t zobristKey) {
-    size_t index = zobristKey & REPETITION_TABLE_MASK;
-    if (repetitionTableBuffer[index] > 0) {
-        repetitionTableBuffer[index]--;
-    }
-}
-
-uint8_t TranspositionTable::getRepetitionEntry(uint64_t zobristKey) {
-    return repetitionTableBuffer[zobristKey & REPETITION_TABLE_MASK];
-}
-

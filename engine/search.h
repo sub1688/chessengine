@@ -1,5 +1,7 @@
 #pragma once
 
+#define MATE_THRESHOLD 200000000
+
 #include <limits>
 #include <optional>
 
@@ -32,8 +34,6 @@ namespace Search {
         -500
     };
 
-    inline constexpr int MATE_THRESHOLD = 200000000;
-    inline constexpr int MATE_SCORE = 200000000;
 
     inline constexpr int NEGATIVE_INFINITY = std::numeric_limits<int>::min() + 1;
     inline constexpr int POSITIVE_INFINITY = std::numeric_limits<int>::max() - 1;
@@ -46,8 +46,9 @@ namespace Search {
     inline int searchedNodes = 0;
     inline int currentEval = 0;
     inline int currentDepth = 0;
-    inline bool searchCancelled = false;
     inline bool lastSearchTurnIsWhite = true;
+
+    volatile inline bool searchCancelled = false;
 
     inline Move bestMove = NULL_MOVE;
 

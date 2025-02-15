@@ -7,10 +7,11 @@
 
 #include "movegen.h"
 #include "piecesquaretable.h"
+#include "san.h"
 #include "transpositiontable.h"
 
-void Search::orderMoves(ArrayVec<Move, 218>& moveVector, Move ttMove) {
-    auto getMoveScore = [&](const Move& move) -> int {
+void Search::orderMoves(ArrayVec<Move, 218> &moveVector, Move ttMove) {
+    auto getMoveScore = [&](const Move &move) -> int {
         int score = 0;
 
         if (move.from == ttMove.from && move.to == ttMove.to) {
@@ -30,7 +31,7 @@ void Search::orderMoves(ArrayVec<Move, 218>& moveVector, Move ttMove) {
     };
 
     std::sort(moveVector.buffer.begin(), moveVector.buffer.begin() + moveVector.elements,
-              [&](const Move& a, const Move& b) {
+              [&](const Move &a, const Move &b) {
                   return getMoveScore(a) > getMoveScore(b);
               });
 }
@@ -38,6 +39,7 @@ void Search::orderMoves(ArrayVec<Move, 218>& moveVector, Move ttMove) {
 
 void Search::startIterativeSearch(long time) {
     TranspositionTable::cutoffs = 0;
+    TranspositionTable::collisions = 0;
     searchCancelled = false;
     lastSearchTurnIsWhite = Board::whiteToMove;
     std::thread timerThread([time]() {
@@ -48,16 +50,17 @@ void Search::startIterativeSearch(long time) {
         searchCancelled = true;
     });
 
-    for (currentDepth = 0; currentDepth < 256; currentDepth++) {
+    for (currentDepth = 1; currentDepth < 256; currentDepth++) {
         SearchResult result = search(currentDepth);
 
         if (!searchCancelled) {
             currentEval = result.evaluation;
             bestMove = result.bestMove;
-            if (abs(result.evaluation) >= MATE_THRESHOLD)
+            if (abs(currentEval) > MATE_THRESHOLD) {
                 searchCancelled = true;
-        }
-        else {
+            }
+            std::cout << currentDepth << ":" << std::to_string(currentEval) << ":" << std::to_string(bestMove.from) << "," << std::to_string(bestMove.to) << std::endl;
+        } else {
             currentDepth--;
             break;
         }
@@ -73,27 +76,30 @@ SearchResult Search::search(int rootDepth, int depth, int alpha, int beta) {
     if (depth == 0)
         return {quiesce(alpha, beta), NULL_MOVE};
 
+    if (rootDepth > 1) {
+        if (Board::isDrawnByRepetition())
+            return {0, NULL_MOVE};
+        alpha = std::max(alpha, NEGATIVE_INFINITY + rootDepth * 100);
+        beta = std::min(beta, POSITIVE_INFINITY - rootDepth * 100);
+        if (alpha >= beta)
+            return {alpha, NULL_MOVE};
+    }
+
     TranspositionEntry entry = TranspositionTable::getEntry(Board::currentZobristKey);
-    int nodeType = UPPER_BOUND;
-    if (entry.zobristKey == Board::currentZobristKey && entry.depthSearched >= depth && rootDepth != 0) {
-        if (abs(entry.score) > MATE_THRESHOLD) {
-            if (entry.score < 0) {
-                entry.score += rootDepth * 100;
-            }else {
-                entry.score -= rootDepth * 100;
-            }
-        }
+    int nodeType = EXACT_BOUND;
+    if (entry.zobristKey == Board::currentZobristKey && entry.depthSearched >= depth && !searchCancelled) {
+        int correctedScore = TranspositionTable::correctScoreForRetrieval(entry.score, rootDepth);
         if (entry.nodeType == EXACT_BOUND) {
             TranspositionTable::cutoffs++;
-            return {entry.score, entry.bestMove};
+            return {correctedScore, entry.bestMove};
         }
-        if (entry.nodeType == UPPER_BOUND && entry.score < alpha) {
+        if (entry.nodeType == UPPER_BOUND && entry.score <= alpha) {
             TranspositionTable::cutoffs++;
-            return {entry.score, entry.bestMove};
+            return {correctedScore, entry.bestMove};
         }
         if (entry.nodeType == LOWER_BOUND && entry.score >= beta) {
             TranspositionTable::cutoffs++;
-            return {entry.score, entry.bestMove};
+            return {correctedScore, entry.bestMove};
         }
     }
 
@@ -119,7 +125,7 @@ SearchResult Search::search(int rootDepth, int depth, int alpha, int beta) {
             if (negatedScore > maximumScore) {
                 maximumScore = negatedScore;
                 bestMove = move;
-                nodeType = EXACT_BOUND;
+                nodeType = UPPER_BOUND;
             }
 
             if (beta <= alpha) {
@@ -129,15 +135,13 @@ SearchResult Search::search(int rootDepth, int depth, int alpha, int beta) {
         }
     }
 
-    if (Board::isDrawnByRepetition() && beta > alpha)
-        maximumScore = 0;
-
     if (!movesAvailable && beta > alpha) {
         maximumScore = Movegen::isKingInDanger(Board::whiteToMove) ? -NEGATIVE_INFINITY + rootDepth * 100 : 0;
     } // This returns NEGATIVE INFINITY for Checkmate (because what could be worse) and 0 for stalemate (which is a draw)
 
-    if (!searchCancelled)
-        TranspositionTable::addEntry(Board::currentZobristKey, bestMove, depth, maximumScore, nodeType);
+    if (!searchCancelled && !isNullMove(bestMove)) {
+        TranspositionTable::addEntry(Board::currentZobristKey, bestMove, rootDepth, depth, maximumScore, nodeType);
+    }
     return {maximumScore, bestMove};
 }
 
@@ -152,10 +156,9 @@ int Search::quiesce(int alpha, int beta) {
     if (alpha < standingPat)
         alpha = standingPat;
 
-    TranspositionEntry entry = TranspositionTable::getEntry(Board::currentZobristKey);
 
     ArrayVec<Move, 218> captures = Movegen::generateAllCapturesOnBoard();
-    orderMoves(captures, entry.zobristKey == Board::currentZobristKey ? entry.bestMove : NULL_MOVE);
+    orderMoves(captures, NULL_MOVE);
 
     for (int i = 0; i < captures.elements; i++) {
         Move move = captures.buffer.at(i);

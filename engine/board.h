@@ -39,6 +39,7 @@ namespace Board {
     // If the number of moves per game exceeds 1024, we are in deep trouble...
     inline uint64_t epMasks[1024];
     inline uint8_t castleRights[1024];
+    inline uint64_t zobristHistory[1024];
     inline uint32_t moveNumber = 0;
 
     inline uint8_t mailbox[64];

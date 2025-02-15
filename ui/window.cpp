@@ -2,6 +2,7 @@
 
 #include <array>
 #include <charconv>
+#include <iomanip>
 #include <thread>
 #include <SFML/Graphics.hpp>
 
@@ -10,13 +11,20 @@
 #include "../engine/search.h"
 #include "../engine/transpositiontable.h"
 #include "../engine/zobrist.h"
+#include "../engine/old/oldsearch.h"
 
 void BoardWindow::playBotMove() {
     thinking = true;
     std::thread([]() {
-        Search::startIterativeSearch(3000);
-        Board::move(Search::bestMove);
-        thinking = false;
+        if (Board::whiteToMove) {
+            Search::startIterativeSearch(3000);
+            Board::move(Search::bestMove);
+            thinking = false;
+        } else {
+            OldSearch::startIterativeSearch(3000);
+            Board::move(OldSearch::bestMove);
+            thinking = false;
+        }
     }).detach(); // Detach thread as it's self-contained
 }
 
@@ -88,7 +96,7 @@ void BoardWindow::init() {
     destroy();
 }
 
-void BoardWindow::update(sf::RenderWindow& window) {
+void BoardWindow::update(sf::RenderWindow &window) {
     if (!thinking) {
         for (int i = 0; i < 64; i++) {
             displayBoard[i] = Board::getPiece(i);
@@ -99,11 +107,9 @@ void BoardWindow::update(sf::RenderWindow& window) {
 
             thinking = true;
             std::thread([]() {
-                Search::startIterativeSearch(20000);
+            Search::startIterativeSearch(20000);
             }).detach();
-            // if (!Board::whiteToMove) {
             // playBotMove();
-            // }
         }
     }
 
@@ -127,8 +133,7 @@ void BoardWindow::update(sf::RenderWindow& window) {
             rect.setFillColor(sf::Color(181, 181, 25, 75));
             rect.setPosition(sf::Vector2f(ix * 75.F, iy * 75.F));
             window.draw(rect);
-        }
-        {
+        } {
             int ix = lastMove[Board::moveNumber].from % 8;
             int iy = 7 - lastMove[Board::moveNumber].from / 8;
             sf::RectangleShape rect(sf::Vector2f(75, 75));
@@ -146,8 +151,7 @@ void BoardWindow::update(sf::RenderWindow& window) {
             rect.setFillColor(sf::Color(25, 181, 25, 75));
             rect.setPosition(sf::Vector2f(ix * 75.F, iy * 75.F));
             window.draw(rect);
-        }
-        {
+        } {
             int ix = Search::bestMove.from % 8;
             int iy = 7 - Search::bestMove.from / 8;
             sf::RectangleShape rect(sf::Vector2f(75, 75));
@@ -196,18 +200,38 @@ void BoardWindow::update(sf::RenderWindow& window) {
     sf::Text text;
     text.setFillColor(sf::Color::White);
     text.setFont(font);
-    std::string str = std::to_string(
-        static_cast<float>((Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval) / 100.F);
-    if (abs((Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval / 100.F) > Search::MATE_THRESHOLD / 200.F) {
-        str = "M" + std::to_string((int)(Search::POSITIVE_INFINITY / 100.F - abs(
-            static_cast<float>(
-                (Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval) /
-            100.F)) / 2 + 1);
+
+    std::ostringstream ss1;
+    ss1 << std::fixed << std::setprecision(2);
+    ss1 << static_cast<float>((Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval) / 100.F;
+    std::string str = ss1.str();
+
+    // Check if it's a mate score
+    if (abs((Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval / 100.F) > MATE_THRESHOLD / 200.F) {
+        str = "M" + std::to_string((int) (
+                                       Search::POSITIVE_INFINITY / 100.F - abs(
+                                           static_cast<float>(
+                                               (Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval) / 100.F))
+                                   / 2 + 1);
     }
-    text.setString(
-        "Depth: " + std::to_string(Search::currentDepth) + " Eval: " + str + (
-            Search::searchCancelled ? " Cancelled" : "") + "\nTransposition Table Entries: "
-        + std::to_string(TranspositionTable::tableEntries) + "\nTransposition Search Cutoffs: " + std::to_string(TranspositionTable::cutoffs));
+    std::ostringstream ss;
+    ss << std::fixed << std::setprecision(2);
+
+    ss << "Depth: " << std::to_string(Search::currentDepth)
+            << "\nEvaluation: " << str
+            << (Search::searchCancelled ? " Cancelled" : "")
+            << "\nTransposition Table Usage: "
+            << (double) TranspositionTable::tableEntries / (double) TranspositionTable::TRANSPOSITION_TABLE_SIZE *
+            (sizeof(TranspositionEntry) * TranspositionTable::TRANSPOSITION_TABLE_SIZE / (double) 1000000)
+            << "/"
+            << (sizeof(TranspositionEntry) * TranspositionTable::TRANSPOSITION_TABLE_SIZE / (double) 1000000)
+            << "MB"
+            << "\nTransposition Search Cutoffs: " << std::to_string(TranspositionTable::cutoffs)
+            << "\nTransposition Table Collisions: "
+            << ((double) TranspositionTable::collisions / (double) TranspositionTable::tableEntries * 100)
+            << "%";
+
+    text.setString(ss.str());
     text.setCharacterSize(25);
     text.setPosition(sf::Vector2f(75 * 8 + 35, 5));
     window.draw(text);

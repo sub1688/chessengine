@@ -3,58 +3,79 @@
 #include <iostream>
 #include <string>
 
+#include "engine/san.h"
 #include "engine/movegen.h"
-#include "engine/zobrist.h"
 #include "engine/piecesquaretable.h"
 #include "engine/search.h"
+#include "engine/zobrist.h"
 #include "ui/window.h"
 
-namespace TranspositionTable {
-    inline uint64_t tableEntries;
-    void addEntry(uint64_t zobristKey, Move bestMove, int depthSearched, int score, int nodeType);
-    void clear();
-}
+void startCLIListening() {
+    int passes = 0;
+    while (passes++ < 100000) {
+        std::string input;
+        std::getline(std::cin, input);
 
-uint64_t testPerftTranspositionTable(int depth) {
-    uint64_t perftCount = 0;
-
-    // Generate all legal moves for the current position
-    ArrayVec<Move, 218> moves = Movegen::generateAllLegalMovesOnBoard();
-
-    for (int i = 0; i < moves.elements; i++) {
-        Move move = moves.buffer.at(i);
-
-        if (Board::move(move)) {
-            TranspositionTable::addEntry(Board::currentZobristKey, Search::NULL_MOVE, 0, 0, 0);
-            if (depth == 1) {
-                perftCount++; // At depth 1, count the legal move
+        if (input == "exit")
+            break;
+        if (input == "ping") {
+            std::cout << "pong\n";
+        } else if (input == "reset") {
+            Board::setStartingPosition();
+        } else if (input == "print") {
+            Board::printBoard();
+        } else if (input.starts_with("move")) {
+            if (input.length() <= 5) {
+                std::cout << "Error: provide a valid move\n";
+                continue;
             }
-            else {
-                // Recursively count moves at the next depth
-                perftCount += testPerftTranspositionTable(depth - 1);
+            std::string move = input.substr(5);
+
+            ArrayVec<Move, 218> moves = Movegen::generateAllLegalMovesOnBoard();
+
+            int prevMoveNumber = Board::moveNumber;
+            for (int i = 0; i < moves.elements; i++) {
+                Move moveObj = moves.buffer[i];
+
+                if (StandardAlgebraicNotation::boardToSan(moveObj) == move) {
+                    Board::move(moveObj);
+                    std::cout << "Moved: " << move << std::endl;
+                    break;
+                }
+
             }
-            // Undo the move to restore the board state
-            Board::undoMove(move);
+            if (Board::moveNumber == prevMoveNumber) {
+                std::cout << "Error: finding move: " << move << " is not legal" << std::endl;
+            }
+        } else if (input.starts_with("search")) {
+            if (input.length() <= 7) {
+                std::cout << "Error: provide a valid time setting\n";
+                continue;
+            }
+
+            int milliseconds = std::stoi(input.substr(7));
+
+            Search::startIterativeSearch(milliseconds);
+            std::cout << "Search complete.\n";
         }
     }
-
-    return perftCount;
 }
 
 int main() {
+    std::cout << "[+] Generating random zobrist keys...\n";
     Zobrist::init();
+    std::cout << "[+] Setting Board Startpos...\n";
     Board::setStartingPosition();
-    // Board::importFEN("8/8/k7/8/K1R5/8/8/8 w - - 0 1");
-    Board::importFEN("k7/8/8/8/8/8/8/1RK5 w - - 0 1");
 
+    std::cout << "[+] Movegen init...\n";
     Movegen::init();
+    std::cout << "[+] PST init...\n";
     PieceSquareTable::initializePieceSquareTable();
+    std::cout << "[+] Done!\n";
 
-    TranspositionTable::clear();
-    // testPerftTranspositionTable(6);
+    // Board::importFEN("k7/8/8/8/8/8/8/1RK5 w - - 0 1");
 
-    // std::cout << std::to_string(TranspositionTable::tableEntries) << std::endl;
+    // startCLIListening();
 
     BoardWindow::init();
-    return 0;
 }

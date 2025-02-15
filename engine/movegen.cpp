@@ -23,6 +23,10 @@ uint64_t Movegen::perft(int depth) {
             }
             // Undo the move to restore the board state
             Board::undoMove(move);
+            if (Board::currentZobristKey != Zobrist::calculateZobristKey()) {
+                std::cout << "HELP" << std::endl;
+                exit(0);
+            }
         }
     }
 
@@ -434,7 +438,7 @@ uint64_t Movegen::precomputeBishopMovesWithBlocker(uint8_t squareIndex, uint64_t
     uint64_t legalMoves = 0ULL;
 
     int rank = squareIndex / 8;
-    int file = squareIndex % 8;
+    int file = squareIndex & 7;
 
     // North-East (rank increases, file increases)
     for (int r = rank + 1, f = file + 1; r < 8 && f < 8; ++r, ++f) {
@@ -472,7 +476,7 @@ uint64_t Movegen::precomputeRookMovesWithBlocker(uint8_t squareIndex, uint64_t b
     uint64_t legalMoves = 0ULL;
 
     int rank = squareIndex / 8;
-    int file = squareIndex % 8;
+    int file = squareIndex & 7;
 
     // North (increasing rank)
     for (int r = rank + 1; r < 8; ++r) {
@@ -564,7 +568,7 @@ uint64_t Movegen::generateRookMovementMask(uint8_t squareIndex) {
 
     // Calculate north, south, east, west rays
     int rank = squareIndex / 8;
-    int file = squareIndex % 8;
+    int file = squareIndex & 7;
 
     // North ray (rank increases)
     for (int r = rank + 1; r < 7; ++r) {
@@ -597,7 +601,7 @@ uint64_t Movegen::generateBishopMovementMask(uint8_t squareIndex) {
     uint64_t movementMask = 0ULL;
 
     int rank = squareIndex / 8;
-    int file = squareIndex % 8;
+    int file = squareIndex & 7; // & 7 is used to replace mod 8 because it is slightly faster as it doesnt require division. This trick only works for integers that are a power of 2 tho.a
 
     // North-East (rank++, file++)
     for (int r = rank + 1, f = file + 1; r < 7 && f < 7; ++r, ++f) {

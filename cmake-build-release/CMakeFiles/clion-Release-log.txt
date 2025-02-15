@@ -1,7 +1,0 @@
-/app/extra/clion/bin/cmake/linux/x64/bin/cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_MAKE_PROGRAM=/app/extra/clion/bin/ninja/linux/x64/ninja -G Ninja -S /home/admin/Desktop/chessengine -B /home/admin/Desktop/chessengine/cmake-build-release
--- libudev stable: 1
--- Found UDev: /usr/lib/x86_64-linux-gnu/libudev.so
---    include: /usr/include
--- Configuring done (1.3s)
--- Generating done (0.0s)
--- Build files have been written to: /home/admin/Desktop/chessengine/cmake-build-release

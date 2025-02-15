@@ -7,9 +7,7 @@
 #include "zobrist.h"
 
 namespace TranspositionTable {
-    void incrementRepetitionEntry(uint64_t zobristKey);
-    void decrementRepetitionEntry(uint64_t zobristKey);
-    uint8_t getRepetitionEntry(uint64_t zobristKey);
+    void clear();
 }
 
 namespace Movegen {
@@ -149,8 +147,7 @@ bool Board::move(Move m) {
     currentZobristKey ^= Zobrist::castleRightsKeys[castleRights[moveNumber - 1]];
     currentZobristKey ^= Zobrist::castleRightsKeys[castleRights[moveNumber]];
 
-    TranspositionTable::incrementRepetitionEntry(currentZobristKey);
-
+    zobristHistory[moveNumber] = currentZobristKey;
     return true;
 }
 
@@ -159,10 +156,6 @@ void Board::undoMove(Move m) {
 }
 
 void Board::undoMove(Move m, bool noZobrist) {
-    if (!noZobrist) {
-        TranspositionTable::decrementRepetitionEntry(currentZobristKey);
-    }
-
     setPiece(m.from, m.pieceFrom);
     if (m.enPassantTarget != 0) {
         setPiece(m.enPassantTarget, m.capture);
@@ -290,6 +283,7 @@ void Board::setStartingPosition() {
         }
     }
     currentZobristKey = Zobrist::calculateZobristKey();
+    TranspositionTable::clear();
 }
 
 
@@ -416,6 +410,7 @@ void Board::importFEN(const std::string& fen) {
         }
     }
     currentZobristKey = Zobrist::calculateZobristKey();
+    TranspositionTable::clear();
 }
 
 bool Board::canWhiteCastleKingside(uint32_t moveNumber) {
@@ -471,5 +466,14 @@ void Board::setBlackCastleQueenside(uint32_t moveNumber, bool value) {
 }
 
 bool Board::isDrawnByRepetition() {
-    return TranspositionTable::getRepetitionEntry(Board::currentZobristKey) >= 3;
+    int count = 0;
+    uint64_t currentKey = zobristHistory[moveNumber - 1]; // The Zobrist key of the current position
+    for (uint8_t i = moveNumber - 1; i != 0; i--) { // Iterate through history in reverse
+        if (zobristHistory[i] == currentKey) {
+            count++;
+            if (count >= 3) return true; // If the position has occurred at least 3 times, it's a draw
+        }
+    }
+    return false;
 }
+
