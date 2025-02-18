@@ -284,6 +284,8 @@ void Board::setStartingPosition() {
     }
     currentZobristKey = Zobrist::calculateZobristKey();
     TranspositionTable::clear();
+
+    whiteToMove = true;
 }
 
 
@@ -411,6 +413,8 @@ void Board::importFEN(const std::string& fen) {
     }
     currentZobristKey = Zobrist::calculateZobristKey();
     TranspositionTable::clear();
+
+    moveNumber = 1;
 }
 
 bool Board::canWhiteCastleKingside(uint32_t moveNumber) {
@@ -477,3 +481,60 @@ bool Board::isDrawnByRepetition() {
     return false;
 }
 
+
+std::string Board::generateFEN() {
+    std::string fen = "";
+
+    // Piece placement
+    for (int rank = 7; rank >= 0; rank--) {
+        int emptySquares = 0;
+        for (int file = 0; file < 8; file++) {
+            int square = rank * 8 + file;
+            int piece = mailbox[square];
+
+            if (piece == NONE) {
+                emptySquares++;
+            } else {
+                if (emptySquares > 0) {
+                    fen += std::to_string(emptySquares);
+                    emptySquares = 0;
+                }
+
+                switch (piece) {
+                case WHITE_PAWN:   fen += 'P'; break;
+                case WHITE_KNIGHT: fen += 'N'; break;
+                case WHITE_BISHOP: fen += 'B'; break;
+                case WHITE_ROOK:   fen += 'R'; break;
+                case WHITE_QUEEN:  fen += 'Q'; break;
+                case WHITE_KING:   fen += 'K'; break;
+                case BLACK_PAWN:   fen += 'p'; break;
+                case BLACK_KNIGHT: fen += 'n'; break;
+                case BLACK_BISHOP: fen += 'b'; break;
+                case BLACK_ROOK:   fen += 'r'; break;
+                case BLACK_QUEEN:  fen += 'q'; break;
+                case BLACK_KING:   fen += 'k'; break;
+                }
+            }
+        }
+        if (emptySquares > 0) fen += std::to_string(emptySquares);
+        if (rank > 0) fen += '/';
+    }
+
+    // Active color
+    fen += " ";
+    fen += (whiteToMove ? 'w' : 'b');
+
+    // Castling rights
+    fen += " ";
+    bool hasCastling = false;
+    if (canWhiteCastleKingside(moveNumber)) { fen += 'K'; hasCastling = true; }
+    if (canWhiteCastleQueenside(moveNumber)) { fen += 'Q'; hasCastling = true; }
+    if (canBlackCastleKingside(moveNumber)) { fen += 'k'; hasCastling = true; }
+    if (canBlackCastleQueenside(moveNumber)) { fen += 'q'; hasCastling = true; }
+    if (!hasCastling) fen += "-";
+
+    // En passant target
+    fen += " -";
+
+    return fen;
+}

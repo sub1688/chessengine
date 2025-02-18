@@ -405,6 +405,18 @@ bool Movegen::inCheckmate() {
     return true;
 }
 
+
+bool Movegen::inStalemate() {
+    ArrayVec<Move, 218> moves = generateAllLegalMovesOnBoard();
+    for (int i = 0; i < moves.elements; i++) {
+        if (Board::move(moves.buffer[i])) {
+            Board::undoMove(moves.buffer[i]);
+            return false;
+        }
+    }
+    return !isKingInDanger(Board::whiteToMove);
+}
+
 void Movegen::precomputeMovementMasks() {
     for (int i = 0; i < 64; i++) {
         ROOK_MOVEMENT_MASKS[i] = generateRookMovementMask(i);

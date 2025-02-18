@@ -64,7 +64,5 @@ void PieceSquareTable::initializePieceSquareTable() {
     flipVertically(KING_ENDGAME_TABLE, flippedEndgameTable);
     std::copy(std::begin(flippedEndgameTable), std::end(flippedEndgameTable), PIECE_SQUARE_TABLE_ENDGAME[BLACK_KING]);
 
-    flipVertically(ROOK_TABLE, flippedEndgameTable);
-    std::copy(std::begin(flippedEndgameTable), std::end(flippedEndgameTable), PIECE_SQUARE_TABLE_ENDGAME[BLACK_ROOK]);
 }
 

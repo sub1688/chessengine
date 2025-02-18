@@ -16,7 +16,17 @@ std::string StandardAlgebraicNotation::boardToSan(const Move &move) {
     // Pawn moves (e.g., "e4")
     if (pieceChar == 'P') {
         if (move.capture != NONE) {
+            if (move.promotion != NONE) {
+                dest += "=";
+                dest += getSanPieceChar(move.promotion); // Append char separately
+            }
+
             return squareToFile(move.from) + "x" + dest;
+        }
+
+        if (move.promotion != NONE) {
+            dest += "=";
+            dest += getSanPieceChar(move.promotion); // Append char separately
         }
         return dest;
     }
@@ -44,10 +54,34 @@ std::string StandardAlgebraicNotation::boardToSan(const Move &move) {
     return sanMove;
 }
 
+std::vector<std::string> StandardAlgebraicNotation::split(const std::string& str, char delimiter) {
+    std::vector<std::string> result;
+    size_t start = 0, end;
+
+    while ((end = str.find(delimiter, start)) != std::string::npos) {
+        result.push_back(str.substr(start, end - start));
+        start = end + 1;
+    }
+    result.push_back(str.substr(start)); // Last part
+
+    return result;
+}
+
 std::string StandardAlgebraicNotation::squareToString(int square) {
     char file = 'a' + (square % 8);
     char rank = '1' + (square / 8);
     return std::string(1, file) + std::string(1, rank);
+}
+
+int StandardAlgebraicNotation::stringToSquare(const std::string& square) {
+    if (square.length() != 2) return -1; // Invalid input
+
+    char file = square[0];
+    char rank = square[1];
+
+    if (file < 'a' || file > 'h' || rank < '1' || rank > '8') return -1; // Out of range
+
+    return (rank - '1') * 8 + (file - 'a');
 }
 
 char StandardAlgebraicNotation::getSanPieceChar(int piece) {

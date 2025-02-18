@@ -11,20 +11,13 @@
 #include "../engine/search.h"
 #include "../engine/transpositiontable.h"
 #include "../engine/zobrist.h"
-#include "../engine/old/oldsearch.h"
 
 void BoardWindow::playBotMove() {
     thinking = true;
     std::thread([]() {
-        if (Board::whiteToMove) {
-            Search::startIterativeSearch(3000);
-            Board::move(Search::bestMove);
-            thinking = false;
-        } else {
-            OldSearch::startIterativeSearch(3000);
-            Board::move(OldSearch::bestMove);
-            thinking = false;
-        }
+        Search::startIterativeSearch(3000);
+        Board::move(Search::bestMove);
+        thinking = false;
     }).detach(); // Detach thread as it's self-contained
 }
 
@@ -107,7 +100,7 @@ void BoardWindow::update(sf::RenderWindow &window) {
 
             thinking = true;
             std::thread([]() {
-            Search::startIterativeSearch(20000);
+                Search::startIterativeSearch(20000);
             }).detach();
             // playBotMove();
         }
@@ -229,7 +222,7 @@ void BoardWindow::update(sf::RenderWindow &window) {
             << "\nTransposition Search Cutoffs: " << std::to_string(TranspositionTable::cutoffs)
             << "\nTransposition Table Collisions: "
             << ((double) TranspositionTable::collisions / (double) TranspositionTable::tableEntries * 100)
-            << "%";
+            << "%\nEndgame Bias: " << Search::getEndGameBias();
 
     text.setString(ss.str());
     text.setCharacterSize(25);

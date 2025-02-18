@@ -31,14 +31,14 @@ add_executable(chessengine main.cpp
         engine/piecesquaretable.h
         engine/piecesquaretable.cpp
         util/arrayvec.h
-        engine/old/oldsearch.h
-        engine/old/oldsearch.cpp
         engine/zobrist.h
         engine/zobrist.cpp
         engine/transpositiontable.h
         engine/transpositiontable.cpp
         engine/san.h
-        engine/san.cpp)
+        engine/san.cpp
+        engine/openingbook.h
+        engine/openingbook.cpp)
 
 target_link_libraries(chessengine PRIVATE sfml-graphics sfml-window sfml-system)
 

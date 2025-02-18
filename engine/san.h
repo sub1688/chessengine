@@ -3,8 +3,11 @@
 #include <string>
 
 #include "board.h"
+#include <vector>
 
 namespace StandardAlgebraicNotation {
+    int stringToSquare(const std::string &square);
+
     std::string boardToSan(const Move &move);
 
     bool requiresDisambiguation(const Move &move);
@@ -20,4 +23,6 @@ namespace StandardAlgebraicNotation {
     char getSanPiecePromotion(int piece);
 
     std::string squareToFile(int square);
+
+    std::vector<std::string> split(const std::string &str, char delimiter);
 }

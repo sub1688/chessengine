@@ -36,7 +36,6 @@ namespace Board {
     inline bool whiteToMove = true;
 
     // En Passant
-    // If the number of moves per game exceeds 1024, we are in deep trouble...
     inline uint64_t epMasks[1024];
     inline uint8_t castleRights[1024];
     inline uint64_t zobristHistory[1024];
@@ -86,4 +85,6 @@ namespace Board {
     bool isDrawnByRepetition();
 
     uint8_t getPiece(int index);
+
+    std::string generateFEN();
 }

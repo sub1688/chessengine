@@ -134,9 +134,10 @@ namespace Movegen {
 
     void printMovementMask(uint64_t mask);
 
-    uint8_t popLeastSignificantBitAndGetIndex(uint64_t& num);
+    uint8_t popLeastSignificantBitAndGetIndex(uint64_t &num);
 
     ArrayVec<Move, 218> generateAllLegalMovesOnBoard();
+
     ArrayVec<Move, 218> generateAllCapturesOnBoard();
 
     bool isSquareAttacked(uint8_t kingIndex, bool white);
@@ -144,4 +145,6 @@ namespace Movegen {
     bool isKingInDanger(bool white);
 
     void init();
+
+    bool inStalemate();
 }
