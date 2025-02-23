@@ -2,383 +2,257 @@
 #include <array>
 #include <iostream>
 #include <random>
+#include <bits/ranges_algobase.h>
 
 #include "zobrist.h"
 
-uint64_t Movegen::perft(int depth) {
+uint64_t Movegen::perft(Board &board, int depth) {
     uint64_t perftCount = 0;
 
     // Generate all legal moves for the current position
-    ArrayVec<Move, 218> moves = generateAllLegalMovesOnBoard();
+    ArrayVec<Move, 218> moves = generateAllLegalMovesOnBoard(board);
 
     for (int i = 0; i < moves.elements; i++) {
         Move move = moves.buffer.at(i);
-        if (Board::move(move)) {
+        if (board.move(move)) {
             if (depth == 1) {
                 perftCount++; // At depth 1, count the legal move
-            }
-            else {
+            } else {
                 // Recursively count moves at the next depth
-                perftCount += perft(depth - 1);
+                perftCount += perft(board, depth - 1);
             }
             // Undo the move to restore the board state
-            Board::undoMove(move);
-            if (Board::currentZobristKey != Zobrist::calculateZobristKey()) {
-                std::cout << "HELP" << std::endl;
-                exit(0);
-            }
+            board.undoMove(move);
         }
     }
 
     return perftCount;
 }
 
-ArrayVec<Move, 218> Movegen::generateAllLegalMovesOnBoard() {
+ArrayVec<Move, 218> Movegen::generateAllLegalMovesOnBoard(Board &board, bool capturesOnly) {
+    bool whiteToMove = board.whiteToMove;
     ArrayVec<Move, 218> legalMoves(0);
-
-    int arrayIndex = 0;
-    bool whiteToMove = Board::whiteToMove;
-
-    uint64_t currentOccupancy = whiteToMove ? Board::BITBOARD_WHITE_OCCUPANCY : Board::BITBOARD_BLACK_OCCUPANCY;
-    while (currentOccupancy) {
-        int pieceIndex = popLeastSignificantBitAndGetIndex(currentOccupancy);
-        uint64_t pseudoLegalMoves = 0ULL;
-        uint64_t castleMoves = 0ULL;
-        uint64_t pseudoLegalEnPassantMoves = 0ULL;
-        uint8_t piece = Board::getPiece(pieceIndex);
-        bool promotion = false;
-
-        switch (piece) {
-        case BLACK_PAWN:
-            {
-                pseudoLegalMoves = generatePseudoLegalPawnMoves(pieceIndex, false);
-                pseudoLegalEnPassantMoves = generatePseudoLegalEnPassantMoves(pieceIndex, false);
-                promotion = pseudoLegalMoves & RANK_1;
-                break;
-            }
-        case WHITE_PAWN:
-            {
-                pseudoLegalMoves = generatePseudoLegalPawnMoves(pieceIndex, true);
-                pseudoLegalEnPassantMoves = generatePseudoLegalEnPassantMoves(pieceIndex, true);
-                promotion = pseudoLegalMoves & RANK_8;
-                break;
-            }
-        case BLACK_KNIGHT:
-        case WHITE_KNIGHT:
-            pseudoLegalMoves = generatePseudoLegalKnightMoves(pieceIndex, whiteToMove);
-            break;
-        case WHITE_BISHOP:
-        case BLACK_BISHOP:
-            pseudoLegalMoves = generatePseudoLegalBishopMoves(pieceIndex, whiteToMove);
-            break;
-        case WHITE_ROOK:
-        case BLACK_ROOK:
-            pseudoLegalMoves = generatePseudoLegalRookMoves(pieceIndex, whiteToMove);
-            break;
-        case WHITE_KING:
-        case BLACK_KING:
-            pseudoLegalMoves = generatePseudoLegalKingMoves(pieceIndex, whiteToMove);
-            castleMoves = generatePseudoLegalCastleMoves(whiteToMove);
-            break;
-        case BLACK_QUEEN:
-        case WHITE_QUEEN:
-            pseudoLegalMoves = generatePseudoLegalQueenMoves(pieceIndex, whiteToMove);
-            break;
-        default:
-            continue;
-        }
-
-        while (pseudoLegalMoves) {
-            uint8_t targetIndex = popLeastSignificantBitAndGetIndex(pseudoLegalMoves);
-            if (promotion) {
-                for (uint8_t promote : whiteToMove ? PROMOTE_PIECES_WHITE : PROMOTE_PIECES_BLACK) {
-                    Move move = Move(pieceIndex, targetIndex);
-                    move.capture = Board::getPiece(targetIndex);
-                    move.pieceFrom = piece;
-                    move.promotion = promote;
-                    legalMoves.buffer[arrayIndex++] = move;
-                }
-            }
-            else {
-                Move move = Move(pieceIndex, targetIndex);
-                move.capture = Board::getPiece(targetIndex);
-                move.pieceFrom = piece;
-                legalMoves.buffer[arrayIndex++] = move;
-            }
-        }
-
-        while (pseudoLegalEnPassantMoves) {
-            uint8_t targetIndex = popLeastSignificantBitAndGetIndex(pseudoLegalEnPassantMoves);
-            Move move = Move(pieceIndex, targetIndex);
-            move.enPassantTarget = whiteToMove ? targetIndex - 8 : targetIndex + 8;
-            move.capture = whiteToMove ? BLACK_PAWN : WHITE_PAWN;
-            move.pieceFrom = piece;
-            legalMoves.buffer[arrayIndex++] = move;
-        }
-
-        while (castleMoves) {
-            uint8_t targetIndex = popLeastSignificantBitAndGetIndex(castleMoves);
-            Move move = Move(pieceIndex, targetIndex);
-            move.capture = NONE;
-            move.pieceFrom = whiteToMove ? WHITE_KING : BLACK_KING;
-            move.castle = true;
-            legalMoves.buffer[arrayIndex++] = move;
+    for (int i = whiteToMove ? 0 : 6; i < (whiteToMove ? 6 : 12); i++) {
+        uint64_t pieceBitboard = board.BITBOARDS[i];
+        while (pieceBitboard) {
+            uint8_t index = popLeastSignificantBitAndGetIndex(pieceBitboard);
+            generatePseudoLegalMoves(board, index, i, whiteToMove, capturesOnly, legalMoves);
         }
     }
-    legalMoves.elements = arrayIndex;
     return legalMoves;
 }
 
+ArrayVec<Move, 218> Movegen::generateAllLegalMovesOnBoard(Board &board) {
+    return generateAllLegalMovesOnBoard(board, false);
+}
 
-ArrayVec<Move, 218> Movegen::generateAllCapturesOnBoard() {
-    ArrayVec<Move, 218> legalMoves(0);
+void Movegen::generatePseudoLegalMoves(Board &board, uint8_t squareIndex, uint8_t piece, bool white, bool capturesOnly,
+                                       ArrayVec<Move, 218> &movesVec) {
+    uint64_t moves = 0ULL;
+    uint64_t castleMoves = 0ULL;
+    uint64_t enPassantMove = 0ULL;
+    bool promotion = false;
 
-    int arrayIndex = 0;
-    bool whiteToMove = Board::whiteToMove;
-
-    uint64_t currentOccupancy = whiteToMove ? Board::BITBOARD_WHITE_OCCUPANCY : Board::BITBOARD_BLACK_OCCUPANCY;
-    uint64_t opponentOccupancy = whiteToMove ? Board::BITBOARD_BLACK_OCCUPANCY : Board::BITBOARD_WHITE_OCCUPANCY;
-    while (currentOccupancy) {
-        int pieceIndex = popLeastSignificantBitAndGetIndex(currentOccupancy);
-        uint64_t pseudoLegalMoves = 0ULL;
-        uint64_t castleMoves = 0ULL;
-        uint64_t pseudoLegalEnPassantMoves = 0ULL;
-        uint8_t piece = Board::getPiece(pieceIndex);
-        bool promotion = false;
-
-        switch (piece) {
-        case BLACK_PAWN:
-            {
-                pseudoLegalMoves = generatePseudoLegalPawnMoves(pieceIndex, false) & opponentOccupancy;
-                pseudoLegalEnPassantMoves = generatePseudoLegalEnPassantMoves(pieceIndex, false) & opponentOccupancy;
-                promotion = pseudoLegalMoves & RANK_1;
-                break;
-            }
+    switch (piece % 6) {
         case WHITE_PAWN:
-            {
-                pseudoLegalMoves = generatePseudoLegalPawnMoves(pieceIndex, true) & opponentOccupancy;
-                pseudoLegalEnPassantMoves = generatePseudoLegalEnPassantMoves(pieceIndex, true) & opponentOccupancy;
-                promotion = pseudoLegalMoves & RANK_8;
-                break;
-            }
-        case BLACK_KNIGHT:
+            moves = generatePseudoLegalPawnMoves(board, squareIndex, white);
+            enPassantMove = generatePseudoLegalEnPassantMoves(board, squareIndex, white);
+            promotion = moves & (white ? RANK_8 : RANK_1);
+            break;
         case WHITE_KNIGHT:
-            pseudoLegalMoves = generatePseudoLegalKnightMoves(pieceIndex, whiteToMove) & opponentOccupancy;
+            moves = generatePseudoLegalKnightMoves(board, squareIndex, white);
             break;
         case WHITE_BISHOP:
-        case BLACK_BISHOP:
-            pseudoLegalMoves = generatePseudoLegalBishopMoves(pieceIndex, whiteToMove) & opponentOccupancy;
+            moves = generatePseudoLegalBishopMoves(board, squareIndex, white);
             break;
         case WHITE_ROOK:
-        case BLACK_ROOK:
-            pseudoLegalMoves = generatePseudoLegalRookMoves(pieceIndex, whiteToMove) & opponentOccupancy;
+            moves = generatePseudoLegalRookMoves(board, squareIndex, white);
+            break;
+        case WHITE_QUEEN:
+            moves = generatePseudoLegalQueenMoves(board, squareIndex, white);
             break;
         case WHITE_KING:
-        case BLACK_KING:
-            pseudoLegalMoves = generatePseudoLegalKingMoves(pieceIndex, whiteToMove) & opponentOccupancy;
-            castleMoves = generatePseudoLegalCastleMoves(whiteToMove) & opponentOccupancy;
+            moves = generatePseudoLegalKingMoves(board, squareIndex, white);
+            castleMoves = generatePseudoLegalCastleMoves(board, white);
             break;
-        case BLACK_QUEEN:
-        case WHITE_QUEEN:
-            pseudoLegalMoves = generatePseudoLegalQueenMoves(pieceIndex, whiteToMove) & opponentOccupancy;
-            break;
-        default:
-            continue;
-        }
+        default: break;
+    }
 
-        while (pseudoLegalMoves) {
-            uint8_t targetIndex = popLeastSignificantBitAndGetIndex(pseudoLegalMoves);
-            if (promotion) {
-                for (uint8_t promote : whiteToMove ? PROMOTE_PIECES_WHITE : PROMOTE_PIECES_BLACK) {
-                    Move move = Move(pieceIndex, targetIndex);
-                    move.capture = Board::getPiece(targetIndex);
-                    move.pieceFrom = piece;
-                    move.promotion = promote;
-                    legalMoves.buffer[arrayIndex++] = move;
-                }
-            }
-            else {
-                Move move = Move(pieceIndex, targetIndex);
-                move.capture = Board::getPiece(targetIndex);
-                move.pieceFrom = piece;
-                legalMoves.buffer[arrayIndex++] = move;
-            }
-        }
-
-        while (pseudoLegalEnPassantMoves) {
-            uint8_t targetIndex = popLeastSignificantBitAndGetIndex(pseudoLegalEnPassantMoves);
-            Move move = Move(pieceIndex, targetIndex);
-            move.enPassantTarget = whiteToMove ? targetIndex - 8 : targetIndex + 8;
-            move.capture = whiteToMove ? BLACK_PAWN : WHITE_PAWN;
-            move.pieceFrom = piece;
-            legalMoves.buffer[arrayIndex++] = move;
-        }
-
+    if (capturesOnly) {
+        uint64_t opponentBitboard = white ? board.BITBOARD_BLACK_OCCUPANCY : board.BITBOARD_WHITE_OCCUPANCY;
+        moves &= opponentBitboard;
+    } else {
         while (castleMoves) {
             uint8_t targetIndex = popLeastSignificantBitAndGetIndex(castleMoves);
-            Move move = Move(pieceIndex, targetIndex);
-            move.capture = NONE;
-            move.pieceFrom = whiteToMove ? WHITE_KING : BLACK_KING;
-            move.castle = true;
-            legalMoves.buffer[arrayIndex++] = move;
+
+            Move moveObj = Move(squareIndex, targetIndex);
+            moveObj.pieceFrom = piece;
+            moveObj.capture = NONE;
+            moveObj.castle = true;
+            movesVec.buffer[movesVec.elements++] = moveObj;
         }
     }
-    legalMoves.elements = arrayIndex;
-    return legalMoves;
+
+    if (promotion) {
+        while (moves) {
+            uint8_t targetIndex = popLeastSignificantBitAndGetIndex(moves);
+            for (uint8_t promotedPiece: white ? PROMOTE_PIECES_WHITE : PROMOTE_PIECES_BLACK) {
+                Move moveObj = Move(squareIndex, targetIndex);
+                moveObj.pieceFrom = piece;
+                moveObj.capture = board.getPiece(targetIndex);
+                moveObj.promotion = promotedPiece;
+                movesVec.buffer[movesVec.elements++] = moveObj;
+            }
+        }
+    } else {
+        while (moves) {
+            uint8_t targetIndex = popLeastSignificantBitAndGetIndex(moves);
+            Move moveObj = Move(squareIndex, targetIndex);
+            moveObj.pieceFrom = piece;
+            moveObj.capture = board.getPiece(targetIndex);
+            movesVec.buffer[movesVec.elements++] = moveObj;
+        }
+    }
+
+    if (enPassantMove) {
+        uint8_t targetIndex = popLeastSignificantBitAndGetIndex(enPassantMove);
+
+        Move moveObj = Move(squareIndex, targetIndex);
+        moveObj.pieceFrom = piece;
+        moveObj.capture = piece == WHITE_PAWN ? BLACK_PAWN : piece;
+        moveObj.enPassantTarget = piece == WHITE_PAWN ? targetIndex - 8 : targetIndex + 8;
+        movesVec.buffer[movesVec.elements++] = moveObj;
+    }
 }
 
-bool Movegen::isKingInDanger(bool white) {
-    uint8_t kingIndex = std::countr_zero(white ? Board::BITBOARDS[WHITE_KING] : Board::BITBOARDS[BLACK_KING]);
-    return isSquareAttacked(kingIndex, white);
+
+bool Movegen::isKingInDanger(Board &board, bool white) {
+    uint8_t kingIndex = std::countr_zero(white ? board.BITBOARDS[WHITE_KING] : board.BITBOARDS[BLACK_KING]);
+    return isSquareAttacked(board, kingIndex, white);
 }
 
-bool Movegen::isSquareAttacked(uint8_t kingIndex, bool white) {
-    uint64_t bishopMoves = generatePseudoLegalBishopMoves(kingIndex, white);
+bool Movegen::isSquareAttacked(Board &board, uint8_t kingIndex, bool white) {
+    uint64_t bishopMoves = generatePseudoLegalBishopMoves(board, kingIndex, white);
 
-    uint64_t opposingQueenBitboard = white ? Board::BITBOARDS[BLACK_QUEEN] : Board::BITBOARDS[WHITE_QUEEN];
-    uint64_t opposingBishopBitboard = white ? Board::BITBOARDS[BLACK_BISHOP] : Board::BITBOARDS[WHITE_BISHOP];
+    uint64_t opposingQueenBitboard = white ? board.BITBOARDS[BLACK_QUEEN] : board.BITBOARDS[WHITE_QUEEN];
+    uint64_t opposingBishopBitboard = white ? board.BITBOARDS[BLACK_BISHOP] : board.BITBOARDS[WHITE_BISHOP];
 
     if (bishopMoves & (opposingQueenBitboard | opposingBishopBitboard))
         return true;
 
-    uint64_t rookMoves = generatePseudoLegalRookMoves(kingIndex, white);
-    uint64_t opposingRookBitboard = white ? Board::BITBOARDS[BLACK_ROOK] : Board::BITBOARDS[WHITE_ROOK];
+    uint64_t rookMoves = generatePseudoLegalRookMoves(board, kingIndex, white);
+    uint64_t opposingRookBitboard = white ? board.BITBOARDS[BLACK_ROOK] : board.BITBOARDS[WHITE_ROOK];
 
     if (rookMoves & (opposingQueenBitboard | opposingRookBitboard))
         return true;
 
-    uint64_t knightMoves = generatePseudoLegalKnightMoves(kingIndex, white);
-    uint64_t opposingKnightBitboard = white ? Board::BITBOARDS[BLACK_KNIGHT] : Board::BITBOARDS[WHITE_KNIGHT];
+    uint64_t knightMoves = generatePseudoLegalKnightMoves(board, kingIndex, white);
+    uint64_t opposingKnightBitboard = white ? board.BITBOARDS[BLACK_KNIGHT] : board.BITBOARDS[WHITE_KNIGHT];
 
     if (knightMoves & opposingKnightBitboard)
         return true;
 
-    uint64_t kingMoves = generatePseudoLegalKingMoves(kingIndex, white);
-    uint64_t opposingKingBitboard = white ? Board::BITBOARDS[BLACK_KING] : Board::BITBOARDS[WHITE_KING];
+    uint64_t kingMoves = generatePseudoLegalKingMoves(board, kingIndex, white);
+    uint64_t opposingKingBitboard = white ? board.BITBOARDS[BLACK_KING] : board.BITBOARDS[WHITE_KING];
 
     if (kingMoves & opposingKingBitboard)
         return true;
 
-    uint64_t opposingPawnBitboard = white ? Board::BITBOARDS[BLACK_PAWN] : Board::BITBOARDS[WHITE_PAWN];
-    uint64_t pawnMoves = 0ULL;
-    if (white) {
-        pawnMoves |= 1ULL << (kingIndex + 9) & opposingPawnBitboard & NOT_FILE_A;
-        pawnMoves |= 1ULL << (kingIndex + 7) & opposingPawnBitboard & NOT_FILE_H;
-
-        if (pawnMoves & opposingPawnBitboard)
-            return true;
-    }
-    else {
-        pawnMoves |= 1ULL << (kingIndex - 9) & opposingPawnBitboard & NOT_FILE_H;
-        pawnMoves |= 1ULL << (kingIndex - 7) & opposingPawnBitboard & NOT_FILE_A;
-
-        if (pawnMoves & opposingPawnBitboard)
-            return true;
-    }
+    uint64_t opposingPawnBitboard = white ? board.BITBOARDS[BLACK_PAWN] : board.BITBOARDS[WHITE_PAWN];
+    if (PAWN_ATTACK_MASKS[kingIndex][white] & opposingPawnBitboard)
+        return true;
 
     return false;
 }
 
-uint64_t Movegen::generatePseudoLegalEnPassantMoves(uint8_t squareIndex, bool white) {
-    if (!Board::epMasks[Board::moveNumber])
-        return 0ULL;
-
+uint64_t Movegen::generatePawnMovementMask(uint8_t squareIndex, bool white) {
     uint64_t moves = 0ULL;
     if (white) {
-        moves |= 1ULL << (squareIndex + 9) & Board::epMasks[Board::moveNumber] & NOT_FILE_A;
-        moves |= 1ULL << (squareIndex + 7) & Board::epMasks[Board::moveNumber] & NOT_FILE_H;
-    }
-    else {
-        moves |= 1ULL << (squareIndex - 9) & Board::epMasks[Board::moveNumber] & NOT_FILE_H;
-        moves |= 1ULL << (squareIndex - 7) & Board::epMasks[Board::moveNumber] & NOT_FILE_A;
-    }
-    return moves;
-}
-
-uint64_t Movegen::generatePseudoLegalPawnMoves(uint8_t squareIndex, bool white) {
-    uint64_t moves = 0ULL;
-    uint64_t emptyBitboard = ~Board::BITBOARD_OCCUPANCY;
-    uint64_t opponentBitboard = white ? Board::BITBOARD_BLACK_OCCUPANCY : Board::BITBOARD_WHITE_OCCUPANCY;
-
-    if (white) {
-        uint64_t singlePush = 1ULL << (squareIndex + 8) & emptyBitboard;
+        uint64_t singlePush = 1ULL << (squareIndex + 8);
         moves |= singlePush;
         if (singlePush & RANK_3) {
-            moves |= 1ULL << (squareIndex + 16) & emptyBitboard;
+            moves |= 1ULL << (squareIndex + 16);
         }
-
-        moves |= 1ULL << (squareIndex + 9) & opponentBitboard & NOT_FILE_A;
-        moves |= 1ULL << (squareIndex + 7) & opponentBitboard & NOT_FILE_H;
-    }
-    else {
-        uint64_t singlePush = 1ULL << (squareIndex - 8) & emptyBitboard;
+    } else {
+        uint64_t singlePush = 1ULL << (squareIndex - 8);
         moves |= singlePush;
         if (singlePush & RANK_6) {
-            moves |= 1ULL << (squareIndex - 16) & emptyBitboard;
+            moves |= 1ULL << (squareIndex - 16);
         }
-        moves |= 1ULL << (squareIndex - 9) & opponentBitboard & NOT_FILE_H;
-        moves |= 1ULL << (squareIndex - 7) & opponentBitboard & NOT_FILE_A;
     }
     return moves;
 }
 
-uint64_t Movegen::generatePseudoLegalQueenMoves(uint8_t squareIndex, bool white) {
-    return generatePseudoLegalBishopMoves(squareIndex, white) | generatePseudoLegalRookMoves(squareIndex, white);
+uint64_t Movegen::generatePawnAttackMask(uint8_t squareIndex, bool white) {
+    uint64_t moves = 0ULL;
+    if (white) {
+        moves |= 1ULL << (squareIndex + 9) & NOT_FILE_A;
+        moves |= 1ULL << (squareIndex + 7) & NOT_FILE_H;
+    } else {
+        moves |= 1ULL << (squareIndex - 9) & NOT_FILE_H;
+        moves |= 1ULL << (squareIndex - 7) & NOT_FILE_A;
+    }
+    return moves;
 }
 
 
-uint64_t Movegen::generatePseudoLegalBishopMoves(uint8_t squareIndex, bool white) {
+uint64_t Movegen::generatePseudoLegalQueenMoves(Board &board, uint8_t squareIndex, bool white) {
+    return generatePseudoLegalBishopMoves(board, squareIndex, white) | generatePseudoLegalRookMoves(
+               board, squareIndex, white);
+}
+
+
+uint64_t Movegen::generatePseudoLegalBishopMoves(Board &board, uint8_t squareIndex, bool white) {
     uint64_t movementMask = BISHOP_MOVEMENT_MASKS[squareIndex];
-    uint64_t blockers = movementMask & Board::BITBOARD_OCCUPANCY;
+    uint64_t blockers = movementMask & board.BITBOARD_OCCUPANCY;
     uint64_t index = (blockers * BISHOP_MAGICS[squareIndex]) >> 52;
     return BISHOP_MOVE_TABLE[squareIndex][index] & (white
-                                                        ? ~Board::BITBOARD_WHITE_OCCUPANCY
-                                                        : ~Board::BITBOARD_BLACK_OCCUPANCY);
+                                                        ? ~board.BITBOARD_WHITE_OCCUPANCY
+                                                        : ~board.BITBOARD_BLACK_OCCUPANCY);
 }
 
-uint64_t Movegen::generatePseudoLegalRookMoves(uint8_t squareIndex, bool white) {
+uint64_t Movegen::generatePseudoLegalRookMoves(Board &board, uint8_t squareIndex, bool white) {
     uint64_t movementMask = ROOK_MOVEMENT_MASKS[squareIndex];
-    uint64_t blockers = movementMask & Board::BITBOARD_OCCUPANCY;
+    uint64_t blockers = movementMask & board.BITBOARD_OCCUPANCY;
     uint64_t index = (blockers * ROOK_MAGICS[squareIndex]) >> 52;
     return ROOK_MOVE_TABLE[squareIndex][index] & (white
-                                                      ? ~Board::BITBOARD_WHITE_OCCUPANCY
-                                                      : ~Board::BITBOARD_BLACK_OCCUPANCY);
+                                                      ? ~board.BITBOARD_WHITE_OCCUPANCY
+                                                      : ~board.BITBOARD_BLACK_OCCUPANCY);
 }
 
-uint64_t Movegen::generatePseudoLegalKingMoves(uint8_t squareIndex, bool white) {
+uint64_t Movegen::generatePseudoLegalKingMoves(Board &board, uint8_t squareIndex, bool white) {
     uint64_t movementMask = KING_MOVEMENT_MASKS[squareIndex];
-    return movementMask & (white ? ~Board::BITBOARD_WHITE_OCCUPANCY : ~Board::BITBOARD_BLACK_OCCUPANCY);
+    return movementMask & (white ? ~board.BITBOARD_WHITE_OCCUPANCY : ~board.BITBOARD_BLACK_OCCUPANCY);
 }
 
-uint64_t Movegen::generatePseudoLegalCastleMoves(bool white) {
+uint64_t Movegen::generatePseudoLegalCastleMoves(Board &board, bool white) {
     uint64_t castleMoves = 0ULL;
 
-    if (isKingInDanger(white))
+    if (isKingInDanger(board, white))
         return 0ULL;
 
     if (white) {
-        if (0x80ULL & Board::BITBOARDS[WHITE_ROOK] && Board::canWhiteCastleKingside(Board::moveNumber) &&
-            !(Board::BITBOARD_OCCUPANCY & 0x60ULL) &&
-            !isSquareAttacked(5, true)) {
+        if (0x80ULL & board.BITBOARDS[WHITE_ROOK] && board.canWhiteCastleKingside(board.moveNumber) &&
+            !(board.BITBOARD_OCCUPANCY & 0x60ULL) &&
+            !isSquareAttacked(board, 5, true)) {
             castleMoves |= 0x40ULL;
         }
 
-        if (0x1ULL & Board::BITBOARDS[WHITE_ROOK] && Board::canWhiteCastleQueenside(Board::moveNumber) &&
-            !(Board::BITBOARD_OCCUPANCY & 0xEULL) &&
-            !isSquareAttacked(3, true)) {
+        if (0x1ULL & board.BITBOARDS[WHITE_ROOK] && board.canWhiteCastleQueenside(board.moveNumber) &&
+            !(board.BITBOARD_OCCUPANCY & 0xEULL) &&
+            !isSquareAttacked(board, 3, true)) {
             castleMoves |= 0x4ULL;
         }
-    }
-    else {
-        if (0x8000000000000000ULL & Board::BITBOARDS[BLACK_ROOK] && Board::canBlackCastleKingside(Board::moveNumber) &&
-            !(Board::BITBOARD_OCCUPANCY & 0x6000000000000000ULL) &&
-            !isSquareAttacked(61, false)) {
+    } else {
+        if (0x8000000000000000ULL & board.BITBOARDS[BLACK_ROOK] && board.canBlackCastleKingside(board.moveNumber) &&
+            !(board.BITBOARD_OCCUPANCY & 0x6000000000000000ULL) &&
+            !isSquareAttacked(board, 61, false)) {
             castleMoves |= 0x4000000000000000ULL;
         }
 
-        if (0x100000000000000ULL & Board::BITBOARDS[BLACK_ROOK] && Board::canBlackCastleQueenside(Board::moveNumber) &&
-            !(Board::BITBOARD_OCCUPANCY & 0xE00000000000000ULL) &&
-            !isSquareAttacked(59, false)) {
+        if (0x100000000000000ULL & board.BITBOARDS[BLACK_ROOK] && board.canBlackCastleQueenside(board.moveNumber) &&
+            !(board.BITBOARD_OCCUPANCY & 0xE00000000000000ULL) &&
+            !isSquareAttacked(board, 59, false)) {
             castleMoves |= 0x400000000000000ULL;
         }
     }
@@ -386,19 +260,36 @@ uint64_t Movegen::generatePseudoLegalCastleMoves(bool white) {
     return castleMoves;
 }
 
-uint64_t Movegen::generatePseudoLegalKnightMoves(uint8_t squareIndex, bool white) {
-    uint64_t movementMask = KNIGHT_MOVEMENT_MASKS[squareIndex];
-    return movementMask & (white ? ~Board::BITBOARD_WHITE_OCCUPANCY : ~Board::BITBOARD_BLACK_OCCUPANCY);
+uint64_t Movegen::generatePseudoLegalPawnMoves(Board &board, uint8_t squareIndex, bool white) {
+    uint64_t movementMask = PAWN_MOVEMENT_MASKS[!white][squareIndex];
+    uint64_t attackMask = PAWN_ATTACK_MASKS[!white][squareIndex];
+    uint64_t opponentBitboard = white ? board.BITBOARD_BLACK_OCCUPANCY : board.BITBOARD_WHITE_OCCUPANCY;
+    uint64_t resultMask = 0;
+
+    if (1ULL << squareIndex + (white ? 8 : -8) & ~board.BITBOARD_OCCUPANCY) {
+        resultMask |= movementMask & ~board.BITBOARD_OCCUPANCY;
+    }
+
+    return resultMask | attackMask & opponentBitboard;
 }
 
-bool Movegen::inCheckmate() {
-    if (!isKingInDanger(Board::whiteToMove))
+uint64_t Movegen::generatePseudoLegalEnPassantMoves(Board &board, uint8_t squareIndex, bool white) {
+    return PAWN_ATTACK_MASKS[!white][squareIndex] & board.epMasks[board.moveNumber];
+}
+
+uint64_t Movegen::generatePseudoLegalKnightMoves(Board &board, uint8_t squareIndex, bool white) {
+    uint64_t movementMask = KNIGHT_MOVEMENT_MASKS[squareIndex];
+    return movementMask & (white ? ~board.BITBOARD_WHITE_OCCUPANCY : ~board.BITBOARD_BLACK_OCCUPANCY);
+}
+
+bool Movegen::inCheckmate(Board &board) {
+    if (!isKingInDanger(board, board.whiteToMove))
         return false;
 
-    ArrayVec<Move, 218> moves = generateAllLegalMovesOnBoard();
+    ArrayVec<Move, 218> moves = generateAllLegalMovesOnBoard(board);
     for (int i = 0; i < moves.elements; i++) {
-        if (Board::move(moves.buffer[i])) {
-            Board::undoMove(moves.buffer[i]);
+        if (board.move(moves.buffer[i])) {
+            board.undoMove(moves.buffer[i]);
             return false;
         }
     }
@@ -406,15 +297,15 @@ bool Movegen::inCheckmate() {
 }
 
 
-bool Movegen::inStalemate() {
-    ArrayVec<Move, 218> moves = generateAllLegalMovesOnBoard();
+bool Movegen::inStalemate(Board &board) {
+    ArrayVec<Move, 218> moves = generateAllLegalMovesOnBoard(board);
     for (int i = 0; i < moves.elements; i++) {
-        if (Board::move(moves.buffer[i])) {
-            Board::undoMove(moves.buffer[i]);
+        if (board.move(moves.buffer[i])) {
+            board.undoMove(moves.buffer[i]);
             return false;
         }
     }
-    return !isKingInDanger(Board::whiteToMove);
+    return !isKingInDanger(board, board.whiteToMove);
 }
 
 void Movegen::precomputeMovementMasks() {
@@ -423,13 +314,17 @@ void Movegen::precomputeMovementMasks() {
         BISHOP_MOVEMENT_MASKS[i] = generateBishopMovementMask(i);
         KING_MOVEMENT_MASKS[i] = generateKingMovementMask(i);
         KNIGHT_MOVEMENT_MASKS[i] = generateKnightMovementMask(i);
+        PAWN_MOVEMENT_MASKS[0][i] = generatePawnMovementMask(i, true);
+        PAWN_MOVEMENT_MASKS[1][i] = generatePawnMovementMask(i, false);
+        PAWN_ATTACK_MASKS[0][i] = generatePawnAttackMask(i, true);
+        PAWN_ATTACK_MASKS[1][i] = generatePawnAttackMask(i, false);
     }
 }
 
 void Movegen::precomputeRookMovegenTable() {
     for (int i = 0; i < 64; i++) {
         uint64_t movementMask = generateRookMovementMask(i);
-        for (uint64_t blocker : generateAllBlockers(movementMask)) {
+        for (uint64_t blocker: generateAllBlockers(movementMask)) {
             uint64_t index = blocker * ROOK_MAGICS[i] >> 52;
             ROOK_MOVE_TABLE[i][index] = precomputeRookMovesWithBlocker(i, blocker);
         }
@@ -439,7 +334,7 @@ void Movegen::precomputeRookMovegenTable() {
 void Movegen::precomputeBishopMovegenTable() {
     for (int i = 0; i < 64; i++) {
         uint64_t movementMask = generateBishopMovementMask(i);
-        for (uint64_t blocker : generateAllBlockers(movementMask)) {
+        for (uint64_t blocker: generateAllBlockers(movementMask)) {
             uint64_t index = blocker * BISHOP_MAGICS[i] >> 52;
             BISHOP_MOVE_TABLE[i][index] = precomputeBishopMovesWithBlocker(i, blocker);
         }
@@ -532,7 +427,7 @@ uint64_t Movegen::generateMagicNumber(uint8_t squareIndex, bool bishop) {
         uint64_t candidateMagic = generateRandomMagic();
         std::array<uint8_t, 4096> occupied = {}; // Use uint8_t to avoid bit-packing
         bool valid = true;
-        for (uint64_t blocker : blockers) {
+        for (uint64_t blocker: blockers) {
             // Generate the index for this blocker
             uint64_t index = (blocker * candidateMagic) >> 52;
             if (index >= 4096) {
@@ -613,7 +508,8 @@ uint64_t Movegen::generateBishopMovementMask(uint8_t squareIndex) {
     uint64_t movementMask = 0ULL;
 
     int rank = squareIndex / 8;
-    int file = squareIndex & 7; // & 7 is used to replace mod 8 because it is slightly faster as it doesnt require division. This trick only works for integers that are a power of 2 tho.a
+    int file = squareIndex & 7;
+    // & 7 is used to replace mod 8 because it is slightly faster as it doesnt require division. This trick only works for integers that are a power of 2 tho.a
 
     // North-East (rank++, file++)
     for (int r = rank + 1, f = file + 1; r < 7 && f < 7; ++r, ++f) {
@@ -687,8 +583,7 @@ void Movegen::printMovementMask(uint64_t movementMask) {
             int squareIndex = rank * 8 + file;
             if (movementMask & (1ULL << squareIndex)) {
                 std::cout << "1  ";
-            }
-            else {
+            } else {
                 std::cout << ".  ";
             }
         }
@@ -710,7 +605,7 @@ uint64_t Movegen::random_uint64() {
     return u1 | (u2 << 16) | (u3 << 32) | (u4 << 48);
 }
 
-uint8_t Movegen::popLeastSignificantBitAndGetIndex(uint64_t& b) {
+uint8_t Movegen::popLeastSignificantBitAndGetIndex(uint64_t &b) {
     auto index = __builtin_ctzll(b);
     b &= b - 1;
     return index;

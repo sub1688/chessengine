@@ -38,7 +38,10 @@ add_executable(chessengine main.cpp
         engine/san.h
         engine/san.cpp
         engine/openingbook.h
-        engine/openingbook.cpp)
+        engine/openingbook.cpp
+        engine/oldsearch.h
+        engine/oldsearch.cpp
+)
 
 target_link_libraries(chessengine PRIVATE sfml-graphics sfml-window sfml-system)
 

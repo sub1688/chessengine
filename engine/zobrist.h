@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+class Board;
+
 namespace Zobrist {
     inline constexpr uint64_t randoms[800] = {
         0x9D39247E33776D41L, 0x2AF7398005AAA5C7L, 0x44DB015024623547L, 0x9C15F73E62A76AE2L,
@@ -228,5 +230,5 @@ namespace Zobrist {
 
     void init();
 
-    uint64_t calculateZobristKey();
+    uint64_t calculateZobristKey(Board& board);
 }

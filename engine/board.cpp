@@ -6,12 +6,8 @@
 
 #include "zobrist.h"
 
-namespace TranspositionTable {
-    void clear();
-}
-
 namespace Movegen {
-    bool isKingInDanger(bool white);
+    bool isKingInDanger(Board& board, bool white);
 }
 
 void Board::setPiece(int index, uint8_t piece) {
@@ -67,7 +63,7 @@ bool Board::move(Move m) {
     }
 
     updateOccupancy();
-    if (Movegen::isKingInDanger(whiteToMove)) {
+    if (Movegen::isKingInDanger(*this, whiteToMove)) {
         whiteToMove = !whiteToMove;
         moveNumber++;
         undoMove(m, true);
@@ -94,10 +90,13 @@ bool Board::move(Move m) {
         currentZobristKey ^= Zobrist::enPassantKeys[file];
     }
 
+    fiftyMoveHistory[moveNumber] = fiftyMoveHistory[moveNumber - 1] + 1;
+
     // en passant
     if (abs(m.to - m.from) == 16 && (m.pieceFrom == WHITE_PAWN || m.pieceFrom == BLACK_PAWN)) {
         epMasks[moveNumber] = 1ULL << (whiteToMove ? m.from + 8 : m.from - 8);
         currentZobristKey ^= Zobrist::enPassantKeys[m.to % 8];
+        fiftyMoveHistory[moveNumber] = 0;
     }
     else {
         epMasks[moveNumber] = 0ULL;
@@ -140,6 +139,7 @@ bool Board::move(Move m) {
     currentZobristKey ^= Zobrist::whiteToMove;
     if (m.capture != NONE && m.enPassantTarget == 0) {
         currentZobristKey ^= Zobrist::pieceSquareKeys[m.to][m.capture];
+        fiftyMoveHistory[moveNumber] = 0;
     }
     currentZobristKey ^= Zobrist::pieceSquareKeys[m.from][m.pieceFrom];
     currentZobristKey ^= Zobrist::pieceSquareKeys[m.to][mailbox[m.to]];
@@ -148,6 +148,7 @@ bool Board::move(Move m) {
     currentZobristKey ^= Zobrist::castleRightsKeys[castleRights[moveNumber]];
 
     zobristHistory[moveNumber] = currentZobristKey;
+
     return true;
 }
 
@@ -249,6 +250,7 @@ void Board::updateOccupancy() {
 
 
 void Board::setStartingPosition() {
+    fiftyMoveHistory[0] = 0;
     BITBOARDS[WHITE_PAWN] = 0x000000000000FF00ULL; // Rank 2
     BITBOARDS[WHITE_ROOK] = 0x0000000000000081ULL; // Corners of rank 1
     BITBOARDS[WHITE_KNIGHT] = 0x0000000000000042ULL; // Knights on rank 1
@@ -282,8 +284,7 @@ void Board::setStartingPosition() {
             }
         }
     }
-    currentZobristKey = Zobrist::calculateZobristKey();
-    TranspositionTable::clear();
+    currentZobristKey = Zobrist::calculateZobristKey(*this);
 
     whiteToMove = true;
 }
@@ -313,6 +314,7 @@ void Board::printBoard() {
 }
 
 void Board::importFEN(const std::string& fen) {
+    fiftyMoveHistory[0] = 0;
     // Clear all bitboards
     for (int i = 0; i < 12; i++) {
         BITBOARDS[i] = 0ULL;
@@ -379,6 +381,7 @@ void Board::importFEN(const std::string& fen) {
     whiteToMove = fen[index] == 'w';
     index += 2;
 
+    moveNumber = 1;
     // Parse castling rights
     castleRights[moveNumber] = 0; // Reset castling rights
     while (fen[index] != ' ') {
@@ -411,10 +414,7 @@ void Board::importFEN(const std::string& fen) {
             }
         }
     }
-    currentZobristKey = Zobrist::calculateZobristKey();
-    TranspositionTable::clear();
-
-    moveNumber = 1;
+    currentZobristKey = Zobrist::calculateZobristKey(*this);
 }
 
 bool Board::canWhiteCastleKingside(uint32_t moveNumber) {
@@ -469,7 +469,13 @@ void Board::setBlackCastleQueenside(uint32_t moveNumber, bool value) {
     }
 }
 
-bool Board::isDrawnByRepetition() {
+bool Board::isDrawn() {
+    if (moveNumber == 0)
+        return false;
+    if (fiftyMoveHistory[moveNumber] >= 100) {
+        return true;
+    }
+
     int count = 0;
     uint64_t currentKey = zobristHistory[moveNumber - 1]; // The Zobrist key of the current position
     for (uint8_t i = moveNumber - 1; i != 0; i--) { // Iterate through history in reverse

@@ -3,13 +3,14 @@
 #include <fstream>
 #include <random>
 #include <sstream>
+#include <iostream>
 
 #include "movegen.h"
 #include "san.h"
-#include "search.h"
 
 void OpeningBook::loadOpeningBook(std::string filename) {
-    Board::setStartingPosition();
+    Board board;
+    board.setStartingPosition();
 
     std::ifstream file(filename);
     if (!file.is_open()) {
@@ -24,58 +25,63 @@ void OpeningBook::loadOpeningBook(std::string filename) {
 
     std::string line;
     std::string currentFen;
-    int lines = 0;
 
     // Use stringstream to process lines
     std::istringstream stream(buffer.str());
     while (std::getline(stream, line)) {
-        if (lines++ > 2000) break;
-
         if (line.starts_with("pos ")) {
             currentFen = line.substr(4);
-            Board::importFEN(currentFen);
-            openingBook[currentFen] = std::vector<Move>(); // Initialize entry
+            board.importFEN(currentFen);
+            openingBook[currentFen] = std::vector<MoveEntry>(); // Initialize entry
         } else {
             std::vector<std::string> split = StandardAlgebraicNotation::split(line, ' ');
             if (split.empty()) continue;
 
-            std::string move = split.at(0);
-            int squareFrom = StandardAlgebraicNotation::stringToSquare(move.substr(0, move.length() - 2));
-            int squareTo = StandardAlgebraicNotation::stringToSquare(move.substr(2));
+            const std::string& move = split.at(0);
+            int probability = std::stoi(split.at(1));
 
-            Move moveObj;
-            ArrayVec<Move, 218> availableMoves = Movegen::generateAllLegalMovesOnBoard();
+            openingBook[currentFen].emplace_back(move, probability);
+        }
+    }
+}
+
+Move OpeningBook::fetchNextBookMove(Board& board) {
+
+    // Check if there's an entry in the opening book
+    auto it = openingBook.find(board.generateFEN());
+    if (it == openingBook.end() || it->second.empty()) {
+        return {};
+    }
+
+    // Get reference to the move list
+    const std::vector<MoveEntry>& moves = it->second;
+
+    // Calculate total sum of probabilities
+    int totalProbability = 0;
+    for (const auto& moveEntry : moves) {
+        totalProbability += moveEntry.probability;
+    }
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(1, totalProbability); // Random number between 1 and totalProbability
+
+    // Generate random number to pick a move
+    int randomNumber = dis(gen);
+
+    // Determine which move corresponds to the random number
+    int cumulativeProbability = 0;
+    for (const auto& moveEntry : moves) {
+        cumulativeProbability += moveEntry.probability;
+        if (randomNumber <= cumulativeProbability) {
+            ArrayVec<Move, 218> availableMoves = Movegen::generateAllLegalMovesOnBoard(board);
             for (int i = 0; i < availableMoves.elements; i++) {
-                if (availableMoves.buffer[i].from == squareFrom && availableMoves.buffer[i].to == squareTo) {
-                    moveObj = availableMoves.buffer[i];
-                    break;
+                if (StandardAlgebraicNotation::toUci(availableMoves.buffer[i]) == moveEntry.move) {
+                    return availableMoves.buffer[i];
                 }
-            }
-
-            if (moveObj.from != moveObj.to) {
-                openingBook[currentFen].push_back(moveObj);
             }
         }
     }
 
-    Board::setStartingPosition();
-}
-
-Move OpeningBook::fetchNextBookMove() {
-
-    // Check if there's an entry in the opening book
-    auto it = openingBook.find(Board::generateFEN());
-    if (it == openingBook.end() || it->second.empty()) {
-        return {}; // Return empty move if not found
-    }
-
-    // Get reference to the move list
-    const std::vector<Move>& moves = it->second;
-
-    // Randomly select a move
-    // std::random_device rd;
-    // std::mt19937 gen(rd());
-    // std::uniform_int_distribution<size_t> dist(0, moves.size() - 1);
-
-    return moves[0];
+    return {};
 }

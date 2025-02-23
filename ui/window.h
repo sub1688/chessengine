@@ -2,6 +2,7 @@
 #include <SFML/Graphics.hpp>
 
 #include "../engine/board.h"
+#include "../util/arrayvec.h"
 
 namespace BoardWindow {
     inline sf::Font font;
@@ -16,7 +17,12 @@ namespace BoardWindow {
     inline int displayBoard[64];
     inline Move lastMove[1024];
 
-    void init();
+    inline bool whiteIsNew = false;
+    inline int newWon = 0, oldWon = 0, drawn = 0;
+
+    inline Board* board = nullptr;
+
+    void init(Board* board);
     void update(sf::RenderWindow& window);
     void loadPieceTextures();
     void destroy();

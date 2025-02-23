@@ -1,4 +1,4 @@
-#include "search.h"
+#include "oldsearch.h"
 
 #include <algorithm>
 #include <array>
@@ -11,18 +11,13 @@
 #include "piecesquaretable.h"
 #include "san.h"
 #include "transpositiontable.h"
-#include "../ui/window.h"
 
-void Search::orderMoves(ArrayVec<Move, 218> &moveVector, Move ttMove, int depth) {
+void OldSearch::orderMoves(ArrayVec<Move, 218> &moveVector, Move ttMove) {
     auto getMoveScore = [&](const Move &move) -> int {
         int score = 0;
 
-        if (move == ttMove) {
+        if (move.from == ttMove.from && move.to == ttMove.to) {
             score += TRANSPOSITION_TABLE_BIAS; // Give TT move a big boost
-        }
-
-        if (move == transpositionTable.killerMoves[depth][0] || move == transpositionTable.killerMoves[depth][1]) {
-            score += KILLER_MOVE_BIAS;
         }
 
         if (move.capture != NONE) {
@@ -44,7 +39,7 @@ void Search::orderMoves(ArrayVec<Move, 218> &moveVector, Move ttMove, int depth)
 }
 
 
-void Search::startIterativeSearch(Board &board, long time) {
+void OldSearch::startIterativeSearch(Board& board, long time) {
     transpositionTable.cutoffs = 0;
     transpositionTable.collisions = 0;
     searchCancelled = false;
@@ -56,8 +51,7 @@ void Search::startIterativeSearch(Board &board, long time) {
         bestMove = move;
         currentEval = 0;
         std::cout << "1:" << std::to_string(currentEval) << ":" << std::to_string(bestMove.from) << "," <<
-                std::to_string(bestMove.to) << ":" << StandardAlgebraicNotation::boardToSan(board, bestMove) <<
-                std::endl;
+                std::to_string(bestMove.to) << ":" << StandardAlgebraicNotation::boardToSan(board, bestMove) << std::endl;
         return;
     }
 
@@ -71,7 +65,7 @@ void Search::startIterativeSearch(Board &board, long time) {
     });
 
     for (currentDepth = 2; currentDepth < 256; currentDepth++) {
-        SearchResult result = search(board, currentDepth);
+        OldSearchResult result = search(board, currentDepth);
 
         if (!searchCancelled) {
             currentEval = result.evaluation;
@@ -80,8 +74,7 @@ void Search::startIterativeSearch(Board &board, long time) {
                 searchCancelled = true;
             }
             std::cout << currentDepth << ":" << std::to_string(currentEval) << ":" << std::to_string(bestMove.from) <<
-                    "," << std::to_string(bestMove.to) << ":" << StandardAlgebraicNotation::boardToSan(board, bestMove)
-                    <<
+                    "," << std::to_string(bestMove.to) << ":" << StandardAlgebraicNotation::boardToSan(board, bestMove) <<
                     std::endl;
         } else {
             currentDepth--;
@@ -91,9 +84,10 @@ void Search::startIterativeSearch(Board &board, long time) {
 
     if (timerThread.joinable())
         timerThread.join();
+
 }
 
-SearchResult Search::search(Board &board, int rootDepth, int depth, int alpha, int beta) {
+OldSearchResult OldSearch::search(Board& board, int rootDepth, int depth, int alpha, int beta) {
     if (searchCancelled)
         return {0, NULL_MOVE};
     if (depth == 0)
@@ -108,8 +102,8 @@ SearchResult Search::search(Board &board, int rootDepth, int depth, int alpha, i
             return {alpha, NULL_MOVE};
     }
 
-
     TranspositionEntry entry = transpositionTable.getEntry(board.currentZobristKey);
+    int nodeType = EXACT_BOUND;
     if (entry.zobristKey == board.currentZobristKey && entry.depthSearched >= depth && !searchCancelled) {
         int correctedScore = transpositionTable.correctScoreForRetrieval(entry.score, rootDepth);
         if (entry.nodeType == EXACT_BOUND) {
@@ -126,17 +120,14 @@ SearchResult Search::search(Board &board, int rootDepth, int depth, int alpha, i
         }
     }
 
-
-    int nodeType = EXACT_BOUND;
     bool movesAvailable = false;
     int maximumScore = NEGATIVE_INFINITY;
     Move bestMove = NULL_MOVE;
 
     ArrayVec<Move, 218> moves = Movegen::generateAllLegalMovesOnBoard(board);
-    orderMoves(moves, entry.bestMove, depth); // Order moves for better pruning
+    orderMoves(moves, entry.bestMove); // Order moves for better pruning
 
     bool firstMove = true;
-    int moved = 0;
     for (int i = 0; i < moves.elements; i++) {
         if (searchCancelled)
             return {0, NULL_MOVE};
@@ -146,9 +137,23 @@ SearchResult Search::search(Board &board, int rootDepth, int depth, int alpha, i
             continue;
 
         movesAvailable = true;
-        int negatedScore = negatedPrincipalVariationSearch(board, move, firstMove, moved, rootDepth, depth, alpha, beta);
+        int negatedScore;
+
+        if (firstMove) {
+            // Full window search for the first move
+            negatedScore = -search(board, rootDepth + 1, depth - 1, -beta, -alpha).evaluation;
+            firstMove = false;
+        } else {
+            // Principal Variation Search - try a null-window search first
+            negatedScore = -search(board, rootDepth + 1, depth - 1, -alpha - 1, -alpha).evaluation;
+
+            // If null-window search fails high, do a full re-search
+            if (negatedScore > alpha && negatedScore < beta) {
+                negatedScore = -search(board, rootDepth + 1, depth - 1, -beta, -alpha).evaluation;
+            }
+        }
+
         board.undoMove(move);
-        moved++;
 
         // Alpha-beta update
         if (negatedScore > maximumScore) {
@@ -159,8 +164,6 @@ SearchResult Search::search(Board &board, int rootDepth, int depth, int alpha, i
 
         alpha = std::max(alpha, negatedScore);
         if (beta <= alpha) {
-            transpositionTable.storeKillerMove(move, depth);
-
             nodeType = LOWER_BOUND; // Beta cutoff
             break;
         }
@@ -176,32 +179,12 @@ SearchResult Search::search(Board &board, int rootDepth, int depth, int alpha, i
     return {maximumScore, bestMove};
 }
 
-int Search::negatedPrincipalVariationSearch(Board &board, Move move, bool &firstMove, int moved, int rootDepth, int depth, int alpha, int beta) {
-    int negatedScore;
-    if (firstMove) {
-        // Full window search for the first move
-        negatedScore = -search(board, rootDepth + 1, depth - 1, -beta, -alpha).evaluation;
-        firstMove = false;
-    } else {
-        // Late move reductions!!!
-        int depthReduction = depth > 3 && move.capture == NONE && move.promotion == NONE && moved > 4 ? 1 : 0;
-        // Principal Variation Search: try a null window search first
-        negatedScore = -search(board, rootDepth + 1, depth - 1 - depthReduction, -alpha - 1, -alpha).evaluation;
 
-        // If null window search fails high, do a full re-search
-        if (negatedScore > alpha && negatedScore < beta) {
-            negatedScore = -search(board, rootDepth + 1, depth - 1, -beta, -alpha).evaluation;
-        }
-    }
-    return negatedScore;
-}
-
-
-SearchResult Search::search(Board &board, int depth) {
+OldSearchResult OldSearch::search(Board& board, int depth) {
     return search(board, 0, depth, NEGATIVE_INFINITY, POSITIVE_INFINITY);
 }
 
-int Search::quiesce(Board &board, int alpha, int beta) {
+int OldSearch::quiesce(Board& board, int alpha, int beta) {
     int standingPat = evaluate(board);
     if (standingPat >= beta)
         return beta;
@@ -210,7 +193,7 @@ int Search::quiesce(Board &board, int alpha, int beta) {
 
 
     ArrayVec<Move, 218> captures = Movegen::generateAllLegalMovesOnBoard(board, true);
-    orderMoves(captures, NULL_MOVE, 0);
+    orderMoves(captures, NULL_MOVE);
 
     for (int i = 0; i < captures.elements; i++) {
         Move move = captures.buffer.at(i);
@@ -227,7 +210,7 @@ int Search::quiesce(Board &board, int alpha, int beta) {
     return alpha;
 }
 
-int Search::evaluate(Board &board) {
+int OldSearch::evaluate(Board& board) {
     if (board.isDrawn())
         return 0;
     int totalValue = 0;
@@ -261,19 +244,19 @@ int Search::evaluate(Board &board) {
     return totalValue * (board.whiteToMove ? 1 : -1);
 }
 
-double Search::getEndGameBias(Board &board) {
+double OldSearch::getEndGameBias(Board& board) {
     return static_cast<double>(__builtin_popcountll(board.BITBOARD_OCCUPANCY)) / 32;
 }
 
-int Search::getPieceValue(uint8_t piece) {
+int OldSearch::getPieceValue(uint8_t piece) {
     return PIECE_VALUES[piece];
 }
 
-bool Search::isNullMove(Move move) {
+bool OldSearch::isNullMove(Move move) {
     return move.from == move.to;
 }
 
-int Search::evaluatePassedPawn(Board &board, uint8_t squareIndex, uint8_t piece) {
+int OldSearch::evaluatePassedPawn(Board& board, uint8_t squareIndex, uint8_t piece) {
     if (piece == WHITE_PAWN) {
         if (WHITE_PASSED_PAWN_MASKS[squareIndex] & board.BITBOARDS[BLACK_PAWN] == 0) {
             int rank = squareIndex / 8;
@@ -289,8 +272,7 @@ int Search::evaluatePassedPawn(Board &board, uint8_t squareIndex, uint8_t piece)
     return 0;
 }
 
-int Search::evaluateKingDistance(Board &board, uint8_t squareIndex, uint8_t otherKingIndex, uint8_t piece,
-                                 int materialDelta) {
+int OldSearch::evaluateKingDistance(Board& board, uint8_t squareIndex, uint8_t otherKingIndex, uint8_t piece, int materialDelta) {
     if (piece == WHITE_KING && materialDelta < 0)
         return 0;
     if (piece == BLACK_KING && materialDelta > 0)

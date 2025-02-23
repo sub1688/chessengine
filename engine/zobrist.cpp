@@ -24,10 +24,10 @@ void Zobrist::init() {
 }
 
 
-uint64_t Zobrist::calculateZobristKey() {
+uint64_t Zobrist::calculateZobristKey(Board& board) {
     uint64_t zobristKey = 0ULL;
     for (int i = 0; i < 64; i++) {
-        int piece = Board::getPiece(i);
+        int piece = board.getPiece(i);
 
         if (piece == NONE)
             continue;
@@ -35,15 +35,15 @@ uint64_t Zobrist::calculateZobristKey() {
         zobristKey ^= pieceSquareKeys[i][piece];
     }
 
-    uint64_t epMask = Board::epMasks[Board::moveNumber];
+    uint64_t epMask = board.epMasks[board.moveNumber];
     if (epMask != 0ULL) {
         int index = __builtin_ctzll(epMask);
         int file = index % 8;
         zobristKey ^= enPassantKeys[file];
     }
 
-    zobristKey ^= castleRightsKeys[Board::castleRights[Board::moveNumber]];
-    if (Board::whiteToMove) {
+    zobristKey ^= castleRightsKeys[board.castleRights[board.moveNumber]];
+    if (board.whiteToMove) {
         zobristKey ^= whiteToMove;
     }
 

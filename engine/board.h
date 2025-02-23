@@ -28,27 +28,31 @@ struct Move {
 
     Move() = default;
 
-    Move(uint8_t m_from, uint8_t m_to) : from(m_from), to(m_to) {
-    }
+    Move(uint8_t m_from, uint8_t m_to) : from(m_from), to(m_to) {}
+
+    bool operator==(const Move & move) const {
+        return from == move.from && to == move.to && enPassantTarget == move.enPassantTarget && pieceFrom == move.pieceFrom && capture == move.capture && promotion == move.promotion && castle == move.castle;
+    };
 };
 
-namespace Board {
-    inline bool whiteToMove = true;
+class Board {
+public:
+    bool whiteToMove = true;
 
-    // En Passant
-    inline uint64_t epMasks[1024];
-    inline uint8_t castleRights[1024];
-    inline uint64_t zobristHistory[1024];
-    inline uint32_t moveNumber = 0;
+    uint64_t epMasks[1024] = {};
+    uint8_t castleRights[1024] = {};
+    uint64_t zobristHistory[1024] = {};
+    uint8_t fiftyMoveHistory[1024] = {};
+    uint32_t moveNumber = 0;
 
-    inline uint8_t mailbox[64];
+    uint8_t mailbox[64] = {};
 
-    inline uint64_t BITBOARDS[12];
-    inline uint64_t BITBOARD_OCCUPANCY;
-    inline uint64_t BITBOARD_WHITE_OCCUPANCY = 0ULL;
-    inline uint64_t BITBOARD_BLACK_OCCUPANCY = 0ULL;
+    uint64_t BITBOARDS[12] = {};
+    uint64_t BITBOARD_OCCUPANCY = 0ULL;
+    uint64_t BITBOARD_WHITE_OCCUPANCY = 0ULL;
+    uint64_t BITBOARD_BLACK_OCCUPANCY = 0ULL;
 
-    inline uint64_t currentZobristKey;
+    uint64_t currentZobristKey = 0ULL;
 
     bool move(Move m);
 
@@ -64,7 +68,7 @@ namespace Board {
 
     void printBoard();
 
-    void importFEN(const std::string& fen);
+    void importFEN(const std::string &fen);
 
     bool canWhiteCastleKingside(uint32_t moveNumber);
 
@@ -82,9 +86,9 @@ namespace Board {
 
     void setBlackCastleQueenside(uint32_t moveNumber, bool value);
 
-    bool isDrawnByRepetition();
+    bool isDrawn();
 
     uint8_t getPiece(int index);
 
     std::string generateFEN();
-}
+};

@@ -10,6 +10,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "C:/Users/Corbis/Desktop/chessengine/engine/board.cpp" "CMakeFiles/chessengine.dir/engine/board.cpp.obj" "gcc" "CMakeFiles/chessengine.dir/engine/board.cpp.obj.d"
   "C:/Users/Corbis/Desktop/chessengine/engine/movegen.cpp" "CMakeFiles/chessengine.dir/engine/movegen.cpp.obj" "gcc" "CMakeFiles/chessengine.dir/engine/movegen.cpp.obj.d"
+  "C:/Users/Corbis/Desktop/chessengine/engine/oldsearch.cpp" "CMakeFiles/chessengine.dir/engine/oldsearch.cpp.obj" "gcc" "CMakeFiles/chessengine.dir/engine/oldsearch.cpp.obj.d"
   "C:/Users/Corbis/Desktop/chessengine/engine/openingbook.cpp" "CMakeFiles/chessengine.dir/engine/openingbook.cpp.obj" "gcc" "CMakeFiles/chessengine.dir/engine/openingbook.cpp.obj.d"
   "C:/Users/Corbis/Desktop/chessengine/engine/piecesquaretable.cpp" "CMakeFiles/chessengine.dir/engine/piecesquaretable.cpp.obj" "gcc" "CMakeFiles/chessengine.dir/engine/piecesquaretable.cpp.obj.d"
   "C:/Users/Corbis/Desktop/chessengine/engine/san.cpp" "CMakeFiles/chessengine.dir/engine/san.cpp.obj" "gcc" "CMakeFiles/chessengine.dir/engine/san.cpp.obj.d"

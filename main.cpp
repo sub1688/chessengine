@@ -5,6 +5,7 @@
 
 #include "engine/san.h"
 #include "engine/movegen.h"
+#include "engine/oldsearch.h"
 #include "engine/openingbook.h"
 #include "engine/piecesquaretable.h"
 #include "engine/search.h"
@@ -12,7 +13,7 @@
 #include "ui/window.h"
 
 bool over = false;
-void startCLIListening() {
+void startCLIListening(Board& board) {
     int passes = 0;
     while (passes++ < 100000) {
         std::string input;
@@ -24,9 +25,10 @@ void startCLIListening() {
             std::cout << "pong\n";
         } else if (input == "reset") {
             over = false;
-            Board::setStartingPosition();
+            board.setStartingPosition();
+            Search::transpositionTable.clear();
         } else if (input == "print") {
-            Board::printBoard();
+            board.printBoard();
         } else if (input.starts_with("move")) {
             if (input.length() <= 5) {
                 std::cout << "Error: provide a valid move\n";
@@ -34,24 +36,24 @@ void startCLIListening() {
             }
             std::string move = input.substr(5);
 
-            ArrayVec<Move, 218> moves = Movegen::generateAllLegalMovesOnBoard();
+            ArrayVec<Move, 218> moves = Movegen::generateAllLegalMovesOnBoard(board);
 
-            int prevMoveNumber = Board::moveNumber;
+            int prevMoveNumber = board.moveNumber;
             for (int i = 0; i < moves.elements; i++) {
                 Move moveObj = moves.buffer[i];
 
-                if (StandardAlgebraicNotation::boardToSan(moveObj) == move) {
-                    Board::move(moveObj);
+                if (StandardAlgebraicNotation::boardToSan(board, moveObj) == move) {
+                    board.move(moveObj);
                     std::cout << "Moved: " << move << std::endl;
 
-                    if (Movegen::inCheckmate() || Movegen::inStalemate() || Board::isDrawnByRepetition()) {
+                    if (Movegen::inCheckmate(board) || Movegen::inStalemate(board) || board.isDrawn()) {
                         std::cout << "game over" << std::endl;
                         over = true;
                     }
                     break;
                 }
             }
-            if (Board::moveNumber == prevMoveNumber) {
+            if (board.moveNumber == prevMoveNumber) {
                 std::cout << "Error: finding move: " << move << " is` not legal" << std::endl;
             }
         } else if (input.starts_with("search")) {
@@ -67,28 +69,47 @@ void startCLIListening() {
 
             int milliseconds = std::stoi(input.substr(7));
 
-            Search::startIterativeSearch(milliseconds);
+            Search::startIterativeSearch(board, milliseconds);
             std::cout << "Search complete.\n";
         }
     }
 }
 
+void benchmarkPerft(Board& board, int depth) {
+    using namespace std::chrono;
+    auto start = high_resolution_clock::now();
+    uint64_t perft = Movegen::perft(board, depth);
+    auto stop = high_resolution_clock::now();
+    auto duration = std::chrono::duration<double>(stop - start).count();
+    // Calculate nodes per second
+    double nodesPerSecond = perft / duration;
+    std::cout << "Perft nodes: " << perft
+            << " Speed: " << std::fixed << std::setprecision(2) << (nodesPerSecond / 1'000'000) << " Mn/s" << std::endl;
+}
+
+
 int main() {
     std::cout << "[+] Generating random zobrist keys...\n";
     Zobrist::init();
     std::cout << "[+] Setting Board Startpos...\n";
-    Board::setStartingPosition();
-    std::cout << "[+] Movegen init...\n";
+
+    Board board;
+    board.setStartingPosition();
+
+    std::cout << "[+] Move generator init...\n";
     Movegen::init();
-    std::cout << "[+] PST init...\n";
+
+    std::cout << "[+] Square bias table init...\n";
     PieceSquareTable::initializePieceSquareTable();
+
     std::cout << "[+] Loading Opening Book..\n";
     OpeningBook::loadOpeningBook("assets/openingbook.txt");
+
     std::cout << "[+] Done!\n";
 
-    // Board::importFEN("7K/P1p1p1p1/2P1P1Pk/6pP/3p2P1/1P6/3P4/8 w - - 0 1");
+    benchmarkPerft(board, 6);
 
-    // startCLIListening();
+    // startCLIListening(board);
 
-    BoardWindow::init();
+    BoardWindow::init(&board);
 }

@@ -7,29 +7,6 @@
 
 #define MAGIC_SHIFT = 52
 
-// NOT File Masks: These masks have 0s in the specified file and 1s elsewhere
-#define NOT_FILE_A 0xFEFEFEFEFEFEFEFEULL // 0b1111111111111111111111111111111111111111111111111111111111111110
-#define NOT_FILE_B 0xFDFDFDFDFDFDFDFDFULL // 0b1111110111111101111111011111101111111011111110111111011111111111
-#define NOT_FILE_C 0xFBFBFBFBFBFBFBFBULL // 0b1111101111111011111110111111011111110111111101111111011111111111
-#define NOT_FILE_D 0xF7F7F7F7F7F7F7F7ULL // 0b1111011111110111111101111111011111110011111101111111011111111111
-#define NOT_FILE_E 0xEFEFEFEFEFEFEFEFULL // 0b1111101111111011111101111111011111101011111101111111011111111111
-#define NOT_FILE_F 0xDFDFDFDFDFDFDFDFULL // 0b1111011111110111111011111111011111111011111101111111111111111111
-#define NOT_FILE_G 0xBFBFBFBFBFBFBFBFULL // 0b1011111111110111111101111111011111111111111101111111011111111111
-#define NOT_FILE_H 0x7F7F7F7F7F7F7F7FULL // 0b0111111111110111111101111111011111111111111111111111111111111111
-#define NOT_FILE_AB 0xFCFCFCFCFCFCFCFCULL // Excludes Files A and B (0 on files A and B)
-#define NOT_FILE_GH 0x3F3F3F3F3F3F3F3FULL // Excludes Files G and H (0 on files G and H)
-
-
-// NOT Rank Masks: These masks have 0s in the specified rank and 1s elsewhere
-#define NOT_RANK_1 0xFFFFFFFFFFFFFF00ULL // 0b1111111111111111111111111111111111111111111111111111111111110000
-#define NOT_RANK_2 0xFFFFFFFFFFFF00FFULL // 0b1111111111111111111111111111111111111111111111111111111100001111
-#define NOT_RANK_3 0xFFFFFFFFFF00FFFFULL // 0b1111111111111111111111111111111111111111111111111111000011111111
-#define NOT_RANK_4 0xFFFFFFFF00FFFFFFULL // 0b1111111111111111111111111111111111111111111111000000111111111111
-#define NOT_RANK_5 0xFFFFFF00FFFFFFFFULL // 0b1111111111111111111111111111000000001111111111111111111111111111
-#define NOT_RANK_6 0xFFFF00FFFFFFFFFFULL // 0b1111111111111111111111110000000011111111111111111111111111111111
-#define NOT_RANK_7 0xFF00FFFFFFFFFFFFULL // 0b1111111111111111111111110000000011111111111111111111111111111111
-#define NOT_RANK_8 0x00FFFFFFFFFFFFFFULL // 0b0000000000000000000000001111111111111111111111111111111111111111
-
 namespace Movegen {
     constexpr uint64_t FILE_A = 0x0101010101010101ULL;
     constexpr uint64_t FILE_H = 0x8080808080808080ULL;
@@ -37,6 +14,10 @@ namespace Movegen {
     constexpr uint64_t RANK_3 = 0x0000000000FF0000ULL;
     constexpr uint64_t RANK_6 = 0x0000FF0000000000ULL;
     constexpr uint64_t RANK_8 = 0xFF00000000000000ULL;
+    constexpr uint64_t NOT_FILE_H = 0x7F7F7F7F7F7F7F7FULL;
+    constexpr uint64_t NOT_FILE_A = 0xFEFEFEFEFEFEFEFEULL;
+    constexpr uint64_t NOT_FILE_AB = 0xFCFCFCFCFCFCFCFCULL;
+    constexpr uint64_t NOT_FILE_GH = 0x3F3F3F3F3F3F3F3FULL;
 
     inline constexpr uint8_t PROMOTE_PIECES_WHITE[4] = {
         WHITE_KNIGHT, WHITE_BISHOP, WHITE_ROOK, WHITE_QUEEN
@@ -80,35 +61,43 @@ namespace Movegen {
     inline uint64_t BISHOP_MOVEMENT_MASKS[64];
     inline uint64_t KNIGHT_MOVEMENT_MASKS[64];
     inline uint64_t KING_MOVEMENT_MASKS[64];
+    inline uint64_t PAWN_MOVEMENT_MASKS[2][64];
+    inline uint64_t PAWN_ATTACK_MASKS[2][64];
 
     inline uint64_t ROOK_MOVE_TABLE[64][4096];
     inline uint64_t BISHOP_MOVE_TABLE[64][4096];
 
-    bool inCheckmate();
+    bool inCheckmate(Board &board);
 
-    uint64_t perft(int depth);
+    uint64_t perft(Board &board, int depth);
 
-    uint64_t generatePseudoLegalBishopMoves(uint8_t squareIndex, bool white);
+    void generatePseudoLegalMoves(Board& board, uint8_t squareIndex, uint8_t piece, bool white, bool capturesOnly, ArrayVec<Move, 218> &movesVec);
 
-    uint64_t generatePseudoLegalRookMoves(uint8_t squareIndex, bool white);
+    uint64_t generatePseudoLegalBishopMoves(Board &board, uint8_t squareIndex, bool white);
 
-    uint64_t generatePseudoLegalQueenMoves(uint8_t squareIndex, bool white);
+    uint64_t generatePseudoLegalRookMoves(Board &board, uint8_t squareIndex, bool white);
 
-    uint64_t generatePseudoLegalKingMoves(uint8_t squareIndex, bool white);
+    uint64_t generatePseudoLegalQueenMoves(Board &board, uint8_t squareIndex, bool white);
 
-    uint64_t generatePseudoLegalKnightMoves(uint8_t squareIndex, bool white);
+    uint64_t generatePseudoLegalKingMoves(Board &board, uint8_t squareIndex, bool white);
 
-    uint64_t generatePseudoLegalPawnMoves(uint8_t squareIndex, bool white);
+    uint64_t generatePseudoLegalKnightMoves(Board &board, uint8_t squareIndex, bool white);
 
-    uint64_t generatePseudoLegalEnPassantMoves(uint8_t squareIndex, bool white);
+    uint64_t generatePseudoLegalPawnMoves(Board &board, uint8_t squareIndex, bool white);
 
-    uint64_t generatePseudoLegalCastleMoves(bool white);
+    uint64_t generatePseudoLegalEnPassantMoves(Board &board, uint8_t squareIndex, bool white);
+
+    uint64_t generatePseudoLegalCastleMoves(Board &board, bool white);
 
     uint64_t random_uint64();
 
     uint64_t generateRandomMagic();
 
     uint64_t generateMagicNumber(uint8_t squareIndex, bool bishop);
+
+    uint64_t generatePawnMovementMask(uint8_t squareIndex, bool white);
+
+    uint64_t generatePawnAttackMask(uint8_t squareIndex, bool white);
 
     uint64_t generateRookMovementMask(uint8_t squareIndex);
 
@@ -136,15 +125,15 @@ namespace Movegen {
 
     uint8_t popLeastSignificantBitAndGetIndex(uint64_t &num);
 
-    ArrayVec<Move, 218> generateAllLegalMovesOnBoard();
+    ArrayVec<Move, 218> generateAllLegalMovesOnBoard(Board& board);
 
-    ArrayVec<Move, 218> generateAllCapturesOnBoard();
+    ArrayVec<Move, 218> generateAllLegalMovesOnBoard(Board& board, bool capturesOnly);
 
-    bool isSquareAttacked(uint8_t kingIndex, bool white);
+    bool isSquareAttacked(Board &board, uint8_t kingIndex, bool white);
 
-    bool isKingInDanger(bool white);
+    bool isKingInDanger(Board &board, bool white);
 
     void init();
 
-    bool inStalemate();
+    bool inStalemate(Board &board);
 }

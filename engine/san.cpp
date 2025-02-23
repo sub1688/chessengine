@@ -2,7 +2,7 @@
 #include "movegen.h"
 #include <string>
 
-std::string StandardAlgebraicNotation::boardToSan(const Move &move) {
+std::string StandardAlgebraicNotation::boardToSan(Board &board, const Move &move) {
     if (move.castle) {
         if (move.to % 8 == 6) {
             return "O-O";
@@ -35,8 +35,8 @@ std::string StandardAlgebraicNotation::boardToSan(const Move &move) {
     std::string sanMove = std::string(1, pieceChar);
 
     // Handle disambiguation (if necessary)
-    if (requiresDisambiguation(move)) {
-        sanMove += disambiguation(move);
+    if (requiresDisambiguation(board, move)) {
+        sanMove += disambiguation(board, move);
     }
 
     // Capture notation
@@ -54,7 +54,7 @@ std::string StandardAlgebraicNotation::boardToSan(const Move &move) {
     return sanMove;
 }
 
-std::vector<std::string> StandardAlgebraicNotation::split(const std::string& str, char delimiter) {
+std::vector<std::string> StandardAlgebraicNotation::split(const std::string &str, char delimiter) {
     std::vector<std::string> result;
     size_t start = 0, end;
 
@@ -73,7 +73,7 @@ std::string StandardAlgebraicNotation::squareToString(int square) {
     return std::string(1, file) + std::string(1, rank);
 }
 
-int StandardAlgebraicNotation::stringToSquare(const std::string& square) {
+int StandardAlgebraicNotation::stringToSquare(const std::string &square) {
     if (square.length() != 2) return -1; // Invalid input
 
     char file = square[0];
@@ -99,25 +99,28 @@ std::string StandardAlgebraicNotation::squareToFile(int square) {
 }
 
 // Checks if a move requires disambiguation
-bool StandardAlgebraicNotation::requiresDisambiguation(const Move &move) {
-    ArrayVec<Move, 218> moves = Movegen::generateAllLegalMovesOnBoard();
+bool StandardAlgebraicNotation::requiresDisambiguation(Board &board, const Move &move) {
+    ArrayVec<Move, 218> moves = Movegen::generateAllLegalMovesOnBoard(board);
     for (int i = 0; i < moves.elements; i++) {
         Move m = moves.buffer[i];
-        if (m.pieceFrom == move.pieceFrom && m.to == move.to && m.from != move.from) {
-            return true;
+        if (board.move(m)) {
+            if (m.pieceFrom == move.pieceFrom && m.to == move.to && m.from != move.from) {
+                board.undoMove(m);
+                return true;
+            }
+            board.undoMove(m);
         }
     }
     return false;
 }
 
 // Generates the disambiguation string if needed
-std::string StandardAlgebraicNotation::disambiguation(const Move &move) {
-    ArrayVec<Move, 218> moves = Movegen::generateAllLegalMovesOnBoard();
+std::string StandardAlgebraicNotation::disambiguation(Board &board, const Move &move) {
+    ArrayVec<Move, 218> moves = Movegen::generateAllLegalMovesOnBoard(board);
     bool fileConflict = false, rankConflict = false, otherConflict = false;
 
     for (int i = 0; i < moves.elements; i++) {
         Move m = moves.buffer[i];
-
         // If another piece of the same type can also move to the same destination
         if (m.pieceFrom == move.pieceFrom && m.to == move.to && m.from != move.from) {
             if ((m.from % 8) == (move.from % 8)) {
@@ -154,7 +157,7 @@ std::string StandardAlgebraicNotation::toUci(const Move &move) {
     uci += '1' + (move.to / 8); // Rank of to-square
 
     // Append promotion piece if applicable (Q, R, B, N)
-    if (move.promotion != -1) {
+    if (move.promotion != NONE) {
         char promoChar = "nbrq"[move.promotion]; // Assuming 0 = Knight, 1 = Bishop, 2 = Rook, 3 = Queen
         uci += promoChar;
     }

@@ -8,17 +8,17 @@
 #include "transpositiontable.h"
 #include "../util/arrayvec.h"
 
-struct SearchResult {
+struct OldSearchResult {
     int evaluation;
     Move bestMove;
 
-    SearchResult() : evaluation(0), bestMove(Move()) {}
+    OldSearchResult() : evaluation(0), bestMove(Move()) {}
 
-    SearchResult(int m_evaluation, Move m_bestMove) : evaluation(m_evaluation), bestMove(m_bestMove) {
+    OldSearchResult(int m_evaluation, Move m_bestMove) : evaluation(m_evaluation), bestMove(m_bestMove) {
     }
 };
 
-namespace Search {
+namespace OldSearch {
     inline constexpr Move NULL_MOVE = Move();
 
     inline constexpr uint64_t WHITE_PASSED_PAWN_MASKS[64] = {
@@ -174,7 +174,6 @@ namespace Search {
     inline constexpr int POSITIVE_INFINITY = std::numeric_limits<int>::max() - 1;
 
     inline constexpr int TRANSPOSITION_TABLE_BIAS = 10000000;
-    inline constexpr int KILLER_MOVE_BIAS = 9000000;
     inline constexpr int LOSING_CAPTURE_BIAS = 2000000;
     inline constexpr int WINNING_CAPTURE_BIAS = 8000000;
     inline constexpr int PROMOTE_BIAS = 6000000;
@@ -188,15 +187,13 @@ namespace Search {
 
     inline Move bestMove = NULL_MOVE;
 
-    void orderMoves(ArrayVec<Move, 218> &moveVector, Move ttMove, int depth);
+    void orderMoves(ArrayVec<Move, 218> &moveVector, Move ttMove);
 
     void startIterativeSearch(Board& board, long time);
 
-    SearchResult search(Board& board, int rootDepth, int depth, int alpha, int beta);
+    OldSearchResult search(Board& board, int rootDepth, int depth, int alpha, int beta);
 
-    SearchResult search(Board& board, int depth);
-
-    int negatedPrincipalVariationSearch(Board& board, Move move, bool &firstMove, int moved, int rootDepth, int depth, int alpha, int beta);
+    OldSearchResult search(Board& board, int depth);
 
     int evaluate(Board& board);
 

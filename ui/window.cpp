@@ -1,7 +1,6 @@
 #include "window.h"
 
 #include <array>
-#include <charconv>
 #include <iomanip>
 #include <thread>
 #include <SFML/Graphics.hpp>
@@ -11,20 +10,28 @@
 #include "../engine/search.h"
 #include "../engine/transpositiontable.h"
 #include "../engine/zobrist.h"
+#include "../engine/oldsearch.h"
 
 void BoardWindow::playBotMove() {
     thinking = true;
     std::thread([]() {
-        Search::startIterativeSearch(3000);
-        Board::move(Search::bestMove);
-        thinking = false;
+        if ((board->whiteToMove && whiteIsNew) || (!board->whiteToMove && !whiteIsNew)) {
+            Search::startIterativeSearch(*board, 100);
+            board->move(Search::bestMove);
+            thinking = false;
+        } else {
+            OldSearch::startIterativeSearch(*board, 100);
+            board->move(OldSearch::bestMove);
+            thinking = false;
+        }
     }).detach(); // Detach thread as it's self-contained
 }
 
-void BoardWindow::init() {
+void BoardWindow::init(Board *board) {
+    BoardWindow::board = board;
     font.loadFromFile("arial.ttf");
 
-    auto window = sf::RenderWindow({1200u, 600u}, "Analysis");
+    auto window = sf::RenderWindow({1200u, 600u}, "Analysis", sf::Style::Titlebar | sf::Style::Close);
     window.setFramerateLimit(100);
 
     loadPieceTextures();
@@ -35,10 +42,11 @@ void BoardWindow::init() {
                 window.close();
             }
 
-            if (event.type == sf::Event::KeyPressed && Board::moveNumber > 0) {
+            if (event.type == sf::Event::KeyPressed && board->moveNumber > 0) {
                 if (event.key.code == sf::Keyboard::Left) {
                     Search::searchCancelled = true;
-                    Board::undoMove(lastMove[Board::moveNumber]);
+                    board->undoMove(lastMove[board->moveNumber]);
+                    thinking = false;
                 }
             }
 
@@ -62,15 +70,15 @@ void BoardWindow::init() {
                 int rank = 7 - (mouseY / 75); // Row (0 to 7, flipped for top-down drawing)
                 int index = rank * 8 + file; // Convert to 0-based index
 
-                ArrayVec<Move, 218> moves = Movegen::generateAllLegalMovesOnBoard();
+                ArrayVec<Move, 218> moves = Movegen::generateAllLegalMovesOnBoard(*board);
 
                 for (int i = 0; i < moves.elements; i++) {
                     Move move = moves.buffer[i];
                     if (move.from == draggingSquare && move.to == index) {
-                        if (Board::move(move)) {
-                            lastMove[Board::moveNumber] = move;
+                        if (board->move(move)) {
+                            lastMove[board->moveNumber] = move;
                             for (int i = 0; i < 64; i++) {
-                                displayBoard[i] = Board::getPiece(i);
+                                displayBoard[i] = board->getPiece(i);
                             }
                             thinking = false;
                             break;
@@ -90,19 +98,33 @@ void BoardWindow::init() {
 }
 
 void BoardWindow::update(sf::RenderWindow &window) {
-    if (!thinking) {
+    if (!thinking && board != nullptr) {
         for (int i = 0; i < 64; i++) {
-            displayBoard[i] = Board::getPiece(i);
+            displayBoard[i] = board->getPiece(i);
         }
 
-        if (!Movegen::inCheckmate()) {
-            zobristKey = Zobrist::calculateZobristKey();
+        if (!Movegen::inCheckmate(*board) && !board->isDrawn()) {
+            zobristKey = Zobrist::calculateZobristKey(*board);
 
             thinking = true;
             std::thread([]() {
-                Search::startIterativeSearch(20000);
+                Search::startIterativeSearch(*board, 20000);
             }).detach();
             // playBotMove();
+        }else {
+            if (board->isDrawn()) {
+                drawn++;
+            }else {
+                if ((board->whiteToMove && whiteIsNew) || (!board->whiteToMove && !whiteIsNew)) {
+                    oldWon++;
+                }else {
+                    newWon++;
+                }
+            }
+            whiteIsNew = !whiteIsNew;;
+            board->setStartingPosition();
+            Search::transpositionTable.clear();
+            OldSearch::transpositionTable.clear();
         }
     }
 
@@ -118,17 +140,17 @@ void BoardWindow::update(sf::RenderWindow &window) {
         window.draw(rect);
     }
 
-    if (lastMove[Board::moveNumber].from != lastMove[Board::moveNumber].to) {
+    if (lastMove[board->moveNumber].from != lastMove[board->moveNumber].to) {
         {
-            int ix = lastMove[Board::moveNumber].to % 8;
-            int iy = 7 - lastMove[Board::moveNumber].to / 8;
+            int ix = lastMove[board->moveNumber].to % 8;
+            int iy = 7 - lastMove[board->moveNumber].to / 8;
             sf::RectangleShape rect(sf::Vector2f(75, 75));
             rect.setFillColor(sf::Color(181, 181, 25, 75));
             rect.setPosition(sf::Vector2f(ix * 75.F, iy * 75.F));
             window.draw(rect);
         } {
-            int ix = lastMove[Board::moveNumber].from % 8;
-            int iy = 7 - lastMove[Board::moveNumber].from / 8;
+            int ix = lastMove[board->moveNumber].from % 8;
+            int iy = 7 - lastMove[board->moveNumber].from / 8;
             sf::RectangleShape rect(sf::Vector2f(75, 75));
             rect.setFillColor(sf::Color(181, 181, 25, 75));
             rect.setPosition(sf::Vector2f(ix * 75.F, iy * 75.F));
@@ -168,12 +190,12 @@ void BoardWindow::update(sf::RenderWindow &window) {
     }
 
     if (draggingSquare != -1) {
-        ArrayVec<Move, 218> moves = Movegen::generateAllLegalMovesOnBoard();
+        ArrayVec<Move, 218> moves = Movegen::generateAllLegalMovesOnBoard(*board);
 
         for (int i = 0; i < moves.elements; i++) {
             Move move = moves.buffer[i];
-            if (move.from == draggingSquare && Board::move(move)) {
-                Board::undoMove(move);
+            if (move.from == draggingSquare && board->move(move)) {
+                board->undoMove(move);
 
                 int ix = move.to % 8;
                 int iy = 7 - move.to / 8;
@@ -214,15 +236,16 @@ void BoardWindow::update(sf::RenderWindow &window) {
             << "\nEvaluation: " << str
             << (Search::searchCancelled ? " Cancelled" : "")
             << "\nTransposition Table Usage: "
-            << (double) TranspositionTable::tableEntries / (double) TranspositionTable::TRANSPOSITION_TABLE_SIZE *
+            << (double) Search::transpositionTable.tableEntries / (double) TranspositionTable::TRANSPOSITION_TABLE_SIZE
+            *
             (sizeof(TranspositionEntry) * TranspositionTable::TRANSPOSITION_TABLE_SIZE / (double) 1000000)
             << "/"
             << (sizeof(TranspositionEntry) * TranspositionTable::TRANSPOSITION_TABLE_SIZE / (double) 1000000)
             << "MB"
-            << "\nTransposition Search Cutoffs: " << std::to_string(TranspositionTable::cutoffs)
+            << "\nTransposition Search Cutoffs: " << std::to_string(Search::transpositionTable.cutoffs)
             << "\nTransposition Table Collisions: "
-            << ((double) TranspositionTable::collisions / (double) TranspositionTable::tableEntries * 100)
-            << "%\nEndgame Bias: " << Search::getEndGameBias();
+            << ((double) Search::transpositionTable.collisions / (double) Search::transpositionTable.tableEntries * 100)
+            << "%\nEndgame Bias: " << Search::getEndGameBias(*board) << "\n\nNew Search Won: " << newWon << "\nOld Search Won: " << oldWon << "\nDrawn: " << drawn;
 
     text.setString(ss.str());
     text.setCharacterSize(25);
