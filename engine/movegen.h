@@ -10,6 +10,8 @@
 namespace Movegen {
     constexpr uint64_t FILE_A = 0x0101010101010101ULL;
     constexpr uint64_t FILE_H = 0x8080808080808080ULL;
+    constexpr uint64_t FILE_G = 0x4040404040404040ULL;
+    constexpr uint64_t FILE_C = 0x404040404040404ULL;
     constexpr uint64_t RANK_1 = 0x00000000000000FFULL;
     constexpr uint64_t RANK_3 = 0x0000000000FF0000ULL;
     constexpr uint64_t RANK_6 = 0x0000FF0000000000ULL;
@@ -123,7 +125,11 @@ namespace Movegen {
 
     void printMovementMask(uint64_t mask);
 
-    uint8_t popLeastSignificantBitAndGetIndex(uint64_t &num);
+    inline uint8_t popLeastSignificantBitAndGetIndex(uint64_t &b) {
+        uint8_t index = __builtin_ctzll(b);
+        b &= b - 1;
+        return index;
+    }
 
     ArrayVec<Move, 218> generateAllLegalMovesOnBoard(Board& board);
 

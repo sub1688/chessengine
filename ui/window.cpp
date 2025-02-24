@@ -16,11 +16,11 @@ void BoardWindow::playBotMove() {
     thinking = true;
     std::thread([]() {
         if ((board->whiteToMove && whiteIsNew) || (!board->whiteToMove && !whiteIsNew)) {
-            Search::startIterativeSearch(*board, 100);
+            Search::startIterativeSearch(*board, 1000);
             board->move(Search::bestMove);
             thinking = false;
         } else {
-            OldSearch::startIterativeSearch(*board, 100);
+            OldSearch::startIterativeSearch(*board, 1000);
             board->move(OldSearch::bestMove);
             thinking = false;
         }

@@ -2,7 +2,6 @@
 #include <SFML/Graphics.hpp>
 
 #include "../engine/board.h"
-#include "../util/arrayvec.h"
 
 namespace BoardWindow {
     inline sf::Font font;

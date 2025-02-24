@@ -127,43 +127,45 @@ void Movegen::generatePseudoLegalMoves(Board &board, uint8_t squareIndex, uint8_
 
 
 bool Movegen::isKingInDanger(Board &board, bool white) {
-    uint8_t kingIndex = std::countr_zero(white ? board.BITBOARDS[WHITE_KING] : board.BITBOARDS[BLACK_KING]);
+    uint8_t kingIndex = __builtin_ctzll(white ? board.BITBOARDS[WHITE_KING] : board.BITBOARDS[BLACK_KING]);
     return isSquareAttacked(board, kingIndex, white);
 }
 
 bool Movegen::isSquareAttacked(Board &board, uint8_t kingIndex, bool white) {
-    uint64_t bishopMoves = generatePseudoLegalBishopMoves(board, kingIndex, white);
-
-    uint64_t opposingQueenBitboard = white ? board.BITBOARDS[BLACK_QUEEN] : board.BITBOARDS[WHITE_QUEEN];
-    uint64_t opposingBishopBitboard = white ? board.BITBOARDS[BLACK_BISHOP] : board.BITBOARDS[WHITE_BISHOP];
-
-    if (bishopMoves & (opposingQueenBitboard | opposingBishopBitboard))
+    // 1. Check for pawn attacks
+    uint64_t opposingPawnBitboard = white ? board.BITBOARDS[BLACK_PAWN] : board.BITBOARDS[WHITE_PAWN];
+    if (PAWN_ATTACK_MASKS[!white][kingIndex] & opposingPawnBitboard)
         return true;
 
-    uint64_t rookMoves = generatePseudoLegalRookMoves(board, kingIndex, white);
-    uint64_t opposingRookBitboard = white ? board.BITBOARDS[BLACK_ROOK] : board.BITBOARDS[WHITE_ROOK];
-
-    if (rookMoves & (opposingQueenBitboard | opposingRookBitboard))
-        return true;
-
-    uint64_t knightMoves = generatePseudoLegalKnightMoves(board, kingIndex, white);
+    // 2. Check for knight attacks
+    uint64_t knightMoves = KNIGHT_MOVEMENT_MASKS[kingIndex];
     uint64_t opposingKnightBitboard = white ? board.BITBOARDS[BLACK_KNIGHT] : board.BITBOARDS[WHITE_KNIGHT];
-
     if (knightMoves & opposingKnightBitboard)
         return true;
 
-    uint64_t kingMoves = generatePseudoLegalKingMoves(board, kingIndex, white);
+    // 3. Check for king attacks
+    uint64_t kingMoves = KING_MOVEMENT_MASKS[kingIndex];
     uint64_t opposingKingBitboard = white ? board.BITBOARDS[BLACK_KING] : board.BITBOARDS[WHITE_KING];
-
     if (kingMoves & opposingKingBitboard)
         return true;
 
-    uint64_t opposingPawnBitboard = white ? board.BITBOARDS[BLACK_PAWN] : board.BITBOARDS[WHITE_PAWN];
-    if (PAWN_ATTACK_MASKS[kingIndex][white] & opposingPawnBitboard)
+    // 4. Check for bishop/queen diagonal attacks
+    uint64_t bishopMoves = generatePseudoLegalBishopMoves(board, kingIndex, white);
+    uint64_t opposingBishopBitboard = white ? board.BITBOARDS[BLACK_BISHOP] : board.BITBOARDS[WHITE_BISHOP];
+    uint64_t opposingQueenBitboard = white ? board.BITBOARDS[BLACK_QUEEN] : board.BITBOARDS[WHITE_QUEEN];
+    if (bishopMoves & (opposingBishopBitboard | opposingQueenBitboard))
         return true;
 
+    // 5. Check for rook/queen straight attacks
+    uint64_t rookMoves = generatePseudoLegalRookMoves(board, kingIndex, white);
+    uint64_t opposingRookBitboard = white ? board.BITBOARDS[BLACK_ROOK] : board.BITBOARDS[WHITE_ROOK];
+    if (rookMoves & (opposingRookBitboard | opposingQueenBitboard))
+        return true;
+
+    // If no attacks are found
     return false;
 }
+
 
 uint64_t Movegen::generatePawnMovementMask(uint8_t squareIndex, bool white) {
     uint64_t moves = 0ULL;
@@ -605,11 +607,6 @@ uint64_t Movegen::random_uint64() {
     return u1 | (u2 << 16) | (u3 << 32) | (u4 << 48);
 }
 
-uint8_t Movegen::popLeastSignificantBitAndGetIndex(uint64_t &b) {
-    auto index = __builtin_ctzll(b);
-    b &= b - 1;
-    return index;
-}
 
 void Movegen::init() {
     precomputeMovementMasks();

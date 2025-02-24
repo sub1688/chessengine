@@ -16,6 +16,11 @@
 #define BLACK_KING 10
 #define BLACK_ROOK 11
 
+/**
+ *  64 bit integer:
+ *  |from(5 bits)|to(5 bits)|en passant target(3 bits)|piece from(4 bits)|piece captured(4 bits)|piece promoted(2 bits)|castle flag(1 bit)|
+ *  Total: 26 bits
+ */
 struct Move {
     uint8_t from = 0;
     uint8_t to = 0;
@@ -64,7 +69,6 @@ public:
 
     void setStartingPosition();
 
-    void setPiece(int index, uint8_t piece);
 
     void printBoard();
 
@@ -88,7 +92,11 @@ public:
 
     bool isDrawn();
 
-    uint8_t getPiece(int index);
+    [[nodiscard]] uint8_t getPiece(int index) const {
+        return mailbox[index];
+    }
+
+    inline void setPiece(int index, uint8_t piece);
 
     std::string generateFEN();
 };
