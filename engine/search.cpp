@@ -11,7 +11,10 @@
 #include "piecesquaretable.h"
 #include "san.h"
 #include "transpositiontable.h"
+#include "zobrist.h"
 #include "../ui/window.h"
+
+#include <cstring>
 
 void Search::orderMoves(ArrayVec<Move, 218> &moveVector, Move ttMove, int depth) {
     auto getMoveScore = [&](const Move &move) -> int {
@@ -45,11 +48,14 @@ void Search::orderMoves(ArrayVec<Move, 218> &moveVector, Move ttMove, int depth)
 
 
 void Search::startIterativeSearch(Board &board, long time) {
+    std::memset(&times, 0, sizeof(times));
+
     transpositionTable.cutoffs = 0;
     transpositionTable.collisions = 0;
     searchCancelled = false;
     lastSearchTurnIsWhite = board.whiteToMove;
 
+    long currentTimeMillis = getMillisSinceEpoch();
     // Lookup in opening book
     Move move = OpeningBook::fetchNextBookMove(board);
     if (!isNullMove(move)) {
@@ -74,6 +80,7 @@ void Search::startIterativeSearch(Board &board, long time) {
         SearchResult result = search(board, currentDepth);
 
         if (!searchCancelled) {
+            times[currentDepth] = getMillisSinceEpoch() - currentTimeMillis;
             currentEval = result.evaluation;
             bestMove = result.bestMove;
             if (abs(currentEval) > MATE_THRESHOLD) {
@@ -128,18 +135,17 @@ SearchResult Search::search(Board &board, int rootDepth, int depth, int alpha, i
     }
 
 
-    // TODO: fix zobbrist keys in null move making and pruning
-    if (rootDepth != 0 && depth >= 3 && !wasNullSearch && canNullMove(board) && !inPrincipalVariation) {
-        int reduction = 2 + depth / 4;
+    // if (rootDepth != 0 && depth >= 3 && !wasNullSearch && canNullMove(board) && !inPrincipalVariation) {
+        // int reduction = 3 + depth / 6;
 
-        board.nullMove();
-        SearchResult result = search(board, rootDepth + 1, depth - 1 - reduction, -beta, -beta + 1, true);
-        int negatedScore = -result.evaluation;
-        board.undoNullMove();
+        // board.nullMove();
+        // SearchResult result = search(board, rootDepth + 1, depth - 1 - reduction, -beta, -beta + 1, true);
+        // int negatedScore = -result.evaluation;
+        // board.undoNullMove();
 
-        if (negatedScore >= beta)
-            return {negatedScore, NULL_MOVE};
-    }
+        // if (negatedScore >= beta)
+            // return {negatedScore, NULL_MOVE};
+    // }
 
     int nodeType = EXACT_BOUND;
     bool movesAvailable = false;
@@ -192,15 +198,24 @@ SearchResult Search::search(Board &board, int rootDepth, int depth, int alpha, i
 
 int Search::negatedPrincipalVariationSearch(Board &board, Move move, bool &firstMove, int moved, int rootDepth, int depth, int alpha, int beta, bool wasNullSearch) {
     int negatedScore;
+
+    if (depth > 3 && move.capture == NONE && move.promotion == NONE && moved > 4)
+    {
+        negatedScore = -search(board, rootDepth + 1, depth - 2, -alpha - 1, -alpha, wasNullSearch).evaluation;
+        if (negatedScore <= alpha)
+        {
+            return negatedScore;
+        }
+    }
+
     if (firstMove) {
         // Full window search for the first move
         negatedScore = -search(board, rootDepth + 1, depth - 1, -beta, -alpha, wasNullSearch).evaluation;
         firstMove = false;
     } else {
         // Late move reductions!!!
-        int depthReduction = depth > 3 && move.capture == NONE && move.promotion == NONE && moved > 4 ? 1 : 0;
         // Principal Variation Search: try a null window search first
-        negatedScore = -search(board, rootDepth + 1, depth - 1 - depthReduction, -alpha - 1, -alpha, wasNullSearch).evaluation;
+        negatedScore = -search(board, rootDepth + 1, depth - 1, -alpha - 1, -alpha, wasNullSearch).evaluation;
 
         // If null window search fails high, do a full re-search
         if (negatedScore > alpha && negatedScore < beta) {
@@ -211,7 +226,7 @@ int Search::negatedPrincipalVariationSearch(Board &board, Move move, bool &first
 }
 
 bool Search::canNullMove(Board &board) {
-    return Movegen::isKingInDanger(board, board.whiteToMove) && __builtin_popcountll(board.majorPieceBitboards(board.whiteToMove)) + __builtin_popcountll(board.minorPieceBitboards(board.whiteToMove)) > 0;
+    return __builtin_popcountll(board.majorPieceBitboards(board.whiteToMove)) + __builtin_popcountll(board.minorPieceBitboards(board.whiteToMove)) > 0;
 }
 
 SearchResult Search::search(Board &board, int depth) {

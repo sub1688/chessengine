@@ -15,6 +15,7 @@ namespace BoardWindow {
     inline bool thinking = false;
     inline int displayBoard[64];
     inline Move lastMove[1024];
+    inline bool didNullMove;
 
     inline bool whiteIsNew = false;
     inline int newWon = 0, oldWon = 0, drawn = 0;

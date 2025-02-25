@@ -2,6 +2,7 @@
 
 #define MATE_THRESHOLD 200000000
 
+#include <chrono>
 #include <limits>
 
 #include "board.h"
@@ -179,6 +180,7 @@ namespace Search {
     inline constexpr int WINNING_CAPTURE_BIAS = 8000000;
     inline constexpr int PROMOTE_BIAS = 6000000;
 
+    inline long times[256] = {};
     inline int currentEval = 0;
     inline int currentDepth = 0;
     inline bool lastSearchTurnIsWhite = true;
@@ -213,4 +215,12 @@ namespace Search {
     int evaluatePassedPawn(Board& board, uint8_t squareIndex, uint8_t piece);
 
     int evaluateKingDistance(Board& board, uint8_t squareIndex, uint8_t otherKingIndex, uint8_t piece, int materialDelta);
+
+    inline long getMillisSinceEpoch()
+    {
+        const auto now     = std::chrono::system_clock::now();
+        const auto epoch   = now.time_since_epoch();
+        const auto seconds = std::chrono::duration_cast<std::chrono::milliseconds>(epoch);
+        return seconds.count();
+    }
 }

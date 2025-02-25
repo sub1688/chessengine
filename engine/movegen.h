@@ -142,4 +142,6 @@ namespace Movegen {
     void init();
 
     bool inStalemate(Board &board);
+
+    bool isMoveCheck(Board &board, Move move);
 }

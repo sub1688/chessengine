@@ -18,8 +18,10 @@
 
 /**
  *  64 bit integer:
- *  |from(5 bits)|to(5 bits)|en passant target(3 bits)|piece from(4 bits)|piece captured(4 bits)|piece promoted(2 bits)|castle flag(1 bit)|
- *  Total: 26 bits
+ *  |from(6 bits)|to(6 bits)|en passant target(3 bits)|piece from(4 bits)|piece captured(4 bits)|piece promoted(4 bits)|castle flag(1 bit)|
+ *  Total: 30 bits
+ *  0b1100110011000011000001100
+ *
  */
 struct Move {
     uint8_t from = 0;
@@ -38,6 +40,11 @@ struct Move {
     bool operator==(const Move & move) const {
         return from == move.from && to == move.to && enPassantTarget == move.enPassantTarget && pieceFrom == move.pieceFrom && capture == move.capture && promotion == move.promotion && castle == move.castle;
     };
+
+    [[nodiscard]] uint64_t getMoveBits() const
+    {
+        return from | to << 6 | enPassantTarget << 9 | pieceFrom << 13 | capture << 17 | promotion << 21 | castle << 22;
+    }
 };
 
 class Board {

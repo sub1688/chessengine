@@ -245,10 +245,16 @@ void BoardWindow::update(sf::RenderWindow &window) {
             << "\nTransposition Search Cutoffs: " << std::to_string(Search::transpositionTable.cutoffs)
             << "\nTransposition Table Collisions: "
             << ((double) Search::transpositionTable.collisions / (double) Search::transpositionTable.tableEntries * 100)
-            << "%\nEndgame Bias: " << Search::getEndGameBias(*board) << "\n\nNew Search Won: " << newWon << "\nOld Search Won: " << oldWon << "\nDrawn: " << drawn;
+            << "%\nEndgame Bias: " << Search::getEndGameBias(*board) << "\nNew Search Won: " << newWon << "\nOld Search Won: " << oldWon << "\nDrawn: " << drawn << "\n";
+
+    ss << "Time to depth:\n";
+    for (int i = 2; i < Search::currentDepth; i++)
+    {
+        ss << std::to_string(i) << ": " << std::to_string(Search::times[i]) << "ms\n";
+    }
 
     text.setString(ss.str());
-    text.setCharacterSize(25);
+    text.setCharacterSize(20);
     text.setPosition(sf::Vector2f(75 * 8 + 35, 5));
     window.draw(text);
 

@@ -6,6 +6,18 @@
 
 #include "zobrist.h"
 
+bool Movegen::isMoveCheck(Board& board, Move move) {
+    bool white = move.pieceFrom < 6;
+    if (board.move(move))
+    {
+        bool check = isKingInDanger(board, !white);
+        board.undoMove(move);
+        return check;
+    }
+    return false;
+}
+
+
 uint64_t Movegen::perft(Board &board, int depth) {
     uint64_t perftCount = 0;
 

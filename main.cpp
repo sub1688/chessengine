@@ -144,5 +144,9 @@ int main() {
     std::cout << "[+] Done!\n";
     // startCLIListening(board);
 
+    Move move = Move(12, 24);
+    move.castle = false;
+    std::cout << move.getMoveBits() << std::endl;
+
     BoardWindow::init(&board);
 }

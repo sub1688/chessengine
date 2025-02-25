@@ -28,14 +28,38 @@ void Board::setPiece(int index, uint8_t piece) {
 
 void Board::nullMove() {
     whiteToMove = !whiteToMove;
-    // moveNumber++;
-    // currentZobristKey ^= Zobrist::whiteToMove;
+    currentZobristKey ^= Zobrist::whiteToMove;
+    moveNumber++;
+
+    // Zobrist en passant
+    uint64_t prevEnPassantMask = epMasks[moveNumber - 1];
+    if (prevEnPassantMask != 0) {
+        int index = __builtin_ctzll(prevEnPassantMask);
+        int file = index & 7;
+        currentZobristKey ^= Zobrist::enPassantKeys[file];
+    }
 }
 
 void Board::undoNullMove() {
     whiteToMove = !whiteToMove;
-    // moveNumber--;
-    // currentZobristKey ^= Zobrist::whiteToMove;
+    moveNumber--;
+    currentZobristKey ^= Zobrist::whiteToMove;
+
+    // Remove en passant hash from the last move
+    uint64_t prevEnPassantMask = epMasks[moveNumber + 1];
+    if (prevEnPassantMask != 0) {
+        int index = __builtin_ctzll(prevEnPassantMask);
+        int file = index & 7;
+        currentZobristKey ^= Zobrist::enPassantKeys[file];
+    }
+
+    // Restore en passant hash from before the move
+    uint64_t oldEnPassantMask = epMasks[moveNumber];
+    if (oldEnPassantMask != 0) {
+        int index = __builtin_ctzll(oldEnPassantMask);
+        int file = index & 7;
+        currentZobristKey ^= Zobrist::enPassantKeys[file];
+    }
 }
 
 
