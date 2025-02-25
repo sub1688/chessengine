@@ -192,11 +192,11 @@ namespace Search {
 
     void startIterativeSearch(Board& board, long time);
 
-    SearchResult search(Board& board, int rootDepth, int depth, int alpha, int beta);
+    SearchResult search(Board& board, int rootDepth, int depth, int alpha, int beta, bool wasNullSearch);
 
     SearchResult search(Board& board, int depth);
 
-    int negatedPrincipalVariationSearch(Board& board, Move move, bool &firstMove, int moved, int rootDepth, int depth, int alpha, int beta);
+    int negatedPrincipalVariationSearch(Board& board, Move move, bool &firstMove, int moved, int rootDepth, int depth, int alpha, int beta, bool wasNullSearch);
 
     int evaluate(Board& board);
 
@@ -205,6 +205,8 @@ namespace Search {
     int getPieceValue(uint8_t piece);
 
     double getEndGameBias(Board& board);
+
+    bool canNullMove(Board& board);
 
     bool isNullMove(Move move);
 

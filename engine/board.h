@@ -59,6 +59,13 @@ public:
 
     uint64_t currentZobristKey = 0ULL;
 
+    [[nodiscard]] uint64_t minorPieceBitboards(bool white) const;
+    [[nodiscard]] uint64_t majorPieceBitboards(bool white) const;
+
+    void nullMove();
+
+    void undoNullMove();
+
     bool move(Move m);
 
     void undoMove(Move m);
@@ -68,7 +75,6 @@ public:
     void updateOccupancy();
 
     void setStartingPosition();
-
 
     void printBoard();
 

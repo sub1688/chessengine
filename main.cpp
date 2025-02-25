@@ -144,7 +144,5 @@ int main() {
     std::cout << "[+] Done!\n";
     // startCLIListening(board);
 
-    benchmarkPerft(board, 6);
-
     BoardWindow::init(&board);
 }

@@ -26,6 +26,19 @@ void Board::setPiece(int index, uint8_t piece) {
     mailbox[index] = piece;
 }
 
+void Board::nullMove() {
+    whiteToMove = !whiteToMove;
+    // moveNumber++;
+    // currentZobristKey ^= Zobrist::whiteToMove;
+}
+
+void Board::undoNullMove() {
+    whiteToMove = !whiteToMove;
+    // moveNumber--;
+    // currentZobristKey ^= Zobrist::whiteToMove;
+}
+
+
 bool Board::move(Move m) {
     setPiece(m.to, m.promotion != NONE ? m.promotion : m.pieceFrom);
     setPiece(m.from, NONE);
@@ -533,3 +546,15 @@ std::string Board::generateFEN() {
 
     return fen;
 }
+
+uint64_t Board::majorPieceBitboards(bool white) const {
+    if (white) {
+        return BITBOARDS[WHITE_KNIGHT] | BITBOARDS[WHITE_BISHOP] | BITBOARDS[WHITE_ROOK] | BITBOARDS[WHITE_QUEEN];
+    }
+    return BITBOARDS[BLACK_KNIGHT] | BITBOARDS[BLACK_BISHOP] | BITBOARDS[BLACK_ROOK] | BITBOARDS[BLACK_QUEEN];
+}
+
+uint64_t Board::minorPieceBitboards(bool white) const {
+    return BITBOARDS[white ? WHITE_PAWN : BLACK_PAWN];
+}
+
