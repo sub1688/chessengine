@@ -222,11 +222,10 @@ void BoardWindow::update(sf::RenderWindow &window) {
     std::string str = ss1.str();
 
     // Check if it's a mate score
-    if (abs((Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval / 100.F) > MATE_THRESHOLD / 200.F) {
-        str = "M" + std::to_string((int) (
-                                       Search::POSITIVE_INFINITY / 100.F - abs(
-                                           static_cast<float>(
-                                               (Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval) / 100.F))
+    if (abs((Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval) > MATE_THRESHOLD) {
+        str = "#" + std::to_string((Search::POSITIVE_INFINITY - abs(
+                                        static_cast<float>(
+                                            (Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval)))
                                    / 2 + 1);
     }
     std::ostringstream ss;
@@ -269,7 +268,7 @@ void BoardWindow::update(sf::RenderWindow &window) {
     float evalOffset = trueEval >= 0
                            ? 300.F + 300.F / -(trueEval / 5.F + 1.F)
                            : -(300 + 300.F / -(-trueEval / 5.F + 1.F));
-    smoothEvalOffset += (evalOffset - smoothEvalOffset) / 12.F;
+    smoothEvalOffset += (evalOffset - smoothEvalOffset) / 24.F;
     float evalHeight = 300.F + smoothEvalOffset;
     sf::RectangleShape evalWhite(sf::Vector2f(30, evalHeight));
     evalBackground.setFillColor(sf::Color(255, 255, 255, 255));

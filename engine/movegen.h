@@ -125,12 +125,6 @@ namespace Movegen {
 
     void printMovementMask(uint64_t mask);
 
-    inline uint8_t popLeastSignificantBitAndGetIndex(uint64_t &b) {
-        uint8_t index = __builtin_ctzll(b);
-        b &= b - 1;
-        return index;
-    }
-
     ArrayVec<Move, 218> generateAllLegalMovesOnBoard(Board& board);
 
     ArrayVec<Move, 218> generateAllLegalMovesOnBoard(Board& board, bool capturesOnly);
@@ -144,4 +138,10 @@ namespace Movegen {
     bool inStalemate(Board &board);
 
     bool isMoveCheck(Board &board, Move move);
+
+    inline uint8_t popLeastSignificantBitAndGetIndex(uint64_t &b) {
+        uint8_t index = __builtin_ctzll(b);
+        b &= b - 1;
+        return index;
+    }
 }

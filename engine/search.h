@@ -1,6 +1,6 @@
 #pragma once
 
-#define MATE_THRESHOLD 200000000
+#define MATE_THRESHOLD 30000
 
 #include <chrono>
 #include <limits>
@@ -171,8 +171,14 @@ namespace Search {
         -500
     };
 
-    inline constexpr int NEGATIVE_INFINITY = std::numeric_limits<int>::min() + 1;
-    inline constexpr int POSITIVE_INFINITY = std::numeric_limits<int>::max() - 1;
+    /**
+     * These scores are not ACTUALLY infinity, they are just representative of a really high/low score to represent
+     * situations with checkmate. I specifically chose 32000 as it is close to the 16 bit integer limit, which would
+     * make the maximum/minimum score low enough to be fit into a single 64 bit integer along with other data in the
+     * transposition table.
+    */
+    inline constexpr int NEGATIVE_INFINITY = -32000;
+    inline constexpr int POSITIVE_INFINITY = 32000;
 
     inline constexpr int TRANSPOSITION_TABLE_BIAS = 10000000;
     inline constexpr int KILLER_MOVE_BIAS = 9000000;
@@ -180,8 +186,8 @@ namespace Search {
     inline constexpr int WINNING_CAPTURE_BIAS = 8000000;
     inline constexpr int PROMOTE_BIAS = 6000000;
 
-    inline long times[256] = {};
     inline int currentEval = 0;
+    inline long times[256] = {};
     inline int currentDepth = 0;
     inline bool lastSearchTurnIsWhite = true;
 

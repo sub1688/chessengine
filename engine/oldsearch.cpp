@@ -70,7 +70,7 @@ void OldSearch::startIterativeSearch(Board& board, long time) {
         if (!searchCancelled) {
             currentEval = result.evaluation;
             bestMove = result.bestMove;
-            if (abs(currentEval) > MATE_THRESHOLD) {
+            if (abs(currentEval) > 30000) {
                 searchCancelled = true;
             }
             std::cout << currentDepth << ":" << std::to_string(currentEval) << ":" << std::to_string(bestMove.from) <<
@@ -96,8 +96,8 @@ OldSearchResult OldSearch::search(Board& board, int rootDepth, int depth, int al
     if (rootDepth > 1) {
         if (board.isDrawn())
             return {0, NULL_MOVE};
-        alpha = std::max(alpha, NEGATIVE_INFINITY + rootDepth * 100);
-        beta = std::min(beta, POSITIVE_INFINITY - rootDepth * 100);
+        alpha = std::max(alpha, NEGATIVE_INFINITY + rootDepth);
+        beta = std::min(beta, POSITIVE_INFINITY - rootDepth);
         if (alpha >= beta)
             return {alpha, NULL_MOVE};
     }
@@ -170,7 +170,7 @@ OldSearchResult OldSearch::search(Board& board, int rootDepth, int depth, int al
     }
 
     if (!movesAvailable) {
-        maximumScore = Movegen::isKingInDanger(board, board.whiteToMove) ? -NEGATIVE_INFINITY + rootDepth * 100 : 0;
+        maximumScore = Movegen::isKingInDanger(board, board.whiteToMove) ? -NEGATIVE_INFINITY + rootDepth : 0;
     }
 
     if (!searchCancelled && !isNullMove(bestMove)) {

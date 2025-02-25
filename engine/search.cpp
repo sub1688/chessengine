@@ -109,8 +109,8 @@ SearchResult Search::search(Board &board, int rootDepth, int depth, int alpha, i
     if (rootDepth > 1) {
         if (board.isDrawn())
             return {0, NULL_MOVE};
-        alpha = std::max(alpha, NEGATIVE_INFINITY + rootDepth * 100);
-        beta = std::min(beta, POSITIVE_INFINITY - rootDepth * 100);
+        alpha = std::max(alpha, NEGATIVE_INFINITY + rootDepth);
+        beta = std::min(beta, POSITIVE_INFINITY - rootDepth);
         if (alpha >= beta)
             return {alpha, NULL_MOVE};
     }
@@ -133,19 +133,6 @@ SearchResult Search::search(Board &board, int rootDepth, int depth, int alpha, i
             return {correctedScore, entry.bestMove};
         }
     }
-
-
-    // if (rootDepth != 0 && depth >= 3 && !wasNullSearch && canNullMove(board) && !inPrincipalVariation) {
-        // int reduction = 3 + depth / 6;
-
-        // board.nullMove();
-        // SearchResult result = search(board, rootDepth + 1, depth - 1 - reduction, -beta, -beta + 1, true);
-        // int negatedScore = -result.evaluation;
-        // board.undoNullMove();
-
-        // if (negatedScore >= beta)
-            // return {negatedScore, NULL_MOVE};
-    // }
 
     int nodeType = EXACT_BOUND;
     bool movesAvailable = false;
@@ -187,7 +174,7 @@ SearchResult Search::search(Board &board, int rootDepth, int depth, int alpha, i
     }
 
     if (!movesAvailable) {
-        maximumScore = Movegen::isKingInDanger(board, board.whiteToMove) ? -NEGATIVE_INFINITY + rootDepth * 100 : 0;
+        maximumScore = Movegen::isKingInDanger(board, board.whiteToMove) ? NEGATIVE_INFINITY + rootDepth : 0;
     }
 
     if (!searchCancelled && !isNullMove(bestMove)) {

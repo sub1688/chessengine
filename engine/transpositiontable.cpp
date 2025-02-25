@@ -22,7 +22,7 @@ void TranspositionTable::addEntry(uint64_t zobristKey, Move bestMove, int rootDe
 int TranspositionTable::correctScoreForRetrieval(int score, int rootDepth) {
     if (abs(score) >= MATE_THRESHOLD) {
         int sign = score > 0 ? 1 : -1;
-        return (score * sign - rootDepth * 100) * sign;
+        return (score * sign - rootDepth) * sign;
     }
     return score;
 }
@@ -30,7 +30,7 @@ int TranspositionTable::correctScoreForRetrieval(int score, int rootDepth) {
 int TranspositionTable::correctScoreForStorage(int score, int rootDepth) {
     if (abs(score) >= MATE_THRESHOLD) {
         int sign = score > 0 ? 1 : -1;
-        return (score * sign + rootDepth * 100) * sign;
+        return (score * sign + rootDepth) * sign;
     }
     return score;
 }

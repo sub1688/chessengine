@@ -19,8 +19,8 @@
 /**
  *  64 bit integer:
  *  |from(6 bits)|to(6 bits)|en passant target(3 bits)|piece from(4 bits)|piece captured(4 bits)|piece promoted(4 bits)|castle flag(1 bit)|
- *  Total: 30 bits
- *  0b1100110011000011000001100
+ *  Total: 27 bits
+ *
  *
  */
 struct Move {
@@ -43,7 +43,7 @@ struct Move {
 
     [[nodiscard]] uint64_t getMoveBits() const
     {
-        return from | to << 6 | enPassantTarget << 9 | pieceFrom << 13 | capture << 17 | promotion << 21 | castle << 22;
+        return from | to << 6 | enPassantTarget << 12 | pieceFrom << 15 | capture << 19 | promotion << 23 | castle << 27;
     }
 };
 

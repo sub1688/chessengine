@@ -1,6 +1,5 @@
 #pragma once
 
-#define MATE_THRESHOLD 200000000
 
 #include <limits>
 

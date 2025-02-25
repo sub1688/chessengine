@@ -1,21 +1,52 @@
 #pragma once
 
+#include <cassert>
 #include <cstdint>
 #include "board.h"
 
-#define UPPER_BOUND 1
-#define EXACT_BOUND 0
-#define LOWER_BOUND (-1)
+#define UPPER_BOUND 2
+#define EXACT_BOUND 1
+#define LOWER_BOUND 0
 
+#define EXTRACT_BEST_MOVE_BITS(x) (x & 0xFFFFFFF)
+#define EXTRACT_DEPTH_SEARCHED(x) ((x >> 28) & 0xFF)
+#define EXTRACT_SCORE(x) (((x >> 36) & 0xFFFF) - 30000)
+#define EXTRACT_NODE_TYPE(x) ((x >> 52) & 0b11)
+
+/**
+ *  TRANSPOSITION ENTRY:
+ *  Zobrist Key: 64 bits
+ *  data:
+ *      Move: 28 bits
+ *      depth: 8 bits
+ *      score: 16 bits
+ *      node type: 2 bits
+ *
+ *      Total: 54 bits
+ *
+ *  Total: 118 bits used
+ */
 struct TranspositionEntry {
     uint64_t zobristKey;
     Move bestMove;
     uint8_t depthSearched;
     uint8_t nodeType;
     int score;
+    uint64_t data;
 
-    TranspositionEntry() : zobristKey(0), bestMove(Move()), depthSearched(0), score(0), nodeType(0) {}
-    TranspositionEntry(uint64_t m_zobristKey, Move m_bestMove, uint8_t m_depthSearched, int m_score, uint8_t m_nodeType) : zobristKey(m_zobristKey), bestMove(m_bestMove), depthSearched(m_depthSearched), score(m_score), nodeType(m_nodeType) {}
+    TranspositionEntry() : zobristKey(0), bestMove(Move()), depthSearched(0), score(0), nodeType(0), data(0) {}
+    TranspositionEntry(uint64_t m_zobristKey, Move m_bestMove, uint8_t m_depthSearched, int m_score, uint8_t m_nodeType) : zobristKey(m_zobristKey), bestMove(m_bestMove), depthSearched(m_depthSearched), score(m_score), nodeType(m_nodeType) {
+        data = getBitsFromData();
+    }
+
+    [[nodiscard]] uint64_t getBitsFromData() const {
+        assert(score + 30000 >= 0 && score + 30000 <= 65535);
+
+        return bestMove.getMoveBits() |
+           static_cast<uint64_t>(depthSearched) << 28ULL |
+           static_cast<uint64_t>(score + 30000) << 36ULL |
+           static_cast<uint64_t>(nodeType) << 52ULL;
+    }
 };
 
 class TranspositionTable {
