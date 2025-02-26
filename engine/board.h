@@ -16,12 +16,22 @@
 #define BLACK_KING 10
 #define BLACK_ROOK 11
 
+#define GET_MOVE_FROM_BITS(bits, move)        \
+    do {                                      \
+        (move).from = (bits) & 0x3F;           \
+        (move).to = ((bits) >> 6) & 0x3F;      \
+        (move).enPassantTarget = ((bits) >> 12) & 0x7; \
+        (move).pieceFrom = ((bits) >> 15) & 0xF; \
+        (move).capture = ((bits) >> 19) & 0xF;  \
+        (move).promotion = ((bits) >> 23) & 0xF; \
+        (move).castle = ((bits) >> 27) & 0x1;  \
+    } while (0)
+
+
 /**
  *  64 bit integer:
  *  |from(6 bits)|to(6 bits)|en passant target(3 bits)|piece from(4 bits)|piece captured(4 bits)|piece promoted(4 bits)|castle flag(1 bit)|
  *  Total: 27 bits
- *
- *
  */
 struct Move {
     uint8_t from = 0;

@@ -7,12 +7,7 @@ void TranspositionTable::addEntry(uint64_t zobristKey, Move bestMove, int rootDe
                                   int nodeType) {
     uint64_t index = zobristKey & TRANSPOSITION_TABLE_MASK;
 
-    TranspositionEntry entry = getEntry(zobristKey);
-    if (entry.zobristKey != 0 && entry.zobristKey != zobristKey) {
-        collisions++;
-        return;
-    }
-    // Replace if empty or different key (collision), or if the new depth is greater
+    // Always replace item in tt!!
     transpositionTableBuffer[index] = TranspositionEntry(zobristKey, bestMove, depthSearched,
                                                          correctScoreForStorage(score, rootDepth), nodeType);
     if (tableEntries < TRANSPOSITION_TABLE_SIZE)
@@ -35,14 +30,25 @@ int TranspositionTable::correctScoreForStorage(int score, int rootDepth) {
     return score;
 }
 
-TranspositionEntry &TranspositionTable::getEntry(uint64_t zobristKey) {
+int TranspositionTable::tableLookup(uint64_t zobristKey, TranspositionEntry &out) {
     uint64_t index = zobristKey & TRANSPOSITION_TABLE_MASK;
-    return transpositionTableBuffer[index];
+    TranspositionEntry entry = transpositionTableBuffer[index];
+
+    if (entry.zobristKey == 0) {
+        return TRANSPOSITION_TABLE_LOOKUP_FAILURE;
+    }
+
+    if (zobristKey == (entry.zobristKey ^ entry.data)) {
+        out = entry;
+        return TRANSPOSITION_TABLE_LOOKUP_SUCCESS;
+    }
+
+    return TRANSPOSITION_TABLE_LOOKUP_FAILURE;
 }
 
 
 void TranspositionTable::clear() {
-    std::memset(transpositionTableBuffer, 0, TRANSPOSITION_TABLE_SIZE * sizeof(TranspositionEntry));
+    std::memset(&transpositionTableBuffer, 0, sizeof(transpositionTableBuffer));
     tableEntries = 0;
 }
 

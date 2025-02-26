@@ -143,19 +143,7 @@ int main() {
     OpeningBook::loadOpeningBook("assets/openingbook.txt");
 
     std::cout << "[+] Done!\n";
-    // startCLIListening(board);
+    startCLIListening(board);
 
-    TranspositionEntry entry = TranspositionEntry();
-    entry.bestMove = Move(12, 24);
-    entry.depthSearched = 8;
-    entry.score = 1245;
-    entry.nodeType = LOWER_BOUND;
-    uint64_t bits = entry.getBitsFromData();
-    std::cout << std::bitset<64>(bits) << std::endl;
-    std::cout << EXTRACT_BEST_MOVE_BITS(bits) << std::endl;
-    std::cout << EXTRACT_SCORE(bits) << std::endl;
-    std::cout << EXTRACT_DEPTH_SEARCHED(bits) << std::endl;
-    std::cout << EXTRACT_NODE_TYPE(bits) << std::endl;
-
-    BoardWindow::init(&board);
+    // BoardWindow::init(&board);
 }

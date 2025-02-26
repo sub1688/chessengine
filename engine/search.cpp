@@ -51,7 +51,6 @@ void Search::startIterativeSearch(Board &board, long time) {
     std::memset(&times, 0, sizeof(times));
 
     transpositionTable.cutoffs = 0;
-    transpositionTable.collisions = 0;
     searchCancelled = false;
     lastSearchTurnIsWhite = board.whiteToMove;
 
@@ -117,30 +116,38 @@ SearchResult Search::search(Board &board, int rootDepth, int depth, int alpha, i
 
     bool inPrincipalVariation = beta > alpha + 1;
 
-    TranspositionEntry entry = transpositionTable.getEntry(board.currentZobristKey);
-    if (entry.zobristKey == board.currentZobristKey && entry.depthSearched >= depth && !searchCancelled && !inPrincipalVariation) {
-        int correctedScore = transpositionTable.correctScoreForRetrieval(entry.score, rootDepth);
-        if (entry.nodeType == EXACT_BOUND) {
-            transpositionTable.cutoffs++;
-            return {correctedScore, entry.bestMove};
-        }
-        if (entry.nodeType == UPPER_BOUND && entry.score <= alpha) {
-            transpositionTable.cutoffs++;
-            return {correctedScore, entry.bestMove};
-        }
-        if (entry.nodeType == LOWER_BOUND && entry.score >= beta) {
-            transpositionTable.cutoffs++;
-            return {correctedScore, entry.bestMove};
+    TranspositionEntry entry;
+    Move lookupBestMove;
+    if (transpositionTable.tableLookup(board.currentZobristKey, entry)) {
+        uint64_t moveBits = EXTRACT_BEST_MOVE_BITS(entry.data);
+        GET_MOVE_FROM_BITS(moveBits, lookupBestMove);
+
+        uint8_t depthSearched = EXTRACT_DEPTH_SEARCHED(entry.data);
+        uint8_t nodeType = EXTRACT_NODE_TYPE(entry.data);
+        int score = EXTRACT_SCORE(entry.data);
+        if (depthSearched >= depth && !searchCancelled) {
+            int correctedScore = transpositionTable.correctScoreForRetrieval(score, rootDepth);
+            if (nodeType == EXACT_BOUND) {
+                transpositionTable.cutoffs++;
+                return {correctedScore, lookupBestMove};
+            }
+            if (nodeType == UPPER_BOUND && score <= alpha) {
+                transpositionTable.cutoffs++;
+                return {alpha, lookupBestMove};
+            }
+            if (nodeType == LOWER_BOUND && score >= beta) {
+                transpositionTable.cutoffs++;
+                return {beta, lookupBestMove};
+            }
         }
     }
 
-    int nodeType = EXACT_BOUND;
+    int nodeType = UPPER_BOUND;
     bool movesAvailable = false;
-    int maximumScore = NEGATIVE_INFINITY;
-    Move bestMove = NULL_MOVE;
+    Move bestMove = lookupBestMove;
 
     ArrayVec<Move, 218> moves = Movegen::generateAllLegalMovesOnBoard(board);
-    orderMoves(moves, entry.bestMove, depth); // Order moves for better pruning
+    orderMoves(moves, bestMove, depth); // Order moves for better pruning
 
     bool firstMove = true;
     int moved = 0;
@@ -158,29 +165,27 @@ SearchResult Search::search(Board &board, int rootDepth, int depth, int alpha, i
         moved++;
 
         // Alpha-beta update
-        if (negatedScore > maximumScore) {
-            maximumScore = negatedScore;
+        if (negatedScore > alpha) {
+            alpha = negatedScore;
             bestMove = move;
-            nodeType = UPPER_BOUND;
+            nodeType = EXACT_BOUND;
         }
 
-        alpha = std::max(alpha, negatedScore);
-        if (beta <= alpha) {
+        if (negatedScore >= beta) {
+            transpositionTable.addEntry(board.currentZobristKey, bestMove, rootDepth, depth, beta, LOWER_BOUND);
             transpositionTable.storeKillerMove(move, depth);
-
-            nodeType = LOWER_BOUND; // Beta cutoff
-            break;
+            return {beta, bestMove};
         }
     }
 
     if (!movesAvailable) {
-        maximumScore = Movegen::isKingInDanger(board, board.whiteToMove) ? NEGATIVE_INFINITY + rootDepth : 0;
+        alpha = Movegen::isKingInDanger(board, board.whiteToMove) ? NEGATIVE_INFINITY + rootDepth : 0;
     }
 
     if (!searchCancelled && !isNullMove(bestMove)) {
-        transpositionTable.addEntry(board.currentZobristKey, bestMove, rootDepth, depth, maximumScore, nodeType);
+        transpositionTable.addEntry(board.currentZobristKey, bestMove, rootDepth, depth, alpha, nodeType);
     }
-    return {maximumScore, bestMove};
+    return {alpha, bestMove};
 }
 
 int Search::negatedPrincipalVariationSearch(Board &board, Move move, bool &firstMove, int moved, int rootDepth, int depth, int alpha, int beta, bool wasNullSearch) {
