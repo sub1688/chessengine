@@ -4,6 +4,7 @@
 
 #include <chrono>
 #include <limits>
+#include <thread>
 
 #include "board.h"
 #include "transpositiontable.h"
@@ -19,7 +20,19 @@ struct SearchResult {
     }
 };
 
+struct ThreadWorkerInfo
+{
+    int threadNumber;
+    int depthToSearch;
+
+    Board board;
+
+    ThreadWorkerInfo(int m_threadNumber, int m_depthToSearch) : threadNumber(m_threadNumber), depthToSearch(m_depthToSearch) {}
+};
+
 namespace Search {
+    static unsigned int MAX_THREADS = std::thread::hardware_concurrency();
+
     inline constexpr Move NULL_MOVE = Move();
 
     inline constexpr uint64_t WHITE_PASSED_PAWN_MASKS[64] = {
@@ -190,8 +203,11 @@ namespace Search {
     inline long times[256] = {};
     inline int currentDepth = 0;
     inline bool lastSearchTurnIsWhite = true;
+    inline long nodesCounted = 0;
+    inline double nodesPerSecond;
 
     inline TranspositionTable transpositionTable = TranspositionTable();
+
     volatile inline bool searchCancelled = false;
 
     inline Move bestMove = NULL_MOVE;
@@ -199,6 +215,8 @@ namespace Search {
     void orderMoves(ArrayVec<Move, 218> &moveVector, Move ttMove, int depth);
 
     void startIterativeSearch(Board& board, long time);
+
+    void threadSearch(ThreadWorkerInfo *info);
 
     SearchResult search(Board& board, int rootDepth, int depth, int alpha, int beta, bool wasNullSearch);
 

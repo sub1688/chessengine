@@ -105,11 +105,11 @@ void BoardWindow::update(sf::RenderWindow &window) {
         if (!Movegen::inCheckmate(*board) && !board->isDrawn()) {
             zobristKey = Zobrist::calculateZobristKey(*board);
 
-            // thinking = true;
-            // std::thread([]() {
-                // Search::startIterativeSearch(*board, 100000);
-            // }).detach();
-            playBotMove();
+            thinking = true;
+            std::thread([]() {
+                Search::startIterativeSearch(*board, 100000);
+            }).detach();
+            // playBotMove();
         }else {
             if (board->isDrawn()) {
                 drawn++;
@@ -242,6 +242,10 @@ void BoardWindow::update(sf::RenderWindow &window) {
             << "MB"
             << "\nTransposition Search Cutoffs: " << std::to_string(Search::transpositionTable.cutoffs)
             << "\nEndgame Bias: " << Search::getEndGameBias(*board) << "\nNew Search Won: " << newWon << "\nOld Search Won: " << oldWon << "\nDrawn: " << drawn << "\n";
+
+    ss << "Nodes Counted: " << std::to_string(Search::nodesCounted)
+       << "\nNodes/second: " << std::fixed << std::setprecision(2)
+       << Search::nodesPerSecond << "\n";
 
     ss << "Time to depth:\n";
     for (int i = 2; i < Search::currentDepth; i++)

@@ -46,10 +46,22 @@ void Search::orderMoves(ArrayVec<Move, 218> &moveVector, Move ttMove, int depth)
               });
 }
 
+void Search::threadSearch(ThreadWorkerInfo* info)
+{
+    SearchResult result = search(info->board, info->depthToSearch);
+
+    if (info->threadNumber == 0)
+    {
+        currentEval = result.evaluation;
+        bestMove = result.bestMove;
+    }
+}
+
 
 void Search::startIterativeSearch(Board &board, long time) {
     std::memset(&times, 0, sizeof(times));
 
+    nodesCounted = 0;
     transpositionTable.cutoffs = 0;
     searchCancelled = false;
     lastSearchTurnIsWhite = board.whiteToMove;
@@ -75,24 +87,32 @@ void Search::startIterativeSearch(Board &board, long time) {
         std::cout << "Cancelled" << std::endl;
     });
 
-    for (currentDepth = 2; currentDepth < 256; currentDepth++) {
-        SearchResult result = search(board, currentDepth);
+    std::vector<std::thread> threads;
+    threads.reserve(MAX_THREADS);
 
-        if (!searchCancelled) {
-            times[currentDepth] = getMillisSinceEpoch() - currentTimeMillis;
-            currentEval = result.evaluation;
-            bestMove = result.bestMove;
-            if (abs(currentEval) > MATE_THRESHOLD) {
-                searchCancelled = true;
-            }
-            std::cout << currentDepth << ":" << std::to_string(currentEval) << ":" << std::to_string(bestMove.from) <<
-                    "," << std::to_string(bestMove.to) << ":" << StandardAlgebraicNotation::boardToSan(board, bestMove)
-                    <<
-                    std::endl;
-        } else {
-            currentDepth--;
-            break;
+    std::vector<std::unique_ptr<ThreadWorkerInfo>> threadWorkerInfos;
+    threadWorkerInfos.reserve(MAX_THREADS);
+
+    for (currentDepth = 2; currentDepth < 256; currentDepth++) {
+        for (int threadNumber = 0; threadNumber < 2; threadNumber++)
+        {
+            threadWorkerInfos.emplace_back(std::make_unique<ThreadWorkerInfo>(threadNumber, currentDepth));
+
+            ThreadWorkerInfo* infoPtr = threadWorkerInfos[threadNumber].get();
+            infoPtr->depthToSearch = currentDepth;
+            infoPtr->threadNumber = threadNumber;
+
+            memcpy(&infoPtr->board, &board, sizeof(Board));
+            threads.emplace_back(threadSearch, infoPtr);
         }
+
+        for (auto &t : threads)
+        {
+            if (t.joinable()) t.join();
+        }
+
+        if (searchCancelled)
+            break;
     }
 
     if (timerThread.joinable())
@@ -102,6 +122,9 @@ void Search::startIterativeSearch(Board &board, long time) {
 SearchResult Search::search(Board &board, int rootDepth, int depth, int alpha, int beta, bool wasNullSearch) {
     if (searchCancelled)
         return {0, NULL_MOVE};
+
+    nodesCounted++;
+
     if (depth == 0)
         return {quiesce(board, alpha, beta), NULL_MOVE};
 
@@ -113,8 +136,6 @@ SearchResult Search::search(Board &board, int rootDepth, int depth, int alpha, i
         if (alpha >= beta)
             return {alpha, NULL_MOVE};
     }
-
-    bool inPrincipalVariation = beta > alpha + 1;
 
     TranspositionEntry entry;
     Move lookupBestMove;

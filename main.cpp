@@ -143,7 +143,7 @@ int main() {
     OpeningBook::loadOpeningBook("assets/openingbook.txt");
 
     std::cout << "[+] Done!\n";
-    startCLIListening(board);
+    // startCLIListening(board);
 
-    // BoardWindow::init(&board);
+    BoardWindow::init(&board);
 }
