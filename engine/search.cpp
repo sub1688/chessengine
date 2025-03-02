@@ -178,6 +178,20 @@ SearchResult Search::search(Board &board, int threadNumber, int rootDepth, int d
     if (depth == 0)
         return {quiesce(board, alpha, beta), NULL_MOVE};
 
+    // Null Move Pruning
+    bool inPrincipalVariation = beta > alpha + 1;
+    if (rootDepth != 0 && depth >= 3 && !wasNullSearch && canNullMove(board) && !inPrincipalVariation) {
+        int reduction = 2 + depth / 4;
+
+        board.nullMove();
+        SearchResult result = search(board, threadNumber, rootDepth + 1, depth - 1 - reduction, -beta, -beta + 1, true);
+        int negatedScore = -result.evaluation;
+        board.undoNullMove();
+
+        if (negatedScore >= beta)
+            return {negatedScore, NULL_MOVE};
+    }
+
     int nodeType = UPPER_BOUND;
     bool movesAvailable = false;
     Move bestMove = lookupBestMove;
