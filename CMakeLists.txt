@@ -3,7 +3,7 @@ project(chessengine)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_BUILD_TYPE "Release")
-#set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 
 set(SFML_USE_STATIC_STD_LIBS ON CACHE BOOL "" FORCE)
@@ -40,8 +40,6 @@ add_executable(chessengine main.cpp
         engine/san.cpp
         engine/openingbook.h
         engine/openingbook.cpp
-        engine/oldsearch.h
-        engine/oldsearch.cpp
 )
 
 target_link_libraries(chessengine PRIVATE sfml-graphics sfml-window sfml-system)

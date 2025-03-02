@@ -6,7 +6,6 @@
 
 #include "engine/san.h"
 #include "engine/movegen.h"
-#include "engine/oldsearch.h"
 #include "engine/openingbook.h"
 #include "engine/piecesquaretable.h"
 #include "engine/search.h"
@@ -81,37 +80,6 @@ void startCLIListening(Board& board) {
     }
 }
 
-void debugPerft(Board& board, int depth) {
-    ArrayVec<Move, 218> moves = Movegen::generateAllLegalMovesOnBoard(board);
-
-
-    for (int i = 0; i < moves.elements; i++) {
-        Move move = moves.buffer[i];
-
-        if (depth == 1) {
-            if (board.move(move)) {
-                std::cout << StandardAlgebraicNotation::squareToString(move.from) <<
-                    StandardAlgebraicNotation::squareToString(move.to) << " 1" << std::endl;
-
-                board.undoMove(move);
-            }
-
-            continue;
-        }
-
-
-        if (board.move(move)) {
-            uint64_t perft = Movegen::perft(board, depth - 1);
-
-
-            std::cout << StandardAlgebraicNotation::squareToString(move.from) <<
-                StandardAlgebraicNotation::squareToString(move.to) << " " << perft << std::endl;
-
-            board.undoMove(move);
-        }
-    }
-}
-
 void benchmarkPerft(Board& board, int depth) {
     using namespace std::chrono;
     auto start = high_resolution_clock::now();
@@ -142,8 +110,9 @@ int main() {
     std::cout << "[+] Loading Opening Book..\n";
     OpeningBook::loadOpeningBook("assets/openingbook.txt");
 
-    std::cout << "[+] Done!\n";
+    std::cout << "[+] Done! (Maximum Threads: " << Search::MAX_THREADS << ")\n";
     // startCLIListening(board);
+    board.importFEN("r1bqkb1r/ppp1nppp/3p4/3PN3/4n3/2P5/PP3PPP/RNBQKB1R w KQkq - 0 7");
 
     BoardWindow::init(&board);
 }

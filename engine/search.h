@@ -31,7 +31,7 @@ struct ThreadWorkerInfo
 };
 
 namespace Search {
-    static unsigned int MAX_THREADS = std::thread::hardware_concurrency();
+    static unsigned int MAX_THREADS = 4;
 
     inline constexpr Move NULL_MOVE = Move();
 
@@ -199,6 +199,9 @@ namespace Search {
     inline constexpr int WINNING_CAPTURE_BIAS = 8000000;
     inline constexpr int PROMOTE_BIAS = 6000000;
 
+
+    inline long currentTimeMillis = 0;
+    inline long searchDuration = 0;
     inline int currentEval = 0;
     inline long times[256] = {};
     inline int currentDepth = 0;
@@ -212,17 +215,17 @@ namespace Search {
 
     inline Move bestMove = NULL_MOVE;
 
-    void orderMoves(ArrayVec<Move, 218> &moveVector, Move ttMove, int depth);
+    void orderMoves(ArrayVec<Move, 218> &moveVector, int rootDepth, int threadNumber, Move ttMove, int depth);
 
     void startIterativeSearch(Board& board, long time);
 
     void threadSearch(ThreadWorkerInfo *info);
 
-    SearchResult search(Board& board, int rootDepth, int depth, int alpha, int beta, bool wasNullSearch);
+    SearchResult search(Board& board, int threadNumber, int rootDepth, int depth, int alpha, int beta, bool wasNullSearch);
 
-    SearchResult search(Board& board, int depth);
+    SearchResult search(Board& board, int threadNumber, int depth);
 
-    int negatedPrincipalVariationSearch(Board& board, Move move, bool &firstMove, int moved, int rootDepth, int depth, int alpha, int beta, bool wasNullSearch);
+    int negatedPrincipalVariationSearch(Board& board, int threadNumber, Move move, bool &firstMove, int moved, int rootDepth, int depth, int alpha, int beta, bool wasNullSearch);
 
     int evaluate(Board& board);
 
@@ -238,7 +241,7 @@ namespace Search {
 
     int evaluatePassedPawn(Board& board, uint8_t squareIndex, uint8_t piece);
 
-    int evaluateKingDistance(Board& board, uint8_t squareIndex, uint8_t otherKingIndex, uint8_t piece, int materialDelta);
+    int evaluateKingDistance(uint8_t squareIndex, uint8_t otherKingIndex, uint8_t piece, int materialDelta);
 
     inline long getMillisSinceEpoch()
     {

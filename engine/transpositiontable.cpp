@@ -7,7 +7,6 @@ void TranspositionTable::addEntry(uint64_t zobristKey, Move bestMove, int rootDe
                                   int nodeType) {
     uint64_t index = zobristKey & TRANSPOSITION_TABLE_MASK;
 
-    // Always replace item in tt!!
     transpositionTableBuffer[index] = TranspositionEntry(zobristKey, bestMove, depthSearched,
                                                          correctScoreForStorage(score, rootDepth), nodeType);
     if (tableEntries < TRANSPOSITION_TABLE_SIZE)
@@ -38,7 +37,7 @@ int TranspositionTable::tableLookup(uint64_t zobristKey, TranspositionEntry &out
         return TRANSPOSITION_TABLE_LOOKUP_FAILURE;
     }
 
-    if (zobristKey == (entry.zobristKey ^ entry.data)) {
+    if (entry.zobristKey == (zobristKey ^ entry.data)) {
         out = entry;
         return TRANSPOSITION_TABLE_LOOKUP_SUCCESS;
     }

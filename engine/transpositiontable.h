@@ -49,7 +49,7 @@ struct TranspositionEntry {
 
 class TranspositionTable {
 public:
-    static constexpr size_t TRANSPOSITION_TABLE_SIZE = 1 << 24;
+    static constexpr size_t TRANSPOSITION_TABLE_SIZE = 1 << 25;
     static constexpr size_t TRANSPOSITION_TABLE_MASK = TRANSPOSITION_TABLE_SIZE - 1;
 
     static constexpr size_t KILLER_DEPTHS = 256;

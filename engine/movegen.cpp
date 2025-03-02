@@ -4,6 +4,7 @@
 #include <random>
 #include <bits/ranges_algobase.h>
 
+#include "san.h"
 #include "zobrist.h"
 
 bool Movegen::isMoveCheck(Board& board, Move move) {
@@ -131,7 +132,7 @@ void Movegen::generatePseudoLegalMoves(Board &board, uint8_t squareIndex, uint8_
 
         Move moveObj = Move(squareIndex, targetIndex);
         moveObj.pieceFrom = piece;
-        moveObj.capture = piece == WHITE_PAWN ? BLACK_PAWN : piece;
+        moveObj.capture = white ? BLACK_PAWN : WHITE_PAWN   ;
         moveObj.enPassantTarget = piece == WHITE_PAWN ? targetIndex - 8 : targetIndex + 8;
         movesVec.buffer[movesVec.elements++] = moveObj;
     }

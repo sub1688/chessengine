@@ -87,7 +87,7 @@ public:
 
     void undoMove(Move m);
 
-    void undoMove(Move m, bool ignoreZobrist);
+    void undoMove(Move m, bool noZobrist);
 
     void updateOccupancy();
 

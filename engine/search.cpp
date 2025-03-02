@@ -16,7 +16,7 @@
 
 #include <cstring>
 
-void Search::orderMoves(ArrayVec<Move, 218> &moveVector, Move ttMove, int depth) {
+void Search::orderMoves(ArrayVec<Move, 218> &moveVector, int rootDepth, int threadNumber, Move ttMove, int depth) {
     auto getMoveScore = [&](const Move &move) -> int {
         int score = 0;
 
@@ -24,9 +24,9 @@ void Search::orderMoves(ArrayVec<Move, 218> &moveVector, Move ttMove, int depth)
             score += TRANSPOSITION_TABLE_BIAS; // Give TT move a big boost
         }
 
-        if (move == transpositionTable.killerMoves[depth][0] || move == transpositionTable.killerMoves[depth][1]) {
-            score += KILLER_MOVE_BIAS;
-        }
+        // if (move == transpositionTable.killerMoves[depth][0] || move == transpositionTable.killerMoves[depth][1]) {
+        // score += KILLER_MOVE_BIAS;
+        // }
 
         if (move.capture != NONE) {
             int materialDelta = getPieceValue(move.capture) - getPieceValue(move.pieceFrom);
@@ -44,16 +44,46 @@ void Search::orderMoves(ArrayVec<Move, 218> &moveVector, Move ttMove, int depth)
               [&](const Move &a, const Move &b) {
                   return getMoveScore(a) > getMoveScore(b);
               });
+
+    if (rootDepth == 0) {
+        if (threadNumber == 0 || moveVector.elements <= 1) {
+            // Main thread uses the standard ordering
+            return;
+        }
+
+        // For helper threads, rotate the top N moves based on thread ID
+        int rotationCount = threadNumber % std::min(4, static_cast<int>(moveVector.elements));
+        if (rotationCount > 0) {
+            // Only rotate among the top few moves (the most promising ones)
+            int topMovesToConsider = std::min(static_cast<int>(moveVector.elements), 4 + threadNumber % 3);
+
+            // Shift the top moves by the rotation count
+            std::rotate(
+                moveVector.buffer.begin(),
+                moveVector.buffer.begin() + rotationCount % topMovesToConsider,
+                moveVector.buffer.begin() + topMovesToConsider
+            );
+        }
+    }
 }
 
-void Search::threadSearch(ThreadWorkerInfo* info)
-{
-    SearchResult result = search(info->board, info->depthToSearch);
+void Search::threadSearch(ThreadWorkerInfo *info) {
+    for (info->depthToSearch = 1; info->depthToSearch < 256; info->depthToSearch++) {
+        SearchResult result = search(info->board, info->threadNumber, info->depthToSearch);
 
-    if (info->threadNumber == 0)
-    {
-        currentEval = result.evaluation;
-        bestMove = result.bestMove;
+        if (searchCancelled)
+            break;
+
+        if (info->threadNumber == 0) {
+            currentEval = result.evaluation;
+            currentDepth = info->depthToSearch;
+            bestMove = result.bestMove;
+            times[currentDepth] = getMillisSinceEpoch() - currentTimeMillis;
+
+            std::cout << currentDepth << ":" << std::to_string(currentEval) << ":" << std::to_string(bestMove.from) <<
+                    "," << std::to_string(bestMove.to) << ":" << StandardAlgebraicNotation::boardToSan(info->board, bestMove) <<
+                    std::endl;
+        }
     }
 }
 
@@ -61,12 +91,13 @@ void Search::threadSearch(ThreadWorkerInfo* info)
 void Search::startIterativeSearch(Board &board, long time) {
     std::memset(&times, 0, sizeof(times));
 
+    searchCancelled = false;
+    searchDuration = time;
     nodesCounted = 0;
     transpositionTable.cutoffs = 0;
-    searchCancelled = false;
     lastSearchTurnIsWhite = board.whiteToMove;
+    currentTimeMillis = getMillisSinceEpoch();
 
-    long currentTimeMillis = getMillisSinceEpoch();
     // Lookup in opening book
     Move move = OpeningBook::fetchNextBookMove(board);
     if (!isNullMove(move)) {
@@ -78,59 +109,40 @@ void Search::startIterativeSearch(Board &board, long time) {
         return;
     }
 
-    std::thread timerThread([time]() {
-        long currentTime = 0;
-        while (!searchCancelled && (currentTime += 100) <= time) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        }
-        searchCancelled = true;
-        std::cout << "Cancelled" << std::endl;
-    });
-
     std::vector<std::thread> threads;
     threads.reserve(MAX_THREADS);
 
     std::vector<std::unique_ptr<ThreadWorkerInfo>> threadWorkerInfos;
     threadWorkerInfos.reserve(MAX_THREADS);
 
-    for (currentDepth = 2; currentDepth < 256; currentDepth++) {
-        for (int threadNumber = 0; threadNumber < 2; threadNumber++)
-        {
-            threadWorkerInfos.emplace_back(std::make_unique<ThreadWorkerInfo>(threadNumber, currentDepth));
+    for (int threadNumber = 0; threadNumber < MAX_THREADS; threadNumber++) {
+        threadWorkerInfos.emplace_back(std::make_unique<ThreadWorkerInfo>(threadNumber, currentDepth));
 
-            ThreadWorkerInfo* infoPtr = threadWorkerInfos[threadNumber].get();
-            infoPtr->depthToSearch = currentDepth;
-            infoPtr->threadNumber = threadNumber;
-
-            memcpy(&infoPtr->board, &board, sizeof(Board));
-            threads.emplace_back(threadSearch, infoPtr);
-        }
-
-        for (auto &t : threads)
-        {
-            if (t.joinable()) t.join();
-        }
-
-        if (searchCancelled)
-            break;
+        ThreadWorkerInfo *infoPtr = threadWorkerInfos[threadNumber].get();
+        memcpy(&infoPtr->board, &board, sizeof(Board));
+        threads.emplace_back(threadSearch, infoPtr);
     }
 
-    if (timerThread.joinable())
-        timerThread.join();
+    for (auto &t: threads) {
+        if (t.joinable()) t.join();
+    }
 }
 
-SearchResult Search::search(Board &board, int rootDepth, int depth, int alpha, int beta, bool wasNullSearch) {
+// TODO: Null Move Pruning
+SearchResult Search::search(Board &board, int threadNumber, int rootDepth, int depth, int alpha, int beta, bool wasNullSearch) {
+    nodesCounted++;
+
+    // Checkup to see search duration is over
+    if ((nodesCounted & 2047) == 0 && getMillisSinceEpoch() - currentTimeMillis >= searchDuration)
+        searchCancelled = true;
+
     if (searchCancelled)
         return {0, NULL_MOVE};
 
-    nodesCounted++;
-
-    if (depth == 0)
-        return {quiesce(board, alpha, beta), NULL_MOVE};
+    if (board.isDrawn())
+        return {0, NULL_MOVE};
 
     if (rootDepth > 1) {
-        if (board.isDrawn())
-            return {0, NULL_MOVE};
         alpha = std::max(alpha, NEGATIVE_INFINITY + rootDepth);
         beta = std::min(beta, POSITIVE_INFINITY - rootDepth);
         if (alpha >= beta)
@@ -143,8 +155,8 @@ SearchResult Search::search(Board &board, int rootDepth, int depth, int alpha, i
         uint64_t moveBits = EXTRACT_BEST_MOVE_BITS(entry.data);
         GET_MOVE_FROM_BITS(moveBits, lookupBestMove);
 
-        uint8_t depthSearched = EXTRACT_DEPTH_SEARCHED(entry.data);
-        uint8_t nodeType = EXTRACT_NODE_TYPE(entry.data);
+        int depthSearched = EXTRACT_DEPTH_SEARCHED(entry.data);
+        int nodeType = EXTRACT_NODE_TYPE(entry.data);
         int score = EXTRACT_SCORE(entry.data);
         if (depthSearched >= depth && !searchCancelled) {
             int correctedScore = transpositionTable.correctScoreForRetrieval(score, rootDepth);
@@ -163,13 +175,16 @@ SearchResult Search::search(Board &board, int rootDepth, int depth, int alpha, i
         }
     }
 
+    if (depth == 0)
+        return {quiesce(board, alpha, beta), NULL_MOVE};
+
     int nodeType = UPPER_BOUND;
     bool movesAvailable = false;
     Move bestMove = lookupBestMove;
 
     ArrayVec<Move, 218> moves = Movegen::generateAllLegalMovesOnBoard(board);
-    orderMoves(moves, bestMove, depth); // Order moves for better pruning
 
+    orderMoves(moves, rootDepth, threadNumber, bestMove, depth); // Order moves for better pruning
     bool firstMove = true;
     int moved = 0;
     for (int i = 0; i < moves.elements; i++) {
@@ -181,7 +196,8 @@ SearchResult Search::search(Board &board, int rootDepth, int depth, int alpha, i
             continue;
 
         movesAvailable = true;
-        int negatedScore = negatedPrincipalVariationSearch(board, move, firstMove, moved, rootDepth, depth, alpha, beta, false);
+        int negatedScore = negatedPrincipalVariationSearch(board, threadNumber, move, firstMove, moved, rootDepth, depth, alpha, beta,
+                                                           false);
         board.undoMove(move);
         moved++;
 
@@ -193,9 +209,9 @@ SearchResult Search::search(Board &board, int rootDepth, int depth, int alpha, i
         }
 
         if (negatedScore >= beta) {
-            transpositionTable.addEntry(board.currentZobristKey, bestMove, rootDepth, depth, beta, LOWER_BOUND);
+            nodeType = LOWER_BOUND;
             transpositionTable.storeKillerMove(move, depth);
-            return {beta, bestMove};
+            break;
         }
     }
 
@@ -203,47 +219,51 @@ SearchResult Search::search(Board &board, int rootDepth, int depth, int alpha, i
         alpha = Movegen::isKingInDanger(board, board.whiteToMove) ? NEGATIVE_INFINITY + rootDepth : 0;
     }
 
-    if (!searchCancelled && !isNullMove(bestMove)) {
+    if (!searchCancelled) {
+        if (movesAvailable && nodeType == LOWER_BOUND) {
+            transpositionTable.addEntry(board.currentZobristKey, bestMove, rootDepth, depth, beta, LOWER_BOUND);
+            return {beta, bestMove};
+        }
         transpositionTable.addEntry(board.currentZobristKey, bestMove, rootDepth, depth, alpha, nodeType);
     }
     return {alpha, bestMove};
 }
 
-int Search::negatedPrincipalVariationSearch(Board &board, Move move, bool &firstMove, int moved, int rootDepth, int depth, int alpha, int beta, bool wasNullSearch) {
+int Search::negatedPrincipalVariationSearch(Board &board, int threadNumber, Move move, bool &firstMove, int moved, int rootDepth,
+                                            int depth, int alpha, int beta, bool wasNullSearch) {
     int negatedScore;
 
-    if (depth > 3 && move.capture == NONE && move.promotion == NONE && moved > 4)
-    {
-        negatedScore = -search(board, rootDepth + 1, depth - 2, -alpha - 1, -alpha, wasNullSearch).evaluation;
-        if (negatedScore <= alpha)
-        {
+    if (depth > 3 && move.capture == NONE && move.promotion == NONE && moved > 4) {
+        negatedScore = -search(board, threadNumber, rootDepth + 1, depth - 2, -alpha - 1, -alpha, wasNullSearch).evaluation;
+        if (negatedScore <= alpha) {
             return negatedScore;
         }
     }
 
     if (firstMove) {
         // Full window search for the first move
-        negatedScore = -search(board, rootDepth + 1, depth - 1, -beta, -alpha, wasNullSearch).evaluation;
+        negatedScore = -search(board, threadNumber, rootDepth + 1, depth - 1, -beta, -alpha, wasNullSearch).evaluation;
         firstMove = false;
     } else {
-        // Late move reductions!!!
+        // Late move reductions
         // Principal Variation Search: try a null window search first
-        negatedScore = -search(board, rootDepth + 1, depth - 1, -alpha - 1, -alpha, wasNullSearch).evaluation;
+        negatedScore = -search(board, threadNumber, rootDepth + 1, depth - 1, -alpha - 1, -alpha, wasNullSearch).evaluation;
 
-        // If null window search fails high, do a full re-search
+        // If null window search fails high, do a full research
         if (negatedScore > alpha && negatedScore < beta) {
-            negatedScore = -search(board, rootDepth + 1, depth - 1, -beta, -alpha, wasNullSearch).evaluation;
+            negatedScore = -search(board, threadNumber, rootDepth + 1, depth - 1, -beta, -alpha, wasNullSearch).evaluation;
         }
     }
     return negatedScore;
 }
 
 bool Search::canNullMove(Board &board) {
-    return __builtin_popcountll(board.majorPieceBitboards(board.whiteToMove)) + __builtin_popcountll(board.minorPieceBitboards(board.whiteToMove)) > 0;
+    return __builtin_popcountll(board.majorPieceBitboards(board.whiteToMove)) + __builtin_popcountll(
+               board.minorPieceBitboards(board.whiteToMove)) > 0;
 }
 
-SearchResult Search::search(Board &board, int depth) {
-    return search(board, 0, depth, NEGATIVE_INFINITY, POSITIVE_INFINITY, false);
+SearchResult Search::search(Board &board, int threadNumber, int depth) {
+    return search(board, threadNumber, 0, depth, NEGATIVE_INFINITY, POSITIVE_INFINITY, false);
 }
 
 int Search::quiesce(Board &board, int alpha, int beta) {
@@ -255,7 +275,7 @@ int Search::quiesce(Board &board, int alpha, int beta) {
 
 
     ArrayVec<Move, 218> captures = Movegen::generateAllLegalMovesOnBoard(board, true);
-    orderMoves(captures, NULL_MOVE, 0);
+    orderMoves(captures, 1, 0, NULL_MOVE, 0);
 
     for (int i = 0; i < captures.elements; i++) {
         Move move = captures.buffer.at(i);
@@ -299,8 +319,8 @@ int Search::evaluate(Board &board) {
         uint64_t whiteKing = std::countr_zero(board.BITBOARDS[WHITE_KING]);
         uint64_t blackKing = std::countr_zero(board.BITBOARDS[BLACK_KING]);
 
-        totalValue += evaluateKingDistance(board, whiteKing, blackKing, WHITE_KING, materialDelta);
-        totalValue -= evaluateKingDistance(board, blackKing, whiteKing, BLACK_KING, materialDelta);
+        totalValue += evaluateKingDistance(whiteKing, blackKing, WHITE_KING, materialDelta);
+        totalValue -= evaluateKingDistance(blackKing, whiteKing, BLACK_KING, materialDelta);
     }
 
     return totalValue * (board.whiteToMove ? 1 : -1);
@@ -334,7 +354,7 @@ int Search::evaluatePassedPawn(Board &board, uint8_t squareIndex, uint8_t piece)
     return 0;
 }
 
-int Search::evaluateKingDistance(Board &board, uint8_t squareIndex, uint8_t otherKingIndex, uint8_t piece,
+int Search::evaluateKingDistance(uint8_t squareIndex, uint8_t otherKingIndex, uint8_t piece,
                                  int materialDelta) {
     if (piece == WHITE_KING && materialDelta < 0)
         return 0;

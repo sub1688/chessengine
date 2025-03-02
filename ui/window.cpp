@@ -10,20 +10,13 @@
 #include "../engine/search.h"
 #include "../engine/transpositiontable.h"
 #include "../engine/zobrist.h"
-#include "../engine/oldsearch.h"
 
 void BoardWindow::playBotMove() {
     thinking = true;
     std::thread([]() {
-        if ((board->whiteToMove && whiteIsNew) || (!board->whiteToMove && !whiteIsNew)) {
-            Search::startIterativeSearch(*board, 250);
-            board->move(Search::bestMove);
-            thinking = false;
-        } else {
-            OldSearch::startIterativeSearch(*board, 250);
-            board->move(OldSearch::bestMove);
-            thinking = false;
-        }
+        Search::startIterativeSearch(*board, 150);
+        board->move(Search::bestMove);
+        thinking = false;
     }).detach(); // Detach thread as it's self-contained
 }
 
@@ -110,20 +103,19 @@ void BoardWindow::update(sf::RenderWindow &window) {
                 Search::startIterativeSearch(*board, 100000);
             }).detach();
             // playBotMove();
-        }else {
+        } else {
             if (board->isDrawn()) {
                 drawn++;
-            }else {
+            } else {
                 if ((board->whiteToMove && whiteIsNew) || (!board->whiteToMove && !whiteIsNew)) {
                     oldWon++;
-                }else {
+                } else {
                     newWon++;
                 }
             }
             whiteIsNew = !whiteIsNew;;
             board->setStartingPosition();
             Search::transpositionTable.clear();
-            OldSearch::transpositionTable.clear();
         }
     }
 
@@ -223,9 +215,10 @@ void BoardWindow::update(sf::RenderWindow &window) {
     // Check if it's a mate score
     if (abs((Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval) > MATE_THRESHOLD) {
         str = "#" + std::to_string(static_cast<int>((Search::POSITIVE_INFINITY - abs(
-                                        static_cast<float>(
-                                            (Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval)))
-                                   / 2 + 1));
+                                                         static_cast<float>(
+                                                             (Search::lastSearchTurnIsWhite ? 1 : -1) *
+                                                             Search::currentEval)))
+                                                    / 2 + 1));
     }
     std::ostringstream ss;
     ss << std::fixed << std::setprecision(2);
@@ -241,15 +234,18 @@ void BoardWindow::update(sf::RenderWindow &window) {
             << (sizeof(TranspositionEntry) * TranspositionTable::TRANSPOSITION_TABLE_SIZE / (double) 1000000)
             << "MB"
             << "\nTransposition Search Cutoffs: " << std::to_string(Search::transpositionTable.cutoffs)
-            << "\nEndgame Bias: " << Search::getEndGameBias(*board) << "\nNew Search Won: " << newWon << "\nOld Search Won: " << oldWon << "\nDrawn: " << drawn << "\n";
+            << "\nEndgame Bias: " << Search::getEndGameBias(*board) << "\nNew Search Won: " << newWon <<
+            "\nOld Search Won: " << oldWon << "\nDrawn: " << drawn << "\n";
+
+    ss << "Calculated Zobrist: " << std::to_string(zobristKey) << "\n";
+    ss << "Current Zobrist:" << std::to_string(board->currentZobristKey) << "\n";
 
     ss << "Nodes Counted: " << std::to_string(Search::nodesCounted)
-       << "\nNodes/second: " << std::fixed << std::setprecision(2)
-       << Search::nodesPerSecond << "\n";
+            << "\nNodes/second: " << std::fixed << std::setprecision(2)
+            << Search::nodesPerSecond << "\n";
 
     ss << "Time to depth:\n";
-    for (int i = 2; i < Search::currentDepth; i++)
-    {
+    for (int i = 2; i <= Search::currentDepth; i++) {
         ss << std::to_string(i) << ": " << std::to_string(Search::times[i]) << "ms\n";
     }
 
