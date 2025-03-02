@@ -111,8 +111,7 @@ int main() {
     OpeningBook::loadOpeningBook("assets/openingbook.txt");
 
     std::cout << "[+] Done! (Maximum Threads: " << Search::MAX_THREADS << ")\n";
-    // startCLIListening(board);
-    board.importFEN("r1bqkb1r/ppp1nppp/3p4/3PN3/4n3/2P5/PP3PPP/RNBQKB1R w KQkq - 0 7");
+    startCLIListening(board);
 
-    BoardWindow::init(&board);
+    // BoardWindow::init(&board);
 }

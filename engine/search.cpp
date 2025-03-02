@@ -142,6 +142,9 @@ SearchResult Search::search(Board &board, int threadNumber, int rootDepth, int d
     if (board.isDrawn())
         return {0, NULL_MOVE};
 
+    if (depth == 0)
+        return {quiesce(board, alpha, beta), NULL_MOVE};
+
     if (rootDepth > 1) {
         alpha = std::max(alpha, NEGATIVE_INFINITY + rootDepth);
         beta = std::min(beta, POSITIVE_INFINITY - rootDepth);
@@ -149,9 +152,11 @@ SearchResult Search::search(Board &board, int threadNumber, int rootDepth, int d
             return {alpha, NULL_MOVE};
     }
 
+    bool inPrincipalVariation = beta > alpha + 1;
+
     TranspositionEntry entry;
     Move lookupBestMove;
-    if (transpositionTable.tableLookup(board.currentZobristKey, entry)) {
+    if (!inPrincipalVariation && transpositionTable.tableLookup(board.currentZobristKey, entry)) {
         uint64_t moveBits = EXTRACT_BEST_MOVE_BITS(entry.data);
         GET_MOVE_FROM_BITS(moveBits, lookupBestMove);
 
@@ -175,11 +180,7 @@ SearchResult Search::search(Board &board, int threadNumber, int rootDepth, int d
         }
     }
 
-    if (depth == 0)
-        return {quiesce(board, alpha, beta), NULL_MOVE};
-
     // Null Move Pruning
-    bool inPrincipalVariation = beta > alpha + 1;
     if (rootDepth != 0 && depth >= 3 && !wasNullSearch && canNullMove(board) && !inPrincipalVariation) {
         int reduction = 2 + depth / 4;
 
@@ -307,8 +308,6 @@ int Search::quiesce(Board &board, int alpha, int beta) {
 }
 
 int Search::evaluate(Board &board) {
-    if (board.isDrawn())
-        return 0;
     int totalValue = 0;
 
     double endgameBias = getEndGameBias(board);

@@ -28,10 +28,11 @@ void Board::setPiece(int index, uint8_t piece) {
 
 void Board::nullMove() {
     whiteToMove = !whiteToMove;
-    currentZobristKey ^= Zobrist::whiteToMove;
     moveNumber++;
 
     // Zobrist en passant
+    currentZobristKey ^= Zobrist::whiteToMove;
+    castleRights[moveNumber] = castleRights[moveNumber - 1];
     uint64_t prevEnPassantMask = epMasks[moveNumber - 1];
     if (prevEnPassantMask != 0) {
         int index = __builtin_ctzll(prevEnPassantMask);

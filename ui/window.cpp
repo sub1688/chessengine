@@ -14,9 +14,15 @@
 void BoardWindow::playBotMove() {
     thinking = true;
     std::thread([]() {
-        Search::startIterativeSearch(*board, 150);
-        board->move(Search::bestMove);
-        thinking = false;
+        if ((board->whiteToMove && whiteIsNew) || (!board->whiteToMove && !whiteIsNew)) {
+            Search::startIterativeSearch(*board, 250);
+            board->move(Search::bestMove);
+            thinking = false;
+        } else {
+            Search::startIterativeSearch(*board, 250);
+            board->move(Search::bestMove);
+            thinking = false;
+        }
     }).detach(); // Detach thread as it's self-contained
 }
 
@@ -37,8 +43,10 @@ void BoardWindow::init(Board *board) {
 
             if (event.type == sf::Event::KeyPressed && board->moveNumber > 0) {
                 if (event.key.code == sf::Keyboard::Left) {
-                    Search::searchCancelled = false;
-                    thinking = false;
+                    board->undoNullMove();
+                }
+                if (event.key.code == sf::Keyboard::Right) {
+                    board->nullMove();
                 }
             }
 
