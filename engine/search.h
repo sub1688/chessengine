@@ -32,7 +32,7 @@ struct ThreadWorkerInfo
 };
 
 namespace Search {
-    static unsigned int MAX_THREADS = 4;
+    static unsigned int MAX_THREADS = 8;
 
     inline constexpr Move NULL_MOVE = Move();
 

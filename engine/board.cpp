@@ -5,6 +5,7 @@
 #include <string>
 
 #include "movegen.h"
+#include "san.h"
 #include "zobrist.h"
 
 namespace Movegen {
@@ -33,6 +34,7 @@ void Board::nullMove() {
     // Zobrist en passant
     currentZobristKey ^= Zobrist::whiteToMove;
     castleRights[moveNumber] = castleRights[moveNumber - 1];
+    epMasks[moveNumber] = 0ULL;
     uint64_t prevEnPassantMask = epMasks[moveNumber - 1];
     if (prevEnPassantMask != 0) {
         int index = __builtin_ctzll(prevEnPassantMask);
@@ -70,6 +72,7 @@ bool Board::move(Move m) {
     }
 
     updateOccupancy();
+
     if (Movegen::isKingInDanger(*this, whiteToMove)) {
         whiteToMove = !whiteToMove;
         moveNumber++;
@@ -113,10 +116,7 @@ bool Board::move(Move m) {
 
 
     // Preset previous castle rights
-    setWhiteCastleKingside(moveNumber, canWhiteCastleKingside(moveNumber - 1));
-    setWhiteCastleQueenside(moveNumber, canWhiteCastleQueenside(moveNumber - 1));
-    setBlackCastleKingside(moveNumber, canBlackCastleKingside(moveNumber - 1));
-    setBlackCastleQueenside(moveNumber, canBlackCastleQueenside(moveNumber - 1));
+    castleRights[moveNumber] = castleRights[moveNumber - 1];
 
     // castle rights
     if (m.pieceFrom == WHITE_KING) {

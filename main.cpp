@@ -75,7 +75,9 @@ void startCLIListening(Board& board) {
             int milliseconds = std::stoi(input.substr(7));
 
             Search::startIterativeSearch(board, milliseconds);
-            std::cout << "Search complete.\n";
+            std::cout << "Search complete." << std::endl;
+        }else if (input.starts_with("genfen")) {
+            std::cout << board.generateFEN() << std::endl;
         }
     }
 }
@@ -109,7 +111,6 @@ int main() {
 
     std::cout << "[+] Loading Opening Book..\n";
     OpeningBook::loadOpeningBook("assets/openingbook.txt");
-    // board.importFEN("8/k7/3p4/p2P1p2/P2P1P2/8/8/K7 w - - 0 1");
 
     std::cout << "[+] Done! (Maximum Threads: " << Search::MAX_THREADS << ")\n";
     startCLIListening(board);

@@ -86,6 +86,8 @@ void Search::threadSearch(ThreadWorkerInfo *info) {
                     "," << std::to_string(bestMove.to) << ":" << StandardAlgebraicNotation::boardToSan(
                         info->board, bestMove) <<
                     std::endl;
+
+            info->board.printBoard();
         }
     }
 }
@@ -154,7 +156,7 @@ SearchResult Search::search(Board &board, ThreadWorkerInfo *threadWorkerInfoPtr,
             return {alpha, NULL_MOVE};
     }
 
-    if (depth == 0)
+    if (depth <= 0)
         return {quiesce(board, alpha, beta), NULL_MOVE};
 
     TranspositionEntry entry;
@@ -184,8 +186,7 @@ SearchResult Search::search(Board &board, ThreadWorkerInfo *threadWorkerInfoPtr,
     }
 
     // Null Move Pruning
-    if (!inPrincipalVariation && rootDepth && depth >= 3 && !wasNullSearch && canNullMove(board) && !
-        Movegen::isKingInDanger(board, board.whiteToMove)) {
+    if (!inPrincipalVariation && rootDepth && depth >= 3 && !wasNullSearch && canNullMove(board) && !Movegen::isKingInDanger(board, board.whiteToMove)) {
         int reduction = 2 + depth / 4;
 
         board.nullMove();

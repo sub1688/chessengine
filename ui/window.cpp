@@ -37,7 +37,7 @@ void BoardWindow::init(Board *board) {
 
             if (event.type == sf::Event::KeyPressed && board->moveNumber > 0) {
                 if (event.key.code == sf::Keyboard::Left) {
-                    board->undoNullMove();
+                    board->undoMove(lastMove[board->moveNumber]);
                 }
                 if (event.key.code == sf::Keyboard::Right) {
                     board->nullMove();
