@@ -91,6 +91,7 @@ void Search::threadSearch(ThreadWorkerInfo *info) {
 void Search::startIterativeSearch(Board &board, long time) {
     std::memset(&times, 0, sizeof(times));
 
+    nullPrunes = 0;
     searchCancelled = false;
     searchDuration = time;
     nodesCounted = 0;
@@ -129,7 +130,7 @@ void Search::startIterativeSearch(Board &board, long time) {
 }
 
 // TODO: Null Move Pruning
-SearchResult Search::search(Board &board, int threadNumber, int rootDepth, int depth, int alpha, int beta, bool wasNullSearch) {
+SearchResult Search::search(Board &board, int threadNumber, int rootDepth, int depth, int alpha, int beta, bool wasNullSearch, bool inPrincipalVariation) {
     nodesCounted++;
 
     // Checkup to see search duration is over
@@ -142,28 +143,26 @@ SearchResult Search::search(Board &board, int threadNumber, int rootDepth, int d
     if (board.isDrawn())
         return {0, NULL_MOVE};
 
-    if (depth == 0)
-        return {quiesce(board, alpha, beta), NULL_MOVE};
-
-    if (rootDepth > 1) {
+    if (rootDepth > 0) {
         alpha = std::max(alpha, NEGATIVE_INFINITY + rootDepth);
-        beta = std::min(beta, POSITIVE_INFINITY - rootDepth);
+        beta = std::min(beta, POSITIVE_INFINITY - rootDepth - 1);
         if (alpha >= beta)
             return {alpha, NULL_MOVE};
     }
 
-    bool inPrincipalVariation = beta > alpha + 1;
+    if (depth == 0)
+        return {quiesce(board, alpha, beta), NULL_MOVE};
 
     TranspositionEntry entry;
     Move lookupBestMove;
-    if (!inPrincipalVariation && transpositionTable.tableLookup(board.currentZobristKey, entry)) {
+    if (transpositionTable.tableLookup(board.currentZobristKey, entry)) {
         uint64_t moveBits = EXTRACT_BEST_MOVE_BITS(entry.data);
         GET_MOVE_FROM_BITS(moveBits, lookupBestMove);
 
         int depthSearched = EXTRACT_DEPTH_SEARCHED(entry.data);
         int nodeType = EXTRACT_NODE_TYPE(entry.data);
         int score = EXTRACT_SCORE(entry.data);
-        if (depthSearched >= depth && !searchCancelled) {
+        if (depthSearched >= depth && !searchCancelled && !inPrincipalVariation) {
             int correctedScore = transpositionTable.correctScoreForRetrieval(score, rootDepth);
             if (nodeType == EXACT_BOUND) {
                 transpositionTable.cutoffs++;
@@ -181,16 +180,22 @@ SearchResult Search::search(Board &board, int threadNumber, int rootDepth, int d
     }
 
     // Null Move Pruning
-    if (rootDepth != 0 && depth >= 3 && !wasNullSearch && canNullMove(board) && !inPrincipalVariation) {
+    if (!inPrincipalVariation && rootDepth && depth >= 3 && !wasNullSearch && canNullMove(board) && !Movegen::isKingInDanger(board, board.whiteToMove)) {
         int reduction = 2 + depth / 4;
 
         board.nullMove();
-        SearchResult result = search(board, threadNumber, rootDepth + 1, depth - 1 - reduction, -beta, -beta + 1, true);
+        SearchResult result = search(board, threadNumber, rootDepth + 1, depth - 1 - reduction, -beta, -beta + 1, true, inPrincipalVariation);
         int negatedScore = -result.evaluation;
         board.undoNullMove();
 
-        if (negatedScore >= beta)
+        if (searchCancelled)
+            return {0, NULL_MOVE};
+
+        if (negatedScore >= beta && abs(negatedScore) < MATE_THRESHOLD)
+        {
+            nullPrunes++;
             return {negatedScore, NULL_MOVE};
+        }
     }
 
     int nodeType = UPPER_BOUND;
@@ -212,7 +217,7 @@ SearchResult Search::search(Board &board, int threadNumber, int rootDepth, int d
 
         movesAvailable = true;
         int negatedScore = negatedPrincipalVariationSearch(board, threadNumber, move, firstMove, moved, rootDepth, depth, alpha, beta,
-                                                           false);
+                                                           wasNullSearch, !rootDepth && firstMove);
         board.undoMove(move);
         moved++;
 
@@ -223,7 +228,7 @@ SearchResult Search::search(Board &board, int threadNumber, int rootDepth, int d
             nodeType = EXACT_BOUND;
         }
 
-        if (negatedScore >= beta) {
+        if (alpha >= beta) {
             nodeType = LOWER_BOUND;
             transpositionTable.storeKillerMove(move, depth);
             break;
@@ -235,8 +240,9 @@ SearchResult Search::search(Board &board, int threadNumber, int rootDepth, int d
     }
 
     if (!searchCancelled) {
-        if (movesAvailable && nodeType == LOWER_BOUND) {
-            transpositionTable.addEntry(board.currentZobristKey, bestMove, rootDepth, depth, beta, LOWER_BOUND);
+        if (alpha >= beta)
+        {
+            transpositionTable.addEntry(board.currentZobristKey, bestMove, rootDepth, depth, beta, nodeType);
             return {beta, bestMove};
         }
         transpositionTable.addEntry(board.currentZobristKey, bestMove, rootDepth, depth, alpha, nodeType);
@@ -245,11 +251,11 @@ SearchResult Search::search(Board &board, int threadNumber, int rootDepth, int d
 }
 
 int Search::negatedPrincipalVariationSearch(Board &board, int threadNumber, Move move, bool &firstMove, int moved, int rootDepth,
-                                            int depth, int alpha, int beta, bool wasNullSearch) {
+                                            int depth, int alpha, int beta, bool wasNullSearch, bool inPrincipalVariation) {
     int negatedScore;
 
     if (depth > 3 && move.capture == NONE && move.promotion == NONE && moved > 4) {
-        negatedScore = -search(board, threadNumber, rootDepth + 1, depth - 2, -alpha - 1, -alpha, wasNullSearch).evaluation;
+        negatedScore = -search(board, threadNumber, rootDepth + 1, depth - 2, -alpha - 1, -alpha, wasNullSearch, inPrincipalVariation).evaluation;
         if (negatedScore <= alpha) {
             return negatedScore;
         }
@@ -257,28 +263,27 @@ int Search::negatedPrincipalVariationSearch(Board &board, int threadNumber, Move
 
     if (firstMove) {
         // Full window search for the first move
-        negatedScore = -search(board, threadNumber, rootDepth + 1, depth - 1, -beta, -alpha, wasNullSearch).evaluation;
+        negatedScore = -search(board, threadNumber, rootDepth + 1, depth - 1, -beta, -alpha, wasNullSearch, inPrincipalVariation).evaluation;
         firstMove = false;
     } else {
         // Late move reductions
         // Principal Variation Search: try a null window search first
-        negatedScore = -search(board, threadNumber, rootDepth + 1, depth - 1, -alpha - 1, -alpha, wasNullSearch).evaluation;
+        negatedScore = -search(board, threadNumber, rootDepth + 1, depth - 1, -alpha - 1, -alpha, wasNullSearch, inPrincipalVariation).evaluation;
 
         // If null window search fails high, do a full research
         if (negatedScore > alpha && negatedScore < beta) {
-            negatedScore = -search(board, threadNumber, rootDepth + 1, depth - 1, -beta, -alpha, wasNullSearch).evaluation;
+            negatedScore = -search(board, threadNumber, rootDepth + 1, depth - 1, -beta, -alpha, wasNullSearch, true).evaluation;
         }
     }
     return negatedScore;
 }
 
 bool Search::canNullMove(Board &board) {
-    return __builtin_popcountll(board.majorPieceBitboards(board.whiteToMove)) + __builtin_popcountll(
-               board.minorPieceBitboards(board.whiteToMove)) > 0;
+    return __builtin_popcountll(board.majorPieceBitboards(board.whiteToMove));
 }
 
 SearchResult Search::search(Board &board, int threadNumber, int depth) {
-    return search(board, threadNumber, 0, depth, NEGATIVE_INFINITY, POSITIVE_INFINITY, false);
+    return search(board, threadNumber, 0, depth, NEGATIVE_INFINITY, POSITIVE_INFINITY, false, true);
 }
 
 int Search::quiesce(Board &board, int alpha, int beta) {

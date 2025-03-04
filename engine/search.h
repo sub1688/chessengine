@@ -31,7 +31,7 @@ struct ThreadWorkerInfo
 };
 
 namespace Search {
-    static unsigned int MAX_THREADS = 4;
+    static unsigned int MAX_THREADS = 3;
 
     inline constexpr Move NULL_MOVE = Move();
 
@@ -208,6 +208,7 @@ namespace Search {
     inline bool lastSearchTurnIsWhite = true;
     inline long nodesCounted = 0;
     inline double nodesPerSecond;
+    inline long nullPrunes = 0;
 
     inline TranspositionTable transpositionTable = TranspositionTable();
 
@@ -221,11 +222,11 @@ namespace Search {
 
     void threadSearch(ThreadWorkerInfo *info);
 
-    SearchResult search(Board& board, int threadNumber, int rootDepth, int depth, int alpha, int beta, bool wasNullSearch);
+    SearchResult search(Board& board, int threadNumber, int rootDepth, int depth, int alpha, int beta, bool wasNullSearch, bool inPrincipalVariation);
 
     SearchResult search(Board& board, int threadNumber, int depth);
 
-    int negatedPrincipalVariationSearch(Board& board, int threadNumber, Move move, bool &firstMove, int moved, int rootDepth, int depth, int alpha, int beta, bool wasNullSearch);
+    int negatedPrincipalVariationSearch(Board& board, int threadNumber, Move move, bool &firstMove, int moved, int rootDepth, int depth, int alpha, int beta, bool wasNullSearch, bool inPrincipalVariation);
 
     int evaluate(Board& board);
 

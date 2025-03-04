@@ -242,6 +242,7 @@ void BoardWindow::update(sf::RenderWindow &window) {
             << (sizeof(TranspositionEntry) * TranspositionTable::TRANSPOSITION_TABLE_SIZE / (double) 1000000)
             << "MB"
             << "\nTransposition Search Cutoffs: " << std::to_string(Search::transpositionTable.cutoffs)
+            << "\nNull Move Prunes: " << std::to_string(Search::nullPrunes)
             << "\nEndgame Bias: " << Search::getEndGameBias(*board) << "\nNew Search Won: " << newWon <<
             "\nOld Search Won: " << oldWon << "\nDrawn: " << drawn << "\n";
 
