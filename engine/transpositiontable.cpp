@@ -51,16 +51,5 @@ void TranspositionTable::clear() {
     tableEntries = 0;
 }
 
-void TranspositionTable::storeKillerMove(Move move, int depth) {
-    if (move.capture != NONE || move.promotion != NONE)
-        return;
 
-    if (killerMoves[depth][0] == move) return;
-
-    /*
-     * the previous killer move is shifted is so that the first killer move in the array is always the most recent one, which is likely to be better in more positions
-     */
-    killerMoves[depth][1] = killerMoves[depth][0];
-    killerMoves[depth][0] = move;
-}
 

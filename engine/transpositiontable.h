@@ -52,11 +52,7 @@ public:
     static constexpr size_t TRANSPOSITION_TABLE_SIZE = 1 << 25;
     static constexpr size_t TRANSPOSITION_TABLE_MASK = TRANSPOSITION_TABLE_SIZE - 1;
 
-    static constexpr size_t KILLER_DEPTHS = 256;
-    static constexpr size_t KILLERS_PER_PLY = 2;
-
     TranspositionEntry transpositionTableBuffer[TRANSPOSITION_TABLE_SIZE];
-    Move killerMoves[KILLER_DEPTHS][KILLERS_PER_PLY];
 
     int tableEntries = 0;
     int cutoffs = 0;
@@ -68,6 +64,4 @@ public:
 
     void addEntry(uint64_t zobristKey, Move bestMove, int rootDepth, int depthSearched, int score, int nodeType);
     void clear();
-
-    void storeKillerMove(Move move, int depth);
 };

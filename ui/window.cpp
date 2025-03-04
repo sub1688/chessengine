@@ -14,15 +14,9 @@
 void BoardWindow::playBotMove() {
     thinking = true;
     std::thread([]() {
-        if ((board->whiteToMove && whiteIsNew) || (!board->whiteToMove && !whiteIsNew)) {
-            Search::startIterativeSearch(*board, 250);
-            board->move(Search::bestMove);
-            thinking = false;
-        } else {
-            Search::startIterativeSearch(*board, 250);
-            board->move(Search::bestMove);
-            thinking = false;
-        }
+        Search::startIterativeSearch(*board, 5000);
+        board->move(Search::bestMove);
+        thinking = false;
     }).detach(); // Detach thread as it's self-contained
 }
 
@@ -106,11 +100,16 @@ void BoardWindow::update(sf::RenderWindow &window) {
         if (!Movegen::inCheckmate(*board) && !board->isDrawn()) {
             zobristKey = Zobrist::calculateZobristKey(*board);
 
-            thinking = true;
-            std::thread([]() {
-                Search::startIterativeSearch(*board, 100000);
-            }).detach();
+            // thinking = true;
+            // std::thread([]() {
+                // Search::startIterativeSearch(*board, 100000);
+            // }).detach();
+
             // playBotMove();
+
+            // if (!board->whiteToMove) {
+                // playBotMove();
+            // }
         } else {
             if (board->isDrawn()) {
                 drawn++;

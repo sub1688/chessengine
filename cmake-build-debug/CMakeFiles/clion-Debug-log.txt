@@ -1,23 +1,4 @@
-/app/extra/clion/bin/cmake/linux/x64/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/app/extra/clion/bin/ninja/linux/x64/ninja -G Ninja -S /home/admin/Desktop/chessengine -B /home/admin/Desktop/chessengine/cmake-build-debug
-[0/7] Performing update step for 'sfml-populate'
-fatal: unable to access 'https://github.com/SFML/SFML.git/': SSL: no alternative certificate subject name matches target hostname 'github.com'
-CMake Error at /home/admin/Desktop/chessengine/cmake-build-debug/_deps/sfml-subbuild/sfml-populate-prefix/tmp/sfml-populate-gitupdate.cmake:8 (execute_process):
-  execute_process last command failed
-Call Stack (most recent call first):
-  /home/admin/Desktop/chessengine/cmake-build-debug/_deps/sfml-subbuild/sfml-populate-prefix/tmp/sfml-populate-gitupdate.cmake:76 (do_fetch)
-
-
-FAILED: sfml-populate-prefix/src/sfml-populate-stamp/sfml-populate-update /home/admin/Desktop/chessengine/cmake-build-debug/_deps/sfml-subbuild/sfml-populate-prefix/src/sfml-populate-stamp/sfml-populate-update 
-cd /home/admin/Desktop/chessengine/cmake-build-debug/_deps/sfml-src && /app/extra/clion/bin/cmake/linux/x64/bin/cmake -Dcan_fetch=YES -P /home/admin/Desktop/chessengine/cmake-build-debug/_deps/sfml-subbuild/sfml-populate-prefix/tmp/sfml-populate-gitupdate.cmake
-ninja: build stopped: subcommand failed.
-
-CMake Error at /app/extra/clion/bin/cmake/linux/x64/share/cmake-3.29/Modules/FetchContent.cmake:1714 (message):
-  Build step for sfml failed: 1
-Call Stack (most recent call first):
-  /app/extra/clion/bin/cmake/linux/x64/share/cmake-3.29/Modules/FetchContent.cmake:1854:EVAL:2 (__FetchContent_directPopulate)
-  /app/extra/clion/bin/cmake/linux/x64/share/cmake-3.29/Modules/FetchContent.cmake:1854 (cmake_language)
-  /app/extra/clion/bin/cmake/linux/x64/share/cmake-3.29/Modules/FetchContent.cmake:2081 (FetchContent_Populate)
-  CMakeLists.txt:19 (FetchContent_MakeAvailable)
-
-
--- Configuring incomplete, errors occurred!
+"C:\Program Files\JetBrains\CLion 2024.3\bin\cmake\win\x64\bin\cmake.exe" -DCMAKE_BUILD_TYPE=Debug -G "MinGW Makefiles" -S C:\Users\Corbis\Desktop\chessengine -B C:\Users\Corbis\Desktop\chessengine\cmake-build-debug
+-- Configuring done (3.1s)
+-- Generating done (0.1s)
+-- Build files have been written to: C:/Users/Corbis/Desktop/chessengine/cmake-build-debug

@@ -24,6 +24,7 @@ struct ThreadWorkerInfo
 {
     int threadNumber;
     int depthToSearch;
+    Move killerMoves[256][2];
 
     Board board;
 
@@ -31,7 +32,7 @@ struct ThreadWorkerInfo
 };
 
 namespace Search {
-    static unsigned int MAX_THREADS = 3;
+    static unsigned int MAX_THREADS = 4;
 
     inline constexpr Move NULL_MOVE = Move();
 
@@ -216,17 +217,17 @@ namespace Search {
 
     inline Move bestMove = NULL_MOVE;
 
-    void orderMoves(ArrayVec<Move, 218> &moveVector, int rootDepth, int threadNumber, Move ttMove, int depth);
+    void orderMoves(ArrayVec<Move, 218> &moveVector, int rootDepth, ThreadWorkerInfo *threadWorkerInfoPtr, Move ttMove, int depth);
 
     void startIterativeSearch(Board& board, long time);
 
     void threadSearch(ThreadWorkerInfo *info);
 
-    SearchResult search(Board& board, int threadNumber, int rootDepth, int depth, int alpha, int beta, bool wasNullSearch, bool inPrincipalVariation);
+    SearchResult search(Board& board, ThreadWorkerInfo *threadWorkerInfoPtr, int rootDepth, int depth, int alpha, int beta, bool wasNullSearch, bool inPrincipalVariation);
 
-    SearchResult search(Board& board, int threadNumber, int depth);
+    SearchResult search(Board& board, ThreadWorkerInfo *threadWorkerInfoPtr, int depth);
 
-    int negatedPrincipalVariationSearch(Board& board, int threadNumber, Move move, bool &firstMove, int moved, int rootDepth, int depth, int alpha, int beta, bool wasNullSearch, bool inPrincipalVariation);
+    int negatedPrincipalVariationSearch(Board& board, ThreadWorkerInfo *threadWorkerInfoPtr, Move move, bool &firstMove, int moved, int rootDepth, int depth, int alpha, int beta, bool wasNullSearch, bool inPrincipalVariation);
 
     int evaluate(Board& board);
 
@@ -243,6 +244,8 @@ namespace Search {
     int evaluatePassedPawn(Board& board, uint8_t squareIndex, uint8_t piece);
 
     int evaluateKingDistance(uint8_t squareIndex, uint8_t otherKingIndex, uint8_t piece, int materialDelta);
+
+    void storeKillerMove(ThreadWorkerInfo *threadWorkerInfoPtr, Move move, int depth);
 
     inline long getMillisSinceEpoch()
     {

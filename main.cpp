@@ -112,7 +112,7 @@ int main() {
     // board.importFEN("8/k7/3p4/p2P1p2/P2P1P2/8/8/K7 w - - 0 1");
 
     std::cout << "[+] Done! (Maximum Threads: " << Search::MAX_THREADS << ")\n";
-    // startCLIListening(board);
+    startCLIListening(board);
 
-    BoardWindow::init(&board);
+    // BoardWindow::init(&board);
 }
