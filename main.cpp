@@ -5,13 +5,13 @@
 #include "engine/movegen.h"
 #include "engine/openingbook.h"
 #include "engine/piecesquaretable.h"
+#include "engine/san.h"
 #include "engine/search.h"
 #include "engine/zobrist.h"
 #include "ui/gui.h"
 
-#define GUI
-// #define CLI
-
+// #define GUI
+#define CLI
 
 #ifdef CLI
 bool over = false;
@@ -59,7 +59,7 @@ void startCLIListening(Board& board) {
                 }
             }
             if (board.moveNumber == prevMoveNumber) {
-                std::cout << "Error: finding move: " << move << " is` not legal" << std::endl;
+                std::cout << "Error: finding move: " << move << " is not legal" << std::endl;
             }
         }
         else if (input.starts_with("search")) {
