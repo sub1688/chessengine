@@ -12,7 +12,6 @@
 #include "san.h"
 #include "transpositiontable.h"
 #include "zobrist.h"
-#include "../ui/window.h"
 
 #include <cstring>
 
@@ -86,8 +85,6 @@ void Search::threadSearch(ThreadWorkerInfo *info) {
                     "," << std::to_string(bestMove.to) << ":" << StandardAlgebraicNotation::boardToSan(
                         info->board, bestMove) <<
                     std::endl;
-
-            info->board.printBoard();
         }
     }
 }
@@ -118,7 +115,7 @@ void Search::startIterativeSearch(Board &board, long time) {
     std::vector<std::thread> threads;
     threads.reserve(MAX_THREADS);
 
-    std::vector<std::unique_ptr<ThreadWorkerInfo> > threadWorkerInfos;
+    std::vector<std::unique_ptr<ThreadWorkerInfo>> threadWorkerInfos;
     threadWorkerInfos.reserve(MAX_THREADS);
 
     for (int threadNumber = 0; threadNumber < MAX_THREADS; threadNumber++) {

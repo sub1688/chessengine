@@ -1,4 +1,50 @@
 "C:\Program Files\JetBrains\CLion 2024.3\bin\cmake\win\x64\bin\cmake.exe" -DCMAKE_BUILD_TYPE=Debug -G "MinGW Makefiles" -S C:\Users\Corbis\Desktop\chessengine -B C:\Users\Corbis\Desktop\chessengine\cmake-build-debug
--- Configuring done (3.1s)
+C:/VulkanSDK/1.4.304.1
+C:/VulkanSDK/1.4.304.1/Include
+CMake Deprecation Warning at Walnut-cmake/CMakeLists.txt:1 (cmake_minimum_required):
+  Compatibility with CMake < 3.5 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value or use a ...<max> suffix to tell
+  CMake that the project does not need compatibility with older versions.
+
+
+-- Could NOT find Doxygen (missing: DOXYGEN_EXECUTABLE) 
+-- Including Win32 support
+CMake Deprecation Warning at Walnut-cmake/vendor/glm/CMakeLists.txt:1 (cmake_minimum_required):
+  Compatibility with CMake < 3.5 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value or use a ...<max> suffix to tell
+  CMake that the project does not need compatibility with older versions.
+
+
+CMake Deprecation Warning at Walnut-cmake/vendor/glm/CMakeLists.txt:2 (cmake_policy):
+  Compatibility with CMake < 3.5 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value or use a ...<max> suffix to tell
+  CMake that the project does not need compatibility with older versions.
+
+
+-- GLM: Version 0.9.9.9
+CMake Deprecation Warning at Walnut-cmake/Walnut/CMakeLists.txt:1 (cmake_minimum_required):
+  Compatibility with CMake < 3.5 will be removed from a future version of
+  CMake.
+
+  Update the VERSION argument <min> value or use a ...<max> suffix to tell
+  CMake that the project does not need compatibility with older versions.
+
+
+C:/VulkanSDK/1.4.304.1/Include
+-- include dir='C:/Users/Corbis/Desktop/chessengine/Walnut-cmake/Walnut/src'
+-- include dir='C:/Users/Corbis/Desktop/chessengine/Walnut-cmake/vendor/stb_image'
+-- include dir='C:/Users/Corbis/Desktop/chessengine/Walnut-cmake/vendor/imgui'
+-- include dir='C:/Users/Corbis/Desktop/chessengine/Walnut-cmake/vendor/glfw/include'
+-- include dir='C:/Users/Corbis/Desktop/chessengine/Walnut-cmake/Walnut/Walnut'
+-- include dir='C:/Users/Corbis/Desktop/chessengine/Walnut-cmake/Walnut/PRIVATE'
+-- include dir='C:/Users/Corbis/Desktop/chessengine/Walnut-cmake/Walnut/src/Walnut/ImGui'
+-- include dir='C:/VulkanSDK/1.4.304.1/Include'
+-- Configuring done (0.2s)
 -- Generating done (0.1s)
 -- Build files have been written to: C:/Users/Corbis/Desktop/chessengine/cmake-build-debug

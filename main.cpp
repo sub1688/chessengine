@@ -1,19 +1,20 @@
-#include <array>
-#include <bitset>
 #include <chrono>
 #include <iostream>
 #include <string>
 
-#include "engine/san.h"
 #include "engine/movegen.h"
 #include "engine/openingbook.h"
 #include "engine/piecesquaretable.h"
 #include "engine/search.h"
 #include "engine/zobrist.h"
-#include "ui/window.h"
+#include "ui/gui.h"
 
+#define GUI
+// #define CLI
+
+
+#ifdef CLI
 bool over = false;
-
 void startCLIListening(Board& board) {
     int passes = 0;
     while (passes++ < 100000) {
@@ -81,8 +82,12 @@ void startCLIListening(Board& board) {
         }
     }
 }
+#endif
+#ifdef GUI
+bool g_ApplicationRunning = true;
+#endif
 
-void benchmarkPerft(Board& board, int depth) {
+void benchmarkPerft(Board &board, int depth) {
     using namespace std::chrono;
     auto start = high_resolution_clock::now();
     uint64_t perft = Movegen::perft(board, depth);
@@ -91,7 +96,7 @@ void benchmarkPerft(Board& board, int depth) {
     // Calculate nodes per second
     double nodesPerSecond = perft / duration;
     std::cout << "Perft nodes: " << perft
-        << " Speed: " << std::fixed << std::setprecision(2) << (nodesPerSecond / 1'000'000) << " Mn/s" << std::endl;
+            << " Speed: " << std::fixed << std::setprecision(2) << (nodesPerSecond / 1'000'000) << " Mn/s" << std::endl;
 }
 
 
@@ -113,7 +118,18 @@ int main() {
     OpeningBook::loadOpeningBook("assets/openingbook.txt");
 
     std::cout << "[+] Done! (Maximum Threads: " << Search::MAX_THREADS << ")\n";
-    startCLIListening(board);
 
-    // BoardWindow::init(&board);
+#ifdef CLI
+    startCLIListening(board);
+#endif
+
+#ifdef GUI
+
+    Walnut::ApplicationSpecification spec;
+    spec.Name = "Chess Engine";
+
+    auto app = Walnut::Application(spec);
+    app.PushLayer(std::make_shared<MainLayer>(&app));
+    app.Run();
+#endif
 }
