@@ -8,9 +8,10 @@
 #include "engine/san.h"
 #include "engine/search.h"
 #include "engine/zobrist.h"
+#include "ui/gui.h"
 
-// #define GUI
-#define CLI
+#define GUI
+// #define CLI
 
 #ifdef CLI
 bool over = false;
@@ -123,6 +124,6 @@ int main() {
 #endif
 
 #ifdef GUI
-
+    Gui::init();
 #endif
 }

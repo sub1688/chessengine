@@ -29,6 +29,9 @@ namespace Movegen {
         BLACK_KNIGHT, BLACK_BISHOP, BLACK_ROOK, BLACK_QUEEN
     };
 
+    /**
+     *  "Magic" constants that are used for "perfect" hashing for move generation.
+     */
     inline constexpr uint64_t ROOK_MAGICS[64] = {
         0x480001080c00320, 0x208008810c00143, 0x410006000906500, 0x20162410002004, 0xa200010210200a00,
         0x804040002984010, 0x1100210020441200, 0x2100008141000422, 0x80900810a0800400, 0x20424024204000,
