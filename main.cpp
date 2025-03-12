@@ -8,7 +8,6 @@
 #include "engine/san.h"
 #include "engine/search.h"
 #include "engine/zobrist.h"
-#include "ui/gui.h"
 
 // #define GUI
 #define CLI
@@ -125,11 +124,5 @@ int main() {
 
 #ifdef GUI
 
-    Walnut::ApplicationSpecification spec;
-    spec.Name = "Chess Engine";
-
-    auto app = Walnut::Application(spec);
-    app.PushLayer(std::make_shared<MainLayer>(&app));
-    app.Run();
 #endif
 }

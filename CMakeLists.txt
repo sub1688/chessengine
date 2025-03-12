@@ -6,18 +6,14 @@ set(CMAKE_BUILD_TYPE "Release")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 
-
-set(VULKAN_SDK "C:/VulkanSDK/1.4.304.1")
-message("${VULKAN_SDK}")
-
-set(Vulkan_INCLUDE_DIR "${VULKAN_SDK}/Include")
-set(Vulkan_LIBRARY "${VULKAN_SDK}/Lib/vulkan-1.lib")
-message(${Vulkan_INCLUDE_DIR})
-
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
-add_subdirectory(Walnut-cmake)
-include_directories(chessengine)
+set(IMGUI_SOURCES imgui/imgui.cpp imgui/imgui_demo.cpp imgui/imgui_draw.cpp imgui/imgui_tables.cpp imgui/imgui_widgets.cpp imgui/imgui_impl_glfw.cpp imgui/imgui_impl_opengl3.cpp)
+
+find_package(OpenGL REQUIRED)
+add_subdirectory(glfw)
+
+include_directories(chessengine imgui)
 
 add_executable(chessengine main.cpp
         engine/board.h
@@ -37,9 +33,8 @@ add_executable(chessengine main.cpp
         engine/san.cpp
         engine/openingbook.h
         engine/openingbook.cpp
-        ui/gui.h
-        ui/gui.cpp
+        ${IMGUI_SOURCES}
 )
 
-target_link_libraries(chessengine PRIVATE Walnut ${Vulkan_LIBRARIES} glfw ${OPENGL_gl_LIBRARY})
+target_link_libraries(chessengine PRIVATE OpenGL::GL glfw)
 
