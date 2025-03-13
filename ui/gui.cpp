@@ -14,20 +14,31 @@ void glfwErrorCallback(int error, const char *description) {
 
 void Gui::render()
 {
-    ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4.0f, 8.0f));
+
+    ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration
+                                | ImGuiWindowFlags_MenuBar;
     ImGui::Begin("Engine", nullptr, windowFlags);
     ImGui::SetWindowSize(ImVec2(1280, 768));
 
-    // Set Background window size
-    ImVec2 windowPos = ImGui::GetWindowPos();
-    ImVec2 windowSize = ImGui::GetWindowSize();
+    ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.F, 0, 0, 0.8F));
 
-    // Adjust GLFW window position & size
-    glfwSetWindowPos(window, static_cast<int>(windowPos.x), static_cast<int>(windowPos.y));
-    glfwSetWindowSize(window, static_cast<int>(windowSize.x), static_cast<int>(windowSize.y));
+    if (ImGui::BeginMenuBar())
+    {
+        ImGui::TextUnformatted("Chess Engine");
 
+        ImGui::SameLine(ImGui::GetWindowWidth() - 50);
+        if (ImGui::Button(" X ")) { glfwSetWindowShouldClose(window, GLFW_TRUE); }
+
+        ImGui::EndMenuBar();
+    }
+    ImGui::PopStyleColor(3);
+    ImGui::PopStyleVar();
 
     ImGui::Text("Hello World");
+
     ImGui::End();
 }
 
@@ -35,6 +46,7 @@ void Gui::init() {
     std::cout << "imgui opengl3 init...\n";
 
     glfwSetErrorCallback(glfwErrorCallback);
+
 
     if (!glfwInit())
         return;
@@ -44,12 +56,20 @@ void Gui::init() {
     glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
 
     // Create Window
-    window = glfwCreateWindow(1280, 768, "Chess Engine", nullptr, nullptr);
+    window = glfwCreateWindow(1, 1, "Chess Engine", nullptr, nullptr);
+    glfwSetWindowPos(window, -1, -1);
     if (window == nullptr)
         return;
 
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
+
+    // Enable high-DPI scaling
+    glfwSetWindowContentScaleCallback(window, [](GLFWwindow* window, float xscale, float yscale) {
+        // Adjust the scale factor as needed, ImGui will handle scaling from here
+        ImGuiIO& io = ImGui::GetIO();
+        io.DisplayFramebufferScale = ImVec2(xscale, yscale);
+    });
 
     // Fix window problems
     glfwSetWindowAttrib(window, GLFW_DECORATED, GLFW_FALSE);
@@ -70,9 +90,18 @@ void Gui::setupImgui() {
     ImGuiIO &io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+    io.Fonts->Clear();
 
+    ImFontConfig fontConfig;
+    fontConfig.SizePixels = 20.F;
+    io.Fonts->AddFontDefault(&fontConfig);
 
     ImGui::StyleColorsClassic();
+
+    ImGuiStyle &style = ImGui::GetStyle();
+    style.Colors[ImGuiCol_WindowBg] = ImVec4(0.1f, 0.1f, 0.1f, 1.f);
+    style.Colors[ImGuiCol_MenuBarBg] = ImVec4(0.075f, 0.075f, 0.075f, 1.f); // Dark gray menu bar
 
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 130");
@@ -91,6 +120,16 @@ void Gui::setupImgui() {
         render();
 
         ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+        // Handle multiple viewports (so ImGui windows can be moved out)
+        if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
+            GLFWwindow* backup_current_context = glfwGetCurrentContext();
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
+            glfwMakeContextCurrent(backup_current_context);
+        }
+
         int display_w, display_h;
         glfwGetFramebufferSize(window, &display_w, &display_h);
         glViewport(0, 0, display_w, display_h);
