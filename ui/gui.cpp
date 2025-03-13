@@ -14,7 +14,7 @@ void glfwErrorCallback(int error, const char *description) {
 
 void Gui::render()
 {
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4.0f, 8.0f));
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4.0f, 6.0f));
 
     ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration
                                 | ImGuiWindowFlags_MenuBar;
@@ -23,30 +23,29 @@ void Gui::render()
 
     ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0, 0, 0, 0));
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.F, 0, 0, 0.8F));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.2F, 0.2F, 0.2F, 0.8F));
 
     if (ImGui::BeginMenuBar())
     {
         ImGui::TextUnformatted("Chess Engine");
 
-        ImGui::SameLine(ImGui::GetWindowWidth() - 50);
-        if (ImGui::Button(" X ")) { glfwSetWindowShouldClose(window, GLFW_TRUE); }
+        ImGui::SameLine(ImGui::GetWindowWidth() - 49);
+        if (ImGui::Button("  X  ")) { glfwSetWindowShouldClose(window, GLFW_TRUE); }
 
         ImGui::EndMenuBar();
     }
     ImGui::PopStyleColor(3);
     ImGui::PopStyleVar();
 
-    ImGui::Text("Hello World");
+
 
     ImGui::End();
 }
 
 void Gui::init() {
-    std::cout << "imgui opengl3 init...\n";
+    std::cout << "[+] Imgui opengl3 init...\n";
 
     glfwSetErrorCallback(glfwErrorCallback);
-
 
     if (!glfwInit())
         return;
@@ -94,12 +93,13 @@ void Gui::setupImgui() {
     io.Fonts->Clear();
 
     ImFontConfig fontConfig;
-    fontConfig.SizePixels = 20.F;
-    io.Fonts->AddFontDefault(&fontConfig);
+    fontConfig.SizePixels = 23.F;
+    io.Fonts->AddFontFromMemoryTTF((void*) fontEmbed, sizeof(fontEmbed), 23.0F, &fontConfig);
 
     ImGui::StyleColorsClassic();
 
     ImGuiStyle &style = ImGui::GetStyle();
+    style.WindowPadding = ImVec2(10.f, 8.f);
     style.Colors[ImGuiCol_WindowBg] = ImVec4(0.1f, 0.1f, 0.1f, 1.f);
     style.Colors[ImGuiCol_MenuBarBg] = ImVec4(0.075f, 0.075f, 0.075f, 1.f); // Dark gray menu bar
 
