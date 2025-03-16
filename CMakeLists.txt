@@ -8,9 +8,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
-set(IMGUI_SOURCES imgui/imgui.cpp imgui/imgui_demo.cpp imgui/imgui_draw.cpp imgui/imgui_tables.cpp imgui/imgui_widgets.cpp imgui/imgui_impl_glfw.cpp imgui/imgui_impl_opengl3.cpp
-        ui/gui.h
-        ui/gui.cpp)
+set(IMGUI_SOURCES imgui/imgui.cpp imgui/imgui_demo.cpp imgui/imgui_draw.cpp imgui/imgui_tables.cpp imgui/imgui_widgets.cpp imgui/imgui_impl_glfw.cpp imgui/imgui_impl_opengl3.cpp)
 
 find_package(OpenGL REQUIRED)
 add_subdirectory(glfw)
@@ -35,6 +33,8 @@ add_executable(chessengine main.cpp
         engine/san.cpp
         engine/openingbook.h
         engine/openingbook.cpp
+        ui/gui.h
+        ui/gui.cpp
         ${IMGUI_SOURCES}
 )
 

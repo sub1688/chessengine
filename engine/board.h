@@ -16,6 +16,8 @@
 #define BLACK_KING 10
 #define BLACK_ROOK 11
 
+#define PIECE uint8_t
+
 #define GET_MOVE_FROM_BITS(bits, move)        \
     do {                                      \
         (move).from = (bits) & 0x3F;           \
