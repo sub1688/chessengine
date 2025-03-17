@@ -7,6 +7,7 @@
 #include "GLFW/glfw3.h"
 
 #include <iostream>
+#include <thread>
 
 #ifndef STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
@@ -17,12 +18,13 @@
  * Texture loading code from Dear ImGui documentation:
  * https://github.com/ocornut/imgui/wiki/Image-Loading-and-Displaying-Examples
  */
-inline bool LoadTextureFromMemory(const void* data, size_t data_size, GLuint* out_texture, int* out_width, int* out_height)
-{
+inline bool LoadTextureFromMemory(const void* data, size_t data_size, GLuint* out_texture, int* out_width,
+                                  int* out_height) {
     // Load from file
     int image_width = 0;
     int image_height = 0;
-    unsigned char* image_data = stbi_load_from_memory((const unsigned char*)data, (int)data_size, &image_width, &image_height, NULL, 4);
+    unsigned char* image_data = stbi_load_from_memory((const unsigned char*)data, (int)data_size, &image_width,
+                                                      &image_height, NULL, 4);
     if (image_data == NULL)
         return false;
 
@@ -48,8 +50,7 @@ inline bool LoadTextureFromMemory(const void* data, size_t data_size, GLuint* ou
 }
 
 // Open and read a file, then forward to LoadTextureFromMemory()
-inline bool LoadTextureFromFile(const char* file_name, GLuint* out_texture, int* out_width, int* out_height)
-{
+inline bool LoadTextureFromFile(const char* file_name, GLuint* out_texture, int* out_width, int* out_height) {
     FILE* f = fopen(file_name, "rb");
     if (f == NULL)
         return false;
@@ -67,7 +68,7 @@ inline bool LoadTextureFromFile(const char* file_name, GLuint* out_texture, int*
 }
 
 // Error callback function
-void glfwErrorCallback(int error, const char *description) {
+void glfwErrorCallback(int error, const char* description) {
     std::cerr << "GLFW Error (" << error << "): " << description << std::endl;
 }
 
@@ -75,8 +76,8 @@ void Gui::render() {
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4.0f, 6.0f));
 
     ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse |
-                                   ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration
-                                   | ImGuiWindowFlags_MenuBar;
+        ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration
+        | ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoMove;
     ImGui::Begin("Engine", nullptr, windowFlags);
     ImGui::SetWindowSize(ImVec2(1280, 768));
 
@@ -90,6 +91,13 @@ void Gui::render() {
         ImGui::SameLine(ImGui::GetWindowWidth() - 49);
         if (ImGui::Button("  X  ")) { glfwSetWindowShouldClose(window, GLFW_TRUE); }
 
+        if (ImGui::IsMouseDragging(ImGuiMouseButton_Left) && ImGui::GetIO().MousePos.y - ImGui::GetWindowPos().y <
+            ImGui::GetCurrentWindow()->MenuBarHeight) {
+            ImVec2 newPos = ImGui::GetWindowPos() + ImGui::GetMouseDragDelta();
+            ImGui::SetWindowPos(newPos);
+            ImGui::ResetMouseDragDelta(); // Reset so movement doesn't accumulate incorrectly
+        }
+
         ImGui::EndMenuBar();
     }
 
@@ -98,17 +106,22 @@ void Gui::render() {
 
     renderChessBoard(600.F, 600.F);
 
+    ImGui::Text("Test");
+
     ImGui::End();
 }
 
+
 void Gui::renderChessBoard(float width, float height) {
-    const char *id = "board";
+    const char* id = "board";
 
     ImVec2 pos = ImGui::GetCurrentWindow()->DC.CursorPos;
     ImVec2 size = ImVec2(width, height);
     ImRect rect = ImRect(pos, pos + size);
     ImGui::ItemSize(rect);
     ImGui::ItemAdd(rect, ImGui::GetCurrentWindow()->GetID(id));
+
+    static int draggingPieceIndex = -1;
 
     // Draw checkerboard
     for (int i = 0; i < 64; i++) {
@@ -126,7 +139,7 @@ void Gui::renderChessBoard(float width, float height) {
 
     // Draw pieces
     for (int i = 0; i < 64; i++) {
-        displayPieceMailbox[i] = currentBoard.mailbox[i];
+        displayPieceMailbox[i] = currentBoard->mailbox[i];
 
         auto squareX = i & 7, squareY = 7 - i / 8;
 
@@ -134,13 +147,26 @@ void Gui::renderChessBoard(float width, float height) {
         ImVec2 imagePos(pos.x + squareX * squareSize.x, pos.y + squareY * squareSize.y);
 
         if (displayPieceMailbox[i] != NONE) {
-            ImGui::GetForegroundDrawList()->AddImage(pieceTextures[displayPieceMailbox[i]], imagePos, imagePos + squareSize);
+            ImGui::GetForegroundDrawList()->AddImage(pieceTextures[displayPieceMailbox[i]], imagePos,
+                                                     imagePos + squareSize);
+        }
+    }
+
+    ImVec2 relativeMousePos = ImGui::GetIO().MousePos - ImGui::GetWindowPos() - pos;
+    ImGui::Text((std::to_string(pos.x) + " " + std::to_string(pos.y)).c_str());
+    if (relativeMousePos > ImVec2(0, 0) && relativeMousePos < size) {
+        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+            if (draggingPieceIndex == -1) {
+                int squareX = static_cast<int>(relativeMousePos.x) / static_cast<int>(size.x / 8);
+                int squareY = static_cast<int>(relativeMousePos.y) / static_cast<int>(size.y / 8);
+                std::cout << std::to_string(squareX) << " " << std::to_string(squareY) << std::endl;;
+            }
         }
     }
 }
 
 
-void Gui::init() {
+void Gui::init(Board* board) {
     std::cout << "[+] Imgui opengl3 init...\n";
 
     glfwSetErrorCallback(glfwErrorCallback);
@@ -162,9 +188,9 @@ void Gui::init() {
     glfwSwapInterval(1);
 
     // Enable high-DPI scaling
-    glfwSetWindowContentScaleCallback(window, [](GLFWwindow *window, float xscale, float yscale) {
+    glfwSetWindowContentScaleCallback(window, [](GLFWwindow* window, float xscale, float yscale) {
         // Adjust the scale factor as needed, ImGui will handle scaling from here
-        ImGuiIO &io = ImGui::GetIO();
+        ImGuiIO& io = ImGui::GetIO();
         io.DisplayFramebufferScale = ImVec2(xscale, yscale);
     });
 
@@ -173,8 +199,7 @@ void Gui::init() {
     glfwSetWindowAttrib(window, GLFW_RESIZABLE, GLFW_FALSE);
 
     // New Board
-    currentBoard = Board();
-    currentBoard.setStartingPosition();
+    currentBoard = board;
 
     // Setup Dear Imgui
     setupImgui();
@@ -188,7 +213,7 @@ void Gui::setupImgui() {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
 
-    ImGuiIO &io = ImGui::GetIO();
+    ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
@@ -196,11 +221,11 @@ void Gui::setupImgui() {
 
     ImFontConfig fontConfig;
     fontConfig.SizePixels = 23.F;
-    io.Fonts->AddFontFromMemoryTTF((void *) fontEmbed, sizeof(fontEmbed), 23.0F, &fontConfig);
+    io.Fonts->AddFontFromMemoryTTF((void*)fontEmbed, sizeof(fontEmbed), 23.0F, &fontConfig);
 
     ImGui::StyleColorsClassic();
 
-    ImGuiStyle &style = ImGui::GetStyle();
+    ImGuiStyle& style = ImGui::GetStyle();
     style.WindowPadding = ImVec2(10.f, 8.f);
     style.Colors[ImGuiCol_WindowBg] = ImVec4(0.1f, 0.1f, 0.1f, 1.f);
     style.Colors[ImGuiCol_MenuBarBg] = ImVec4(0.075f, 0.075f, 0.075f, 1.f); // Dark gray menu bar
@@ -237,7 +262,7 @@ void Gui::setupImgui() {
 
         // Handle multiple viewports (so ImGui windows can be moved out)
         if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
-            GLFWwindow *backup_current_context = glfwGetCurrentContext();
+            GLFWwindow* backup_current_context = glfwGetCurrentContext();
             ImGui::UpdatePlatformWindows();
             ImGui::RenderPlatformWindowsDefault();
             glfwMakeContextCurrent(backup_current_context);

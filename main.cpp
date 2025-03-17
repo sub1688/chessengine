@@ -124,6 +124,6 @@ int main() {
 #endif
 
 #ifdef GUI
-    Gui::init();
+    Gui::init(&board);
 #endif
 }
