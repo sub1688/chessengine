@@ -9,6 +9,10 @@
 #include <iostream>
 #include <thread>
 
+#include "../engine/movegen.h"
+#include "../engine/search.h"
+#include "../util/arrayvec.h"
+
 #ifndef STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -104,11 +108,23 @@ void Gui::render() {
     ImGui::PopStyleColor(3);
     ImGui::PopStyleVar();
 
-    renderChessBoard(600.F, 600.F);
 
-    ImGui::Text("Test");
-
+    ImGui::Columns(2);
+    renderChessBoard(ImGui::GetColumnWidth() - ImGui::GetStyle().WindowPadding.x * 2, ImGui::GetColumnWidth() - ImGui::GetStyle().WindowPadding.x * 2);
+    ImGui::Text("Max Threads:");
+    ImGui::SliderInt("", &Search::MAX_THREADS, 1, static_cast<int>(std::thread::hardware_concurrency()));
+    ImGui::NextColumn();
+    ImGui::Text(("Engine Evaluation: " + std::to_string(static_cast<float>((Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval) / 100.F)).c_str());
+    ImGui::Text(("Depth: " + std::to_string(Search::currentDepth)).c_str());
+    ImGui::Columns(1);
     ImGui::End();
+
+    if (!thinking) {
+        thinking = true;
+        std::thread([]() {
+            Search::startIterativeSearch(*board, 100000);
+        }).detach();
+    }
 }
 
 
@@ -123,12 +139,45 @@ void Gui::renderChessBoard(float width, float height) {
 
     static int draggingPieceIndex = -1;
 
+    // Piece dragging logic
+    ImVec2 relativeBoardPos = pos - ImGui::GetWindowPos();
+    ImVec2 relativeMousePos = ImGui::GetIO().MousePos - ImGui::GetWindowPos() - relativeBoardPos;
+    if (relativeMousePos > ImVec2(0, 0) && relativeMousePos < size) {
+        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+            if (draggingPieceIndex == -1) {
+                int squareX = static_cast<int>(relativeMousePos.x) / static_cast<int>(size.x / 8);
+                int squareY = static_cast<int>(relativeMousePos.y) / static_cast<int>(size.y / 8);
+                if (board->getPiece(draggingPieceIndex) != NONE) {
+                    draggingPieceIndex = squareX + (7 - squareY) * 8;
+                    Search::searchCancelled = true;
+                }
+            }
+        }else if (!ImGui::IsMouseDown(ImGuiMouseButton_Left) && draggingPieceIndex != -1) {
+            int squareX = static_cast<int>(relativeMousePos.x) / static_cast<int>(size.x / 8);
+            int squareY = 7 - static_cast<int>(relativeMousePos.y) / static_cast<int>(size.y / 8);
+            int newSquareIndex = squareX + squareY * 8;
+
+            ArrayVec<Move, 218> legalMoves = Movegen::generateAllLegalMovesOnBoard(*board);
+            for (int i = 0; i < legalMoves.elements; i++) {
+                Move move = legalMoves.buffer[i];
+                if (board->move(move)) {
+                    if (move.from == draggingPieceIndex && move.to == newSquareIndex) {
+                        thinking = false;
+                        break;
+                    }
+                    board->undoMove(move);
+                }
+            }
+            draggingPieceIndex = -1;
+        }
+    }
+
     // Draw checkerboard
+    ImVec2 squareSize(width / 8.F, height / 8.F);
     for (int i = 0; i < 64; i++) {
         auto squareX = i & 7, squareY = i / 8;
 
-        ImVec2 squareSize(width / 8.F, height / 8.F);
-        ImVec2 squarePos(pos.x + squareX * squareSize.x, pos.y + squareY * squareSize.y);
+        ImVec2 squarePos(pos.x + static_cast<float>(squareX) * squareSize.x, pos.y + static_cast<float>(squareY) * squareSize.y);
 
         ImU32 squareColor = ImGui::ColorConvertFloat4ToU32(
             (squareX + squareY) % 2 ? ImVec4(0.71F, 0.53F, 0.39F, 1.F) : ImVec4(0.94F, 0.85F, 0.71F, 1.F)
@@ -137,14 +186,36 @@ void Gui::renderChessBoard(float width, float height) {
         ImGui::GetForegroundDrawList()->AddRectFilled(squarePos, squarePos + squareSize, squareColor);
     }
 
+    if (draggingPieceIndex != -1) {
+        ArrayVec<Move, 218> legalMoves = Movegen::generateAllLegalMovesOnBoard(*board);
+        for (int i = 0; i < legalMoves.elements; i++) {
+            Move move = legalMoves.buffer[i];
+            if (move.from != draggingPieceIndex)
+                continue;
+            if (board->move(move)) {
+                board->undoMove(move);
+
+                ImVec2 squarePos(pos.x + static_cast<float>(move.to & 7) * squareSize.x, pos.y + static_cast<float>(7 - move.to / 8) * squareSize.y);
+                ImGui::GetForegroundDrawList()->AddRectFilled(squarePos, squarePos + squareSize, ImGui::ColorConvertFloat4ToU32(ImVec4(0.5F, 0.9F, 0.5F, 0.3F)));
+            }
+        }
+    }
+
+    if (!Search::isNullMove(Search::bestMove)) {
+        ImVec2 squarePos(pos.x + static_cast<float>(Search::bestMove.to & 7) * squareSize.x, pos.y + static_cast<float>(7 - Search::bestMove.to / 8) * squareSize.y);
+        ImGui::GetForegroundDrawList()->AddRectFilled(squarePos, squarePos + squareSize, ImGui::ColorConvertFloat4ToU32(ImVec4(0.9F, 0.9F, 0.5F, 0.3F)));
+    }
+
     // Draw pieces
     for (int i = 0; i < 64; i++) {
-        displayPieceMailbox[i] = currentBoard->mailbox[i];
+        displayPieceMailbox[i] = board->mailbox[i];
+
+        if (i == draggingPieceIndex)
+            continue;
 
         auto squareX = i & 7, squareY = 7 - i / 8;
 
-        ImVec2 squareSize(width / 8.F, height / 8.F);
-        ImVec2 imagePos(pos.x + squareX * squareSize.x, pos.y + squareY * squareSize.y);
+        ImVec2 imagePos(pos.x + static_cast<float>(squareX) * squareSize.x, pos.y + static_cast<float>(squareY) * squareSize.y);
 
         if (displayPieceMailbox[i] != NONE) {
             ImGui::GetForegroundDrawList()->AddImage(pieceTextures[displayPieceMailbox[i]], imagePos,
@@ -152,16 +223,9 @@ void Gui::renderChessBoard(float width, float height) {
         }
     }
 
-    ImVec2 relativeMousePos = ImGui::GetIO().MousePos - ImGui::GetWindowPos() - pos;
-    ImGui::Text((std::to_string(pos.x) + " " + std::to_string(pos.y)).c_str());
-    if (relativeMousePos > ImVec2(0, 0) && relativeMousePos < size) {
-        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-            if (draggingPieceIndex == -1) {
-                int squareX = static_cast<int>(relativeMousePos.x) / static_cast<int>(size.x / 8);
-                int squareY = static_cast<int>(relativeMousePos.y) / static_cast<int>(size.y / 8);
-                std::cout << std::to_string(squareX) << " " << std::to_string(squareY) << std::endl;;
-            }
-        }
+    if (draggingPieceIndex != -1 && displayPieceMailbox[draggingPieceIndex] != NONE) {
+        ImVec2 drawPos = relativeMousePos - ImVec2(squareSize.x / 2, squareSize.y / 2);
+        ImGui::GetForegroundDrawList()->AddImage(pieceTextures[displayPieceMailbox[draggingPieceIndex]], pos + drawPos, pos + drawPos + squareSize);
     }
 }
 
@@ -199,7 +263,7 @@ void Gui::init(Board* board) {
     glfwSetWindowAttrib(window, GLFW_RESIZABLE, GLFW_FALSE);
 
     // New Board
-    currentBoard = board;
+    Gui::board = board;
 
     // Setup Dear Imgui
     setupImgui();

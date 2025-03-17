@@ -102,7 +102,7 @@ void Search::startIterativeSearch(Board &board, long time) {
     currentTimeMillis = getMillisSinceEpoch();
 
     // Lookup in opening book
-    Move move = OpeningBook::fetchNextBookMove(board);
+   /* Move move = OpeningBook::fetchNextBookMove(board);
     if (!isNullMove(move)) {
         bestMove = move;
         currentEval = 0;
@@ -110,7 +110,7 @@ void Search::startIterativeSearch(Board &board, long time) {
                 std::to_string(bestMove.to) << ":" << StandardAlgebraicNotation::boardToSan(board, bestMove) <<
                 std::endl;
         return;
-    }
+    }*/
 
     std::vector<std::thread> threads;
     threads.reserve(MAX_THREADS);

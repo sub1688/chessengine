@@ -11,10 +11,12 @@ static bool operator>(const ImVec2& lhs, const ImVec2& rhs)   { return lhs.x > r
 static bool operator<(const ImVec2& lhs, const ImVec2& rhs)   { return lhs.x < rhs.x && lhs.y < rhs.y; }
 
 namespace Gui {
-    inline Board* currentBoard;
+    inline Board* board;
     inline GLFWwindow* window;
     inline GLuint pieceTextures[12];
     inline PIECE displayPieceMailbox[64];
+
+    inline bool thinking = false;
 
     void init(Board* board);
     void setupImgui();
