@@ -17,6 +17,7 @@
 #define BLACK_ROOK 11
 
 #define PIECE uint8_t
+#define SQUARE uint8_t
 
 #define GET_MOVE_FROM_BITS(bits, move)        \
     do {                                      \

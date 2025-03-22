@@ -107,6 +107,7 @@ int main() {
 
     Board board;
     board.setStartingPosition();
+    board.importFEN("rnb1kbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 
     std::cout << "[+] Move generator init...\n";
     Movegen::init();

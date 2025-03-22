@@ -1,6 +1,5 @@
 #include "transpositiontable.h"
 #include <cstring>
-
 #include "search.h"
 
 void TranspositionTable::addEntry(uint64_t zobristKey, Move bestMove, int rootDepth, int depthSearched, int score,

@@ -108,27 +108,71 @@ void Gui::render() {
     ImGui::PopStyleColor(3);
     ImGui::PopStyleVar();
 
+    ImGui::BeginTabBar("tabs");
 
-    ImGui::Columns(2);
-    renderChessBoard(ImGui::GetColumnWidth() - ImGui::GetStyle().WindowPadding.x * 2, ImGui::GetColumnWidth() - ImGui::GetStyle().WindowPadding.x * 2);
-    ImGui::Text("Max Threads:");
-    ImGui::SliderInt("", &Search::MAX_THREADS, 1, static_cast<int>(std::thread::hardware_concurrency()));
-    ImGui::NextColumn();
-    ImGui::Text(("Engine Evaluation: " + std::to_string(static_cast<float>((Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval) / 100.F)).c_str());
-    ImGui::Text(("Depth: " + std::to_string(Search::currentDepth)).c_str());
-    ImGui::Columns(1);
+    if (ImGui::BeginTabItem("Analysis")) {
+        ImGui::Columns(2);
+        const float evaluationBarWidth = ImGui::GetColumnWidth() / 25.F;
+        renderEvaluationBar(Search::currentEval, evaluationBarWidth, ImGui::GetColumnWidth() - ImGui::GetStyle().WindowPadding.x * 3 - evaluationBarWidth);
+        ImGui::SameLine();
+        renderChessBoard(ImGui::GetColumnWidth() - ImGui::GetStyle().WindowPadding.x * 3 - evaluationBarWidth, ImGui::GetColumnWidth() - ImGui::GetStyle().WindowPadding.x * 3 - evaluationBarWidth, true);
+        ImGui::Text("Max Threads:");
+        ImGui::SliderInt(" ", &Search::MAX_THREADS, 1, static_cast<int>(std::thread::hardware_concurrency()));
+        ImGui::NextColumn();
+        std::string str = std::to_string(static_cast<float>((Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval) / 100.F);
+        if (abs((Search::lastSearchTurnIsWhite ? 1 : -1) * Search::currentEval) > MATE_THRESHOLD) {
+
+            str = "#" + std::to_string(static_cast<int>((Search::POSITIVE_INFINITY - abs(
+
+                                                             static_cast<float>(
+
+                                                                 (Search::lastSearchTurnIsWhite ? 1 : -1) *
+
+                                                                 Search::currentEval)))
+
+                                                        / 2 + 1));
+
+        }
+        ImGui::Text(("Engine Evaluation: " + str).c_str());
+        ImGui::Text(("Depth: " + std::to_string(Search::currentDepth)).c_str());
+        ImGui::Columns(1);
+        ImGui::EndTabItem();
+
+        if (currentSearchType == NO_SEARCH) {
+            currentSearchType = ANALYSIS_SEARCH;
+
+            std::thread([]() {
+                Search::startIterativeSearch(*board, 100000);
+            }).detach();
+        }
+    }
+    if (ImGui::BeginTabItem("Game")) {
+        if (currentSearchType == ANALYSIS_SEARCH) {
+            currentSearchType = NO_SEARCH;
+            Search::searchCancelled = true;
+        }
+        renderChessBoard(ImGui::GetWindowHeight() - ImGui::GetCurrentWindow()->MenuBarHeight - ImGui::GetCurrentTabBar()->BarRect.GetHeight() - ImGui::GetStyle().WindowPadding.x * 2, ImGui::GetWindowHeight() - ImGui::GetCurrentWindow()->MenuBarHeight - ImGui::GetCurrentTabBar()->BarRect.GetHeight() - ImGui::GetStyle().WindowPadding.x * 2, false);
+
+        if (currentSearchType == NO_SEARCH && Search::searchCancelled && !board->whiteToMove) {
+            currentSearchType = GAME_SEARCH;
+            std::thread([] {
+                Search::startIterativeSearch(*board, 5000);
+                lastMoveByBot = Search::bestMove;
+                moveAnimation = ImVec2(0, 0);
+                board->move(Search::bestMove);
+            }).detach();
+        }
+
+        ImGui::EndTabItem();
+    }
+
+    ImGui::EndTabBar();
     ImGui::End();
 
-    if (!thinking) {
-        thinking = true;
-        std::thread([]() {
-            Search::startIterativeSearch(*board, 100000);
-        }).detach();
-    }
 }
 
 
-void Gui::renderChessBoard(float width, float height) {
+void Gui::renderChessBoard(float width, float height, bool analyze) {
     const char* id = "board";
 
     ImVec2 pos = ImGui::GetCurrentWindow()->DC.CursorPos;
@@ -162,7 +206,7 @@ void Gui::renderChessBoard(float width, float height) {
                 Move move = legalMoves.buffer[i];
                 if (board->move(move)) {
                     if (move.from == draggingPieceIndex && move.to == newSquareIndex) {
-                        thinking = false;
+                        currentSearchType = NO_SEARCH;
                         break;
                     }
                     board->undoMove(move);
@@ -183,7 +227,7 @@ void Gui::renderChessBoard(float width, float height) {
             (squareX + squareY) % 2 ? ImVec4(0.71F, 0.53F, 0.39F, 1.F) : ImVec4(0.94F, 0.85F, 0.71F, 1.F)
         );
 
-        ImGui::GetForegroundDrawList()->AddRectFilled(squarePos, squarePos + squareSize, squareColor);
+        ImGui::GetWindowDrawList()->AddRectFilled(squarePos, squarePos + squareSize, squareColor);
     }
 
     if (draggingPieceIndex != -1) {
@@ -196,14 +240,9 @@ void Gui::renderChessBoard(float width, float height) {
                 board->undoMove(move);
 
                 ImVec2 squarePos(pos.x + static_cast<float>(move.to & 7) * squareSize.x, pos.y + static_cast<float>(7 - move.to / 8) * squareSize.y);
-                ImGui::GetForegroundDrawList()->AddRectFilled(squarePos, squarePos + squareSize, ImGui::ColorConvertFloat4ToU32(ImVec4(0.5F, 0.9F, 0.5F, 0.3F)));
+                ImGui::GetWindowDrawList()->AddRectFilled(squarePos, squarePos + squareSize, ImGui::ColorConvertFloat4ToU32(ImVec4(0.5F, 0.9F, 0.5F, 0.3F)));
             }
         }
-    }
-
-    if (!Search::isNullMove(Search::bestMove)) {
-        ImVec2 squarePos(pos.x + static_cast<float>(Search::bestMove.to & 7) * squareSize.x, pos.y + static_cast<float>(7 - Search::bestMove.to / 8) * squareSize.y);
-        ImGui::GetForegroundDrawList()->AddRectFilled(squarePos, squarePos + squareSize, ImGui::ColorConvertFloat4ToU32(ImVec4(0.9F, 0.9F, 0.5F, 0.3F)));
     }
 
     // Draw pieces
@@ -218,17 +257,101 @@ void Gui::renderChessBoard(float width, float height) {
         ImVec2 imagePos(pos.x + static_cast<float>(squareX) * squareSize.x, pos.y + static_cast<float>(squareY) * squareSize.y);
 
         if (displayPieceMailbox[i] != NONE) {
-            ImGui::GetForegroundDrawList()->AddImage(pieceTextures[displayPieceMailbox[i]], imagePos,
-                                                     imagePos + squareSize);
+            if (!Search::isNullMove(lastMoveByBot) && lastMoveByBot.to == i && lastMoveByBot.pieceFrom == displayPieceMailbox[i]) {
+                auto prevSquareX = lastMoveByBot.from & 7, prevSquareY = 7 - lastMoveByBot.from / 8;
+                ImVec2 prevImagePos(pos.x + static_cast<float>(prevSquareX) * squareSize.x, pos.y + static_cast<float>(prevSquareY) * squareSize.y);
+                if (moveAnimation.x == 0 && moveAnimation.y == 0) {
+                    moveAnimation = prevImagePos;
+                }
+                ImVec2 addition = ImVec2((imagePos.x - moveAnimation.x) / 6.F,(imagePos.y - moveAnimation.y) / 6.F);
+                moveAnimation = moveAnimation + addition;
+
+                ImGui::GetWindowDrawList()->AddImage(pieceTextures[displayPieceMailbox[i]], moveAnimation,
+                                                     moveAnimation + squareSize);;
+            }else {
+                ImGui::GetWindowDrawList()->AddImage(pieceTextures[displayPieceMailbox[i]], imagePos,
+                                                         imagePos + squareSize);
+            }
         }
     }
 
     if (draggingPieceIndex != -1 && displayPieceMailbox[draggingPieceIndex] != NONE) {
         ImVec2 drawPos = relativeMousePos - ImVec2(squareSize.x / 2, squareSize.y / 2);
-        ImGui::GetForegroundDrawList()->AddImage(pieceTextures[displayPieceMailbox[draggingPieceIndex]], pos + drawPos, pos + drawPos + squareSize);
+        ImGui::GetWindowDrawList()->AddImage(pieceTextures[displayPieceMailbox[draggingPieceIndex]], pos + drawPos, pos + drawPos + squareSize);
+    }
+
+    if (!Search::isNullMove(Search::bestMove) && analyze) {
+        ImVec2 squarePos(pos.x + static_cast<float>(Search::bestMove.to & 7) * squareSize.x + squareSize.x / 2, pos.y + static_cast<float>(7 - Search::bestMove.to / 8) * squareSize.y + squareSize.y / 2);
+        ImVec2 fromSquarePos(pos.x + static_cast<float>(Search::bestMove.from & 7) * squareSize.x + squareSize.x / 2, pos.y + static_cast<float>(7 - Search::bestMove.from / 8) * squareSize.y + squareSize.y / 2);
+        drawArrow(fromSquarePos, squarePos, width * 0.086F, width * 0.02323F, ImGui::ColorConvertFloat4ToU32(ImVec4(0.5, 0.7, 0.5, 0.6)));
     }
 }
 
+void Gui::renderEvaluationBar(int eval, float width, float height) {
+    const char* id = "bar";
+
+    ImVec2 pos = ImGui::GetCurrentWindow()->DC.CursorPos;
+    ImVec2 size = ImVec2(width, height);
+    ImRect rect = ImRect(pos, pos + size);
+    ImGui::ItemSize(rect);
+    ImGui::ItemAdd(rect, ImGui::GetCurrentWindow()->GetID(id));
+
+    ImGui::GetWindowDrawList()->AddRectFilled(pos, pos + size, ImGui::ColorConvertFloat4ToU32(ImVec4(0.17F, 0.17F, 0.17F, 1.0F)));
+
+    float trueEval = static_cast<float>((Search::lastSearchTurnIsWhite ? 1 : -1) * eval) / 100.F;
+
+    float evalOffset = trueEval >= 0
+                           ? height / 2 + height / 2 / -(trueEval / 5.F + 1.F)
+                           : -(height / 2 + height / 2 / -(-trueEval / 5.F + 1.F));
+
+    if (abs(eval) > 30000) {
+        smoothEvalOffset += (trueEval < 0 ? -height / 2 - smoothEvalOffset : height / 2 - smoothEvalOffset) / 8.F;
+    }else {
+        smoothEvalOffset += (evalOffset - smoothEvalOffset) / 20.F;
+    }
+
+    float evalHeight = height / 2 + smoothEvalOffset;
+
+    ImGui::GetWindowDrawList()->AddRectFilled(pos + ImVec2(0, height - evalHeight), pos + size, 0xFFFFFFFF);
+}
+
+
+void Gui::drawArrow(ImVec2 from, ImVec2 to, float arrowSize = 40.0f, float thickness = 20.0f, ImU32 color = IM_COL32(255, 255, 255, 255))
+{
+    ImDrawList* draw_list = ImGui::GetWindowDrawList();
+
+    // Compute direction vector (normalized)
+    ImVec2 dir = ImVec2(to.x - from.x, to.y - from.y);
+    float length = sqrtf(dir.x * dir.x + dir.y * dir.y);
+    if (length == 0.0f) return; // Prevent division by zero
+    dir.x /= length;
+    dir.y /= length;
+
+    // Perpendicular vector for width
+    ImVec2 perp(-dir.y, dir.x);
+
+    // Adjusted shaft endpoint to avoid overlap with arrowhead
+    ImVec2 shaft_end = ImVec2(to.x - dir.x * arrowSize, to.y - dir.y * arrowSize);
+
+    // Compute shaft quad vertices
+    ImVec2 shaft_left = ImVec2(from.x + perp.x * thickness * 0.5f, from.y + perp.y * thickness * 0.5f);
+    ImVec2 shaft_right = ImVec2(from.x - perp.x * thickness * 0.5f, from.y - perp.y * thickness * 0.5f);
+    ImVec2 end_left = ImVec2(shaft_end.x + perp.x * thickness * 0.5f, shaft_end.y + perp.y * thickness * 0.5f);
+    ImVec2 end_right = ImVec2(shaft_end.x - perp.x * thickness * 0.5f, shaft_end.y - perp.y * thickness * 0.5f);
+
+    // Compute arrowhead points
+    ImVec2 arrow_left = ImVec2(to.x - dir.x * arrowSize + perp.x * arrowSize * 0.65f,
+                               to.y - dir.y * arrowSize + perp.y * arrowSize * 0.65f);
+    ImVec2 arrow_right = ImVec2(to.x - dir.x * arrowSize - perp.x * arrowSize * 0.65f,
+                                to.y - dir.y * arrowSize - perp.y * arrowSize * 0.65f);
+
+    // Draw shaft (filled quad)
+    draw_list->AddQuadFilled(shaft_left, shaft_right, end_right, end_left, color);
+
+    // Draw arrowhead (filled triangle)
+    draw_list->AddTriangleFilled(to, arrow_left, arrow_right, color);
+
+}
 
 void Gui::init(Board* board) {
     std::cout << "[+] Imgui opengl3 init...\n";
