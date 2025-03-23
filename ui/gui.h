@@ -24,6 +24,7 @@ namespace Gui {
     inline float smoothEvalOffset = 0;
     inline Move lastMoveByBot = Move();
     inline ImVec2 moveAnimation = ImVec2(0, 0);
+    inline int timeToThink = 5000;
 
     void init(Board* board);
     void setupImgui();

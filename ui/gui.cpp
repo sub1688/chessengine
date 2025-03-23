@@ -151,15 +151,21 @@ void Gui::render() {
             currentSearchType = NO_SEARCH;
             Search::searchCancelled = true;
         }
-        renderChessBoard(ImGui::GetWindowHeight() - ImGui::GetCurrentWindow()->MenuBarHeight - ImGui::GetCurrentTabBar()->BarRect.GetHeight() - ImGui::GetStyle().WindowPadding.x * 2, ImGui::GetWindowHeight() - ImGui::GetCurrentWindow()->MenuBarHeight - ImGui::GetCurrentTabBar()->BarRect.GetHeight() - ImGui::GetStyle().WindowPadding.x * 2, false);
+        ImGui::Columns(2);
+        renderChessBoard(ImGui::GetColumnWidth() - ImGui::GetStyle().WindowPadding.x * 2, ImGui::GetColumnWidth() - ImGui::GetStyle().WindowPadding.x * 2, false);
+        ImGui::NextColumn();
+        ImGui::SliderInt("Time to think", &timeToThink, 10, 20000);
+        ImGui::Columns(1);
 
-        if (currentSearchType == NO_SEARCH && Search::searchCancelled && !board->whiteToMove) {
+        if (currentSearchType == NO_SEARCH && Search::searchCancelled && !board->isDrawn() && !Movegen::inCheckmate(*board)/* && !board->whiteToMove*/) {
             currentSearchType = GAME_SEARCH;
             std::thread([] {
-                Search::startIterativeSearch(*board, 5000);
+                Search::startIterativeSearch(*board, timeToThink);
                 lastMoveByBot = Search::bestMove;
                 moveAnimation = ImVec2(0, 0);
                 board->move(Search::bestMove);
+                currentSearchType = NO_SEARCH;
+                Search::searchCancelled = true;
             }).detach();
         }
 

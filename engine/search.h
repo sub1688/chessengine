@@ -32,7 +32,7 @@ struct ThreadWorkerInfo
 };
 
 namespace Search {
-    static int MAX_THREADS = std::thread::hardware_concurrency() / 2;
+    static int MAX_THREADS = 1;
 
     inline constexpr Move NULL_MOVE = Move();
 

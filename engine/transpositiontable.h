@@ -13,7 +13,7 @@
 
 #define EXTRACT_BEST_MOVE_BITS(x) (x & 0xFFFFFFF)
 #define EXTRACT_DEPTH_SEARCHED(x) ((x >> 28) & 0xFF)
-#define EXTRACT_SCORE(x) (((x >> 36) & 0xFFFF) - 30000)
+#define EXTRACT_SCORE(x) (((x >> 36) & 0xFFFF) - 32000)
 #define EXTRACT_NODE_TYPE(x) ((x >> 52) & 0b11)
 
 /**
@@ -42,7 +42,7 @@ struct TranspositionEntry {
     [[nodiscard]] uint64_t getBitsFromData(Move bestMove, uint8_t depthSearched, int score, uint8_t nodeType) const {
         return bestMove.getMoveBits() |
            static_cast<uint64_t>(depthSearched) << 28ULL |
-           static_cast<uint64_t>(score + 30000) << 36ULL |
+           static_cast<uint64_t>(score + 32000) << 36ULL |
            static_cast<uint64_t>(nodeType) << 52ULL;
     }
 };

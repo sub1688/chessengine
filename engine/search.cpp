@@ -233,9 +233,9 @@ SearchResult Search::search(Board &board, ThreadWorkerInfo *threadWorkerInfoPtr,
         }
 
         if (alpha >= beta) {
-            nodeType = LOWER_BOUND;
             storeKillerMove(threadWorkerInfoPtr, move, depth);
-            break;
+            transpositionTable.addEntry(board.currentZobristKey, bestMove, rootDepth, depth, beta, LOWER_BOUND);
+            return {beta, bestMove};
         }
     }
 
@@ -244,10 +244,6 @@ SearchResult Search::search(Board &board, ThreadWorkerInfo *threadWorkerInfoPtr,
     }
 
     if (!searchCancelled) {
-        if (alpha >= beta) {
-            transpositionTable.addEntry(board.currentZobristKey, bestMove, rootDepth, depth, beta, nodeType);
-            return {beta, bestMove};
-        }
         transpositionTable.addEntry(board.currentZobristKey, bestMove, rootDepth, depth, alpha, nodeType);
     }
     return {alpha, bestMove};
@@ -273,7 +269,6 @@ int Search::negatedPrincipalVariationSearch(Board &board, ThreadWorkerInfo *thre
                                inPrincipalVariation).evaluation;
         firstMove = false;
     } else {
-        // Late move reductions
         // Principal Variation Search: try a null window search first
         negatedScore = -search(board, threadWorkerInfoPtr, rootDepth + 1, depth - 1, -alpha - 1, -alpha, wasNullSearch,
                                inPrincipalVariation).evaluation;
