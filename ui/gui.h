@@ -2,6 +2,8 @@
 
 #include "../engine/board.h"
 #include <imgui.h>
+#include <vector>
+
 #include "GLFW/glfw3.h"
 #include "font.embed"
 
@@ -25,6 +27,7 @@ namespace Gui {
     inline Move lastMoveByBot = Move();
     inline ImVec2 moveAnimation = ImVec2(0, 0);
     inline int timeToThink = 5000;
+    inline std::vector<Move> arrows = std::vector<Move>();
 
     void init(Board* board);
     void setupImgui();

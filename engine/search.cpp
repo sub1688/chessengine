@@ -80,6 +80,9 @@ void Search::threadSearch(ThreadWorkerInfo *info) {
             currentDepth = info->depthToSearch;
             bestMove = result.bestMove;
             times[currentDepth] = getMillisSinceEpoch() - currentTimeMillis;
+            timesFloat[currentDepth] = static_cast<float>(times[currentDepth]);
+            depths[currentDepth] = static_cast<float>(currentDepth);
+            evaluations[info->board.moveNumber] = static_cast<float>(currentEval) / 100.F * static_cast<float>(lastSearchTurnIsWhite ? 1 : -1);
 
             std::cout << currentDepth << ":" << std::to_string(currentEval) << ":" << std::to_string(bestMove.from) <<
                     "," << std::to_string(bestMove.to) << ":" << StandardAlgebraicNotation::boardToSan(
@@ -92,6 +95,8 @@ void Search::threadSearch(ThreadWorkerInfo *info) {
 
 void Search::startIterativeSearch(Board &board, long time) {
     std::memset(&times, 0, sizeof(times));
+    std::memset(&timesFloat, 0, sizeof(timesFloat));
+    std::memset(&depths, 0, sizeof(depths));
 
     nullPrunes = 0;
     searchCancelled = false;
@@ -131,7 +136,6 @@ void Search::startIterativeSearch(Board &board, long time) {
     }
 }
 
-// TODO: Null Move Pruning
 SearchResult Search::search(Board &board, ThreadWorkerInfo *threadWorkerInfoPtr, int rootDepth, int depth, int alpha,
                             int beta, bool wasNullSearch, bool inPrincipalVariation) {
     nodesCounted++;
@@ -386,7 +390,7 @@ int Search::evaluateKingDistance(uint8_t squareIndex, uint8_t otherKingIndex, ui
     int file1 = squareIndex % 8, rank1 = squareIndex / 8;
     int file2 = otherKingIndex % 8, rank2 = otherKingIndex / 8;
 
-    return (std::abs(file1 - file2) + std::abs(rank1 - rank2)) * -20;
+    return (std::abs(file1 - file2) + std::abs(rank1 - rank2)) * -50;
 }
 
 void Search::storeKillerMove(ThreadWorkerInfo *threadWorkerInfoPtr, Move move, int depth) {

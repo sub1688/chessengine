@@ -32,7 +32,7 @@ struct ThreadWorkerInfo
 };
 
 namespace Search {
-    static int MAX_THREADS = 1;
+    static int MAX_THREADS = std::thread::hardware_concurrency() / 2;
 
     inline constexpr Move NULL_MOVE = Move();
 
@@ -205,6 +205,9 @@ namespace Search {
     inline long searchDuration = 0;
     inline int currentEval = 0;
     inline long times[256] = {};
+    inline float evaluations[1024] = {};
+    inline float timesFloat[256] = {};
+    inline float depths[256] = {};
     inline int currentDepth = 0;
     inline bool lastSearchTurnIsWhite = true;
     inline long nodesCounted = 0;

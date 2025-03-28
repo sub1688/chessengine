@@ -59,8 +59,8 @@ public:
 
     int tableLookup(uint64_t zobristKey, TranspositionEntry &out);
 
-    int correctScoreForStorage(int score, int rootDepth);
-    int correctScoreForRetrieval(int score, int rootDepth);
+    static int correctScoreForStorage(int score, int rootDepth);
+    static int correctScoreForRetrieval(int score, int rootDepth);
 
     void addEntry(uint64_t zobristKey, Move bestMove, int rootDepth, int depthSearched, int score, int nodeType);
     void clear();

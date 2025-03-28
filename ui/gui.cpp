@@ -1,6 +1,7 @@
 #include "gui.h"
 
 #include <imgui_internal.h>
+#include <implot.h>
 
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -135,6 +136,37 @@ void Gui::render() {
         }
         ImGui::Text(("Engine Evaluation: " + str).c_str());
         ImGui::Text(("Depth: " + std::to_string(Search::currentDepth)).c_str());
+
+        ImPlot::GetStyle().Colors[ImPlotCol_FrameBg] = ImColor(35, 35, 35, 255);
+        if (ImPlot::BeginPlot("Evaluation"))
+        {
+            float maxEvaluation = 1;
+
+            for (int i = 0; i < board->moveNumber + 1; i++)
+            {
+                if (maxEvaluation < abs(Search::evaluations[i]))
+                    maxEvaluation = abs(Search::evaluations[i]);
+            }
+
+            maxEvaluation = std::min(maxEvaluation, 30.F);
+
+            ImPlot::SetupAxes("Move", "Evaluation", ImPlotAxisFlags_LockMin | ImPlotAxisFlags_LockMax);
+            ImPlot::SetupAxisLimits(ImAxis_X1, 0, board->moveNumber, ImGuiCond_Always);
+            ImPlot::SetupAxisLimits(ImAxis_Y1, -maxEvaluation - 1, maxEvaluation + 1, ImGuiCond_Always); // Adjust Y scale dynamically
+            ImPlot::PlotLine<float>("Evaluation", Search::evaluations, board->moveNumber + 1);
+
+            ImPlot::EndPlot();
+        }
+
+        if (ImPlot::BeginPlot("Time to depth"))
+        {
+            ImPlot::SetupAxes("Depth", "Time/ms", ImPlotAxisFlags_LockMin | ImPlotAxisFlags_LockMax);
+            ImPlot::SetupAxisLimits(ImAxis_X1, 0, Search::currentDepth, ImGuiCond_Always);
+            ImPlot::SetupAxisLimits(ImAxis_Y1, 0, Search::timesFloat[Search::currentDepth], ImGuiCond_Always); // Adjust Y scale dynamically
+            ImPlot::PlotLine<float>("Time to depth", Search::timesFloat, Search::currentDepth + 1);
+            ImPlot::EndPlot();
+        }
+
         ImGui::Columns(1);
         ImGui::EndTabItem();
 
@@ -142,7 +174,7 @@ void Gui::render() {
             currentSearchType = ANALYSIS_SEARCH;
 
             std::thread([]() {
-                Search::startIterativeSearch(*board, 100000);
+                Search::startIterativeSearch(*board, 2000000);
             }).detach();
         }
     }
@@ -157,7 +189,7 @@ void Gui::render() {
         ImGui::SliderInt("Time to think", &timeToThink, 10, 20000);
         ImGui::Columns(1);
 
-        if (currentSearchType == NO_SEARCH && Search::searchCancelled && !board->isDrawn() && !Movegen::inCheckmate(*board)/* && !board->whiteToMove*/) {
+        if (currentSearchType == NO_SEARCH && Search::searchCancelled && !board->isDrawn() && !Movegen::inCheckmate(*board) && !board->whiteToMove) {
             currentSearchType = GAME_SEARCH;
             std::thread([] {
                 Search::startIterativeSearch(*board, timeToThink);
@@ -188,12 +220,54 @@ void Gui::renderChessBoard(float width, float height, bool analyze) {
     ImGui::ItemAdd(rect, ImGui::GetCurrentWindow()->GetID(id));
 
     static int draggingPieceIndex = -1;
+    static int draggingArrowIndex = -1;
 
     // Piece dragging logic
     ImVec2 relativeBoardPos = pos - ImGui::GetWindowPos();
     ImVec2 relativeMousePos = ImGui::GetIO().MousePos - ImGui::GetWindowPos() - relativeBoardPos;
-    if (relativeMousePos > ImVec2(0, 0) && relativeMousePos < size) {
+    if (relativeMousePos > ImVec2(0, 0) && relativeMousePos < size)
+    {
+        if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && draggingArrowIndex == -1)
+        {
+            int squareX = static_cast<int>(relativeMousePos.x) / static_cast<int>(size.x / 8);
+            int squareY = static_cast<int>(relativeMousePos.y) / static_cast<int>(size.y / 8);
+            draggingArrowIndex = squareX + (7 - squareY) * 8;
+            arrows.push_back(Move(draggingArrowIndex, draggingArrowIndex));
+        }else if (!ImGui::IsMouseDown(ImGuiMouseButton_Right) && draggingArrowIndex != -1)
+        {
+            if (!arrows.empty())
+                arrows.resize(arrows.size() - 1);
+            int squareX = static_cast<int>(relativeMousePos.x) / static_cast<int>(size.x / 8);
+            int squareY = 7 - static_cast<int>(relativeMousePos.y) / static_cast<int>(size.y / 8);
+            int newSquareIndex = squareX + squareY * 8;
+            if (newSquareIndex != draggingArrowIndex)
+            {
+                // Check if arrow already exists
+                bool exists = false;
+                for (Move m : arrows)
+                    if (m == Move(draggingArrowIndex, newSquareIndex))
+                        exists = true;
+                if (!exists)
+                    arrows.push_back(Move(draggingArrowIndex, newSquareIndex));
+                else if (!arrows.empty()) {
+                    arrows.resize(arrows.size() - 1);
+                }
+            }
+            draggingArrowIndex = -1;
+        }else if (ImGui::IsMouseDown(ImGuiMouseButton_Right) && draggingArrowIndex != -1)
+        {
+            int squareX = static_cast<int>(relativeMousePos.x) / static_cast<int>(size.x / 8);
+            int squareY = 7 - static_cast<int>(relativeMousePos.y) / static_cast<int>(size.y / 8);
+            int newSquareIndex = squareX + squareY * 8;
+            if (newSquareIndex != draggingArrowIndex)
+            {
+                if (!arrows.empty())
+                    arrows.resize(arrows.size() - 1);
+                arrows.push_back(Move(draggingArrowIndex, newSquareIndex));
+            }
+        }
         if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+            arrows.clear();
             if (draggingPieceIndex == -1) {
                 int squareX = static_cast<int>(relativeMousePos.x) / static_cast<int>(size.x / 8);
                 int squareY = static_cast<int>(relativeMousePos.y) / static_cast<int>(size.y / 8);
@@ -289,7 +363,14 @@ void Gui::renderChessBoard(float width, float height, bool analyze) {
     if (!Search::isNullMove(Search::bestMove) && analyze) {
         ImVec2 squarePos(pos.x + static_cast<float>(Search::bestMove.to & 7) * squareSize.x + squareSize.x / 2, pos.y + static_cast<float>(7 - Search::bestMove.to / 8) * squareSize.y + squareSize.y / 2);
         ImVec2 fromSquarePos(pos.x + static_cast<float>(Search::bestMove.from & 7) * squareSize.x + squareSize.x / 2, pos.y + static_cast<float>(7 - Search::bestMove.from / 8) * squareSize.y + squareSize.y / 2);
-        drawArrow(fromSquarePos, squarePos, width * 0.086F, width * 0.02323F, ImGui::ColorConvertFloat4ToU32(ImVec4(0.5, 0.7, 0.5, 0.6)));
+        drawArrow(fromSquarePos, squarePos, width * 0.086F / 1.2F, width * 0.02323F / 1.2F, ImGui::ColorConvertFloat4ToU32(ImVec4(0.5, 0.7, 0.5, 0.6)));
+    }
+
+    for (Move m : arrows)
+    {
+        ImVec2 squarePos(pos.x + static_cast<float>(m.to & 7) * squareSize.x + squareSize.x / 2, pos.y + static_cast<float>(7 - m.to / 8) * squareSize.y + squareSize.y / 2);
+        ImVec2 fromSquarePos(pos.x + static_cast<float>(m.from & 7) * squareSize.x + squareSize.x / 2, pos.y + static_cast<float>(7 - m.from / 8) * squareSize.y + squareSize.y / 2);
+        drawArrow(fromSquarePos, squarePos, width * 0.086F / 1.2F, width * 0.02323F / 1.2F, ImGui::ColorConvertFloat4ToU32(ImVec4(0.7, 0.2, 0.2, 0.6)));
     }
 }
 
@@ -391,6 +472,7 @@ void Gui::init(Board* board) {
     glfwSetWindowAttrib(window, GLFW_DECORATED, GLFW_FALSE);
     glfwSetWindowAttrib(window, GLFW_RESIZABLE, GLFW_FALSE);
 
+
     // New Board
     Gui::board = board;
 
@@ -405,6 +487,7 @@ void Gui::init(Board* board) {
 void Gui::setupImgui() {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
+    ImPlot::CreateContext();
 
     ImGuiIO& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
@@ -476,5 +559,6 @@ void Gui::setupImgui() {
 
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
+    ImPlot::DestroyContext();
     ImGui::DestroyContext();
 }
