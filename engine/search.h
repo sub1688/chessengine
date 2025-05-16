@@ -171,13 +171,13 @@ namespace Search {
     };
 
     inline constexpr int PIECE_VALUES[12] = {
-        100,
+        110,
         300,
         300,
         910,
         100000,
         500,
-        -100,
+        -110,
         -300,
         -300,
         -910,
@@ -193,6 +193,9 @@ namespace Search {
     */
     inline constexpr int NEGATIVE_INFINITY = -32000;
     inline constexpr int POSITIVE_INFINITY = 32000;
+
+    inline constexpr int BISHOP_PAIR_BONUS = 40;
+    inline constexpr int MOBILITY_SCORE = 5;
 
     inline constexpr int TRANSPOSITION_TABLE_BIAS = 10000000;
     inline constexpr int KILLER_MOVE_BIAS = 9000000;

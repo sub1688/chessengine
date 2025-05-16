@@ -76,7 +76,7 @@ namespace Movegen {
 
     uint64_t perft(Board &board, int depth);
 
-    void generatePseudoLegalMoves(Board& board, uint8_t squareIndex, uint8_t piece, bool white, bool capturesOnly, ArrayVec<Move, 218> &movesVec);
+    void generatePseudoLegalMoves(Board& board, uint8_t squareIndex, uint8_t piece, bool white, bool capturesOnly, bool excludeKing, ArrayVec<Move, 218> &movesVec);
 
     uint64_t generatePseudoLegalBishopMoves(Board &board, uint8_t squareIndex, bool white);
 
@@ -130,7 +130,9 @@ namespace Movegen {
 
     ArrayVec<Move, 218> generateAllLegalMovesOnBoard(Board& board);
 
-    ArrayVec<Move, 218> generateAllLegalMovesOnBoard(Board& board, bool capturesOnly);
+    ArrayVec<Move, 218> generateAllLegalMovesOnBoardAndExcludeKing(Board& board);
+
+    ArrayVec<Move, 218> generateAllLegalMovesOnBoard(Board& board, bool capturesOnly, bool excludeKing);
 
     bool isSquareAttacked(Board &board, uint8_t kingIndex, bool white);
 

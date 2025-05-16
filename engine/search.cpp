@@ -302,7 +302,7 @@ int Search::quiesce(Board &board, int alpha, int beta) {
         alpha = standingPat;
 
 
-    ArrayVec<Move, 218> captures = Movegen::generateAllLegalMovesOnBoard(board, true);
+    ArrayVec<Move, 218> captures = Movegen::generateAllLegalMovesOnBoard(board, true, false);
     orderMoves(captures, 1, nullptr, NULL_MOVE, 0);
 
     for (int i = 0; i < captures.elements; i++) {
@@ -327,9 +327,11 @@ int Search::evaluate(Board &board) {
 
     uint64_t bitboard = board.BITBOARD_OCCUPANCY;
     int materialDelta = 0;
+
     while (bitboard) {
         uint8_t index = Movegen::popLeastSignificantBitAndGetIndex(bitboard);
         uint8_t piece = board.getPiece(index);
+
         materialDelta += getPieceValue(piece);
         totalValue += static_cast<int>(
                     PieceSquareTable::PIECE_SQUARE_TABLE[piece][index] * endgameBias +
@@ -340,6 +342,23 @@ int Search::evaluate(Board &board) {
     }
 
     totalValue += materialDelta;
+
+    // Evaluate Bishop Pair
+    int positiveBishopCount = __builtin_popcountll(board.BITBOARDS[board.whiteToMove ? WHITE_BISHOP : BLACK_BISHOP]);
+    int negativeBishopCount = __builtin_popcountll(board.BITBOARDS[board.whiteToMove ? BLACK_BISHOP : WHITE_BISHOP]);
+
+    if (positiveBishopCount >= 2) {
+        totalValue += BISHOP_PAIR_BONUS;
+    }
+    if (negativeBishopCount >= 2) {
+        totalValue -= BISHOP_PAIR_BONUS;
+    }
+
+    // Evaluate Mobility
+    totalValue += static_cast<int>(Movegen::generateAllLegalMovesOnBoard(board, false, true).elements) * MOBILITY_SCORE;
+    board.whiteToMove = !board.whiteToMove;
+    totalValue -= static_cast<int>(Movegen::generateAllLegalMovesOnBoard(board, false, true).elements) * MOBILITY_SCORE;
+    board.whiteToMove = !board.whiteToMove;
 
     if (endgameBias < 0.18) {
         uint64_t whiteKing = std::countr_zero(board.BITBOARDS[WHITE_KING]);

@@ -42,24 +42,29 @@ uint64_t Movegen::perft(Board &board, int depth) {
     return perftCount;
 }
 
-ArrayVec<Move, 218> Movegen::generateAllLegalMovesOnBoard(Board &board, bool capturesOnly) {
+ArrayVec<Move, 218> Movegen::generateAllLegalMovesOnBoard(Board &board, bool capturesOnly, bool excludeKing) {
     bool whiteToMove = board.whiteToMove;
     ArrayVec<Move, 218> legalMoves(0);
     for (int i = whiteToMove ? 0 : 6; i < (whiteToMove ? 6 : 12); i++) {
         uint64_t pieceBitboard = board.BITBOARDS[i];
         while (pieceBitboard) {
             uint8_t index = popLeastSignificantBitAndGetIndex(pieceBitboard);
-            generatePseudoLegalMoves(board, index, i, whiteToMove, capturesOnly, legalMoves);
+            generatePseudoLegalMoves(board, index, i, whiteToMove, capturesOnly, excludeKing, legalMoves);
         }
     }
     return legalMoves;
 }
 
 ArrayVec<Move, 218> Movegen::generateAllLegalMovesOnBoard(Board &board) {
-    return generateAllLegalMovesOnBoard(board, false);
+    return generateAllLegalMovesOnBoard(board, false, false);
 }
 
-void Movegen::generatePseudoLegalMoves(Board &board, uint8_t squareIndex, uint8_t piece, bool white, bool capturesOnly,
+
+ArrayVec<Move, 218> Movegen::generateAllLegalMovesOnBoardAndExcludeKing(Board &board) {
+    return generateAllLegalMovesOnBoard(board, false, true);
+}
+
+void Movegen::generatePseudoLegalMoves(Board &board, uint8_t squareIndex, uint8_t piece, bool white, bool capturesOnly, bool excludeKing,
                                        ArrayVec<Move, 218> &movesVec) {
     uint64_t moves = 0ULL;
     uint64_t castleMoves = 0ULL;
@@ -85,8 +90,10 @@ void Movegen::generatePseudoLegalMoves(Board &board, uint8_t squareIndex, uint8_
             moves = generatePseudoLegalQueenMoves(board, squareIndex, white);
             break;
         case WHITE_KING:
-            moves = generatePseudoLegalKingMoves(board, squareIndex, white);
-            castleMoves = generatePseudoLegalCastleMoves(board, white);
+            if (!excludeKing) {
+                moves = generatePseudoLegalKingMoves(board, squareIndex, white);
+                castleMoves = generatePseudoLegalCastleMoves(board, white);
+            }
             break;
         default: break;
     }
