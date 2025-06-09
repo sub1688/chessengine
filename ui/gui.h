@@ -16,6 +16,11 @@ static ImVec2 operator-(const ImVec2& lhs, const ImVec2& rhs)   { return {lhs.x 
 static bool operator>(const ImVec2& lhs, const ImVec2& rhs)   { return lhs.x > rhs.x && lhs.y > rhs.y; }
 static bool operator<(const ImVec2& lhs, const ImVec2& rhs)   { return lhs.x < rhs.x && lhs.y < rhs.y; }
 
+struct MoveRecord {
+    std::string name;
+    Move move;
+};
+
 namespace Gui {
     inline Board* board;
     inline GLFWwindow* window;
@@ -28,6 +33,8 @@ namespace Gui {
     inline ImVec2 moveAnimation = ImVec2(0, 0);
     inline int timeToThink = 5000;
     inline std::vector<Move> arrows = std::vector<Move>();
+    inline std::vector<MoveRecord> whiteMoveHistory = std::vector<MoveRecord>();
+    inline std::vector<MoveRecord> blackMoveHistory = std::vector<MoveRecord>();
 
     void init(Board* board);
     void setupImgui();
@@ -36,4 +43,6 @@ namespace Gui {
     void renderChessBoard(float width, float height, bool analyze);
     void renderEvaluationBar(int eval, float width, float height);
     void drawArrow(ImVec2 from, ImVec2 to, float arrowSize, float thickness, ImU32 color);
+
+    std::string generatePGN();
 }

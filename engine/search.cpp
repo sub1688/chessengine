@@ -229,7 +229,7 @@ SearchResult Search::search(Board &board, ThreadWorkerInfo *threadWorkerInfoPtr,
         board.undoMove(move);
         moved++;
 
-        // Alpha-beta update
+        // Alpha-beta pruning
         if (negatedScore > alpha) {
             alpha = negatedScore;
             bestMove = move;
@@ -353,12 +353,6 @@ int Search::evaluate(Board &board) {
     if (negativeBishopCount >= 2) {
         totalValue -= BISHOP_PAIR_BONUS;
     }
-
-    // Evaluate Mobility
-    totalValue += static_cast<int>(Movegen::generateAllLegalMovesOnBoard(board, false, true).elements) * MOBILITY_SCORE;
-    board.whiteToMove = !board.whiteToMove;
-    totalValue -= static_cast<int>(Movegen::generateAllLegalMovesOnBoard(board, false, true).elements) * MOBILITY_SCORE;
-    board.whiteToMove = !board.whiteToMove;
 
     if (endgameBias < 0.18) {
         uint64_t whiteKing = std::countr_zero(board.BITBOARDS[WHITE_KING]);
